@@ -12,7 +12,7 @@ Introduction
 to do this.
 
 autoflake only removes unused standard modules imports. This is necessary
-since other modules may have side effecs, making them unsafe to remove
+since other modules may have side effects, making them unsafe to remove
 automatically.
 
 .. _pyflakes: http://pypi.python.org/pypi/pyflakes
