@@ -30,7 +30,9 @@ SAFE_MODULES = set(standard_module_names()) - {'readline'}
 def unused_import_line_numbers(source):
     """Yield line numbers of unused imports."""
     import tempfile
-    temp_filename = tempfile.mkstemp()[1]
+    (_temp_open_file, temp_filename) = tempfile.mkstemp()
+    os.close(_temp_open_file)
+
     with open_with_encoding(temp_filename, encoding='utf-8', mode='w') as f:
         f.write(source)
 
@@ -58,8 +60,8 @@ def filter_commented_out_code(source):
     for line_number, line in enumerate(sio.readlines(), start=1):
         if (line_number in marked_lines and
                 ',' not in line and
-                '\\' not in line):
-            assert 'import' in line
+                '\\' not in line and
+                'import' in line):
             if re.split(r'\bimport\b', line)[1].strip() not in SAFE_MODULES:
                 yield line
         else:
