@@ -18,8 +18,15 @@ class UnitTests(unittest.TestCase):
             list(autoflake.unused_import_line_numbers(
                 'import os\n')))
 
+    def test_standard_module_names(self):
+        self.assertIn('os', list(autoflake.standard_module_names()))
+        self.assertIn('subprocess', list(autoflake.standard_module_names()))
 
-class UnitTests(unittest.TestCase):
+        self.assertNotIn('autoflake', list(autoflake.standard_module_names()))
+        self.assertNotIn('pep8', list(autoflake.standard_module_names()))
+
+
+class SystemTests(unittest.TestCase):
 
     def test_in_place(self):
         with temporary_file("""\
