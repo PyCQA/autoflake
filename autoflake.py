@@ -2,10 +2,8 @@
 
 from __future__ import print_function
 
-from io import StringIO
+import io
 import os
-import subprocess
-import tempfile
 
 
 __version__ = '0.0.1'
@@ -14,8 +12,23 @@ __version__ = '0.0.1'
 PYFLAKES_BIN = 'pyflakes'
 
 
+def standard_module_names():
+    """Yield list of standard module names."""
+    from distutils import sysconfig
+    for _, __, filenames in os.walk(
+            sysconfig.get_python_lib(standard_lib=True)):
+        for name in filenames:
+            extension = '.py'
+            if name.endswith(extension) and not name.startswith('_'):
+                yield name[:-len(extension)]
+
+
+SAFE_MODULES = set(standard_module_names()) - {'readline'}
+
+
 def unused_import_line_numbers(source):
     """Yield line numbers of unused imports."""
+    import tempfile
     temp_filename = tempfile.mkstemp()[1]
     with open_with_encoding(temp_filename, encoding='utf-8', mode='w') as f:
         f.write(source)
@@ -30,6 +43,7 @@ def run_pyflakes(filename):
     """Return output of pyflakes."""
     assert ':' not in filename
 
+    import subprocess
     process = subprocess.Popen(
         [PYFLAKES_BIN, filename],
         stdout=subprocess.PIPE)
@@ -39,7 +53,7 @@ def run_pyflakes(filename):
 def filter_commented_out_code(source):
     """Yield code with unused imports removed."""
     marked_lines = list(unused_import_line_numbers(source))
-    sio = StringIO(source)
+    sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
         if line_number not in marked_lines:
             yield line
@@ -61,8 +75,8 @@ def fix_file(filename, args, standard_out):
         else:
             import difflib
             diff = difflib.unified_diff(
-                StringIO(source).readlines(),
-                StringIO(filtered_source).readlines(),
+                io.StringIO(source).readlines(),
+                io.StringIO(filtered_source).readlines(),
                 'before/' + filename,
                 'after/' + filename)
             standard_out.write(''.join(diff))
