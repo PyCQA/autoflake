@@ -37,7 +37,8 @@ def unused_import_line_numbers(source):
         f.write(source)
 
     for line in run_pyflakes(temp_filename).splitlines():
-        yield int(line.split(':')[1])
+        if line.rstrip().endswith('imported but unused'):
+            yield int(line.split(':')[1])
 
     os.remove(temp_filename)
 
