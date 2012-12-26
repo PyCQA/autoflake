@@ -40,6 +40,9 @@ import foo
 x = foo
 import subprocess
 x()
+
+if True:
+    import os
 """) as filename:
             output_file = io.StringIO()
             autoflake.main(argv=['my_fake_program', '--in-place', filename],
@@ -50,6 +53,9 @@ x()
 import foo
 x = foo
 x()
+
+if True:
+    pass
 """, f.read())
 
 

@@ -64,8 +64,25 @@ def filter_commented_out_code(source):
                 'import' in line):
             if re.split(r'\bimport\b', line)[1].strip() not in SAFE_MODULES:
                 yield line
+            elif line.lstrip() != line:
+                yield indentation(line) + 'pass' + line_ending(line)
         else:
             yield line
+
+
+def indentation(line):
+    """Return leading whitespace."""
+    if line.strip():
+        non_whitespace_index = len(line) - len(line.lstrip())
+        return line[:non_whitespace_index]
+    else:
+        return ''
+
+
+def line_ending(line):
+    """Return line ending."""
+    non_whitespace_index = len(line.rstrip()) - len(line)
+    return line[non_whitespace_index:]
 
 
 def fix_file(filename, args, standard_out):
