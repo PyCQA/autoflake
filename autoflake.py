@@ -54,7 +54,7 @@ def run_pyflakes(filename):
     return process.communicate()[0].decode('utf-8')
 
 
-def filter_commented_out_code(source):
+def filter_code(source):
     """Yield code with unused imports removed."""
     marked_lines = list(unused_import_line_numbers(source))
     sio = io.StringIO(source)
@@ -87,12 +87,12 @@ def line_ending(line):
 
 
 def fix_file(filename, args, standard_out):
-    """Run filter_commented_out_code() on file."""
+    """Run filter_code() on file."""
     encoding = detect_encoding(filename)
     with open_with_encoding(filename, encoding=encoding) as input_file:
         source = input_file.read()
 
-    filtered_source = ''.join(filter_commented_out_code(source))
+    filtered_source = ''.join(filter_code(source))
 
     if source != filtered_source:
         if args.in_place:
