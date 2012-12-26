@@ -10,13 +10,19 @@ import unittest
 import autoflake
 
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
+
 class UnitTests(unittest.TestCase):
 
     def test_unused_import_line_numbers(self):
         self.assertEqual(
             [1],
             list(autoflake.unused_import_line_numbers(
-                'import os\n')))
+                unicode('import os\n'))))
 
     def test_standard_module_names(self):
         self.assertIn('os', list(autoflake.standard_module_names()))
