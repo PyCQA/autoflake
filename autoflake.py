@@ -111,7 +111,6 @@ def fix_file(filename, args, standard_out):
 
 def open_with_encoding(filename, encoding, mode='r'):
     """Return opened file with a specific encoding."""
-    import io
     return io.open(filename, mode=mode, encoding=encoding,
                    newline='')  # Preserve line endings
 
