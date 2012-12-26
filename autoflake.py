@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import io
 import os
+import re
 
 
 __version__ = '0.0.1'
@@ -55,7 +56,13 @@ def filter_commented_out_code(source):
     marked_lines = list(unused_import_line_numbers(source))
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if line_number not in marked_lines:
+        if (line_number in marked_lines and
+                ',' not in line and
+                '\\' not in line):
+            assert 'import' in line
+            if re.split(r'\bimport\b', line)[1].strip() not in SAFE_MODULES:
+                yield line
+        else:
             yield line
 
 
