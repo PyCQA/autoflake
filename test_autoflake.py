@@ -31,6 +31,18 @@ class UnitTests(unittest.TestCase):
         self.assertNotIn('autoflake', list(autoflake.standard_module_names()))
         self.assertNotIn('pep8', list(autoflake.standard_module_names()))
 
+    def test_filter_code(self):
+        self.assertEqual(
+            """\
+import os
+os.foo()
+""",
+            ''.join(autoflake.filter_code("""\
+import os
+import re
+os.foo()
+""")))
+
 
 class SystemTests(unittest.TestCase):
 
