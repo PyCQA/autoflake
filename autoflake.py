@@ -168,7 +168,7 @@ def fix_file(filename, args, standard_out):
 
     filtered_source = None
     while True:
-        filtered_source = ''.join(filter_code(source))
+        filtered_source = ''.join(filter_useless_pass(''.join(filter_code(source))))
         if filtered_source == source:
             break
         source = filtered_source
