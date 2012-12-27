@@ -109,7 +109,7 @@ def fix_file(filename, args, standard_out):
         else:
             import difflib
             diff = difflib.unified_diff(
-                io.StringIO(source).readlines(),
+                io.StringIO(original_source).readlines(),
                 io.StringIO(filtered_source).readlines(),
                 'before/' + filename,
                 'after/' + filename)
