@@ -32,7 +32,7 @@ def standard_package_names():
             yield name
 
 
-SAFE_PACKAGES = set(standard_package_names()) - {'readline'}
+SAFE_PACKAGES = set(standard_package_names()) - {'rlcompleter'}
 
 
 def unused_import_line_numbers(source):
