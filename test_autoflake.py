@@ -120,6 +120,20 @@ from my_blah.my_blah_blah import blah
 os.foo()
 """))))
 
+    def test_filter_code_should_ignore_unsafe_imports(self):
+        self.assertEqual(
+            """\
+import rlcompleter
+print(1)
+""",
+            ''.join(autoflake.filter_code(unicode("""\
+import rlcompleter
+import sys
+import io
+import os
+print(1)
+"""))))
+
     def test_detect_encoding_with_bad_encoding(self):
         with temporary_file('# -*- coding: blah -*-\n') as filename:
             self.assertEqual('latin-1',

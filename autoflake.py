@@ -32,7 +32,13 @@ def standard_package_names():
             yield name
 
 
-SAFE_PACKAGES = set(standard_package_names()) - {'rlcompleter'}
+IMPORTS_WITH_SIDE_EFFECTS = {'rlcompleter'}
+
+BINARY_IMPORTS = {'datetime', 'io', 'json', 'multiprocessing', 'parser', 'sys'}
+
+SAFE_IMPORTS = (set(standard_package_names()) -
+                IMPORTS_WITH_SIDE_EFFECTS |
+                BINARY_IMPORTS)
 
 
 def unused_import_line_numbers(source):
@@ -91,7 +97,7 @@ def filter_code(source):
                 ',' not in line and
                 '\\' not in line):
             package = extract_package_name(line)
-            if package not in SAFE_PACKAGES:
+            if package not in SAFE_IMPORTS:
                 yield line
             elif line.lstrip() != line:
                 # Remove indented unused import.
