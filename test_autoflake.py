@@ -24,12 +24,32 @@ class UnitTests(unittest.TestCase):
             list(autoflake.unused_import_line_numbers(
                 unicode('import os\n'))))
 
-    def test_standard_module_names(self):
-        self.assertIn('os', list(autoflake.standard_module_names()))
-        self.assertIn('subprocess', list(autoflake.standard_module_names()))
+    def test_unused_import_line_numbers_with_from(self):
+        self.assertEqual(
+            [1],
+            list(autoflake.unused_import_line_numbers(
+                unicode('from os import path\n'))))
 
-        self.assertNotIn('autoflake', list(autoflake.standard_module_names()))
-        self.assertNotIn('pep8', list(autoflake.standard_module_names()))
+    def test_unused_import_line_numbers_with_dot(self):
+        self.assertEqual(
+            [1],
+            list(autoflake.unused_import_line_numbers(
+                unicode('import os.path\n'))))
+
+    def test_extract_package_name(self):
+        self.assertEqual('os', autoflake.extract_package_name('import os'))
+        self.assertEqual(
+            'os', autoflake.extract_package_name('from os import path'))
+        self.assertEqual(
+            'os', autoflake.extract_package_name('import os.path'))
+
+    def test_standard_package_names(self):
+        self.assertIn('os', list(autoflake.standard_package_names()))
+        self.assertIn('subprocess', list(autoflake.standard_package_names()))
+        self.assertIn('idlelib', list(autoflake.standard_package_names()))
+
+        self.assertNotIn('autoflake', list(autoflake.standard_package_names()))
+        self.assertNotIn('pep8', list(autoflake.standard_package_names()))
 
     def test_line_ending(self):
         self.assertEqual('', autoflake.line_ending(''))
@@ -57,6 +77,16 @@ import re
 os.foo()
 """))))
 
+    def test_filter_code_with_from(self):
+        self.assertEqual(
+            """\
+x = 1
+""",
+            ''.join(autoflake.filter_code(unicode("""\
+from os import path
+x = 1
+"""))))
+
     def test_filter_code_should_ignore_complex_imports(self):
         self.assertEqual(
             """\
@@ -76,11 +106,19 @@ os.foo()
             """\
 import os
 import my_own_module
+from my_package import another_module
+from my_package import subprocess
+from my_blah.my_blah_blah import blah
 os.foo()
 """,
             ''.join(autoflake.filter_code(unicode("""\
 import os
 import my_own_module
+import re
+from my_package import another_module
+from my_package import subprocess
+from my_blah.my_blah_blah import blah
+from idlelib.UndoDelegator import UndoDelegator
 os.foo()
 """))))
 
