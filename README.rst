@@ -31,7 +31,7 @@ Example
 
    def foo():
        import abc
-       math.pi
+       return math.pi
 
 results in
 
@@ -40,4 +40,4 @@ results in
    import math
 
    def foo():
-       math.pi
+       return math.pi
