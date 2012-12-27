@@ -71,8 +71,44 @@ import os, math, subprocess
 os.foo()
 """)))
 
+    def test_filter_code_should_ignore_non_standard_library(self):
+        self.assertEqual(
+            """\
+import os
+import my_own_module
+os.foo()
+""",
+            ''.join(autoflake.filter_code("""\
+import os
+import my_own_module
+os.foo()
+""")))
+
+    def test_detect_encoding_with_bad_encoding(self):
+        with temporary_file('# -*- coding: blah -*-\n') as filename:
+            self.assertEqual('latin-1',
+                             autoflake.detect_encoding(filename))
+
 
 class SystemTests(unittest.TestCase):
+
+    def test_diff(self):
+        with temporary_file("""\
+import re
+import os
+import my_own_module
+x = 1
+""") as filename:
+            output_file = io.StringIO()
+            autoflake.main(argv=['my_fake_program', filename],
+                           standard_out=output_file,
+                           standard_error=None)
+            self.assertEqual("""\
+-import re
+-import os
+ import my_own_module
+ x = 1
+""", '\n'.join(output_file.getvalue().split('\n')[3:]))
 
     def test_in_place(self):
         with temporary_file("""\
@@ -102,6 +138,34 @@ except ImportError:
     pass
 """, f.read())
 
+    def test_with_missing_file(self):
+        output_file = io.StringIO()
+        ignore = StubFile()
+        autoflake.main(argv=['my_fake_program', '--in-place', '.fake'],
+                       standard_out=output_file,
+                       standard_error=ignore)
+        self.assertFalse(output_file.getvalue())
+
+    def test_ignore_hidden_directories(self):
+        with temporary_directory() as directory:
+            with temporary_directory(prefix='.',
+                                     directory=directory) as inner_directory:
+
+                with temporary_file("""\
+import re
+import os
+""", directory=inner_directory):
+
+                    output_file = io.StringIO()
+                    autoflake.main(argv=['my_fake_program',
+                                         '--recursive',
+                                         directory],
+                                   standard_out=output_file,
+                                   standard_error=None)
+                    self.assertEqual(
+                        '',
+                        output_file.getvalue().strip())
+
 
 @contextlib.contextmanager
 def temporary_file(contents, directory='.', prefix=''):
@@ -115,6 +179,26 @@ def temporary_file(contents, directory='.', prefix=''):
     finally:
         import os
         os.remove(f.name)
+
+
+@contextlib.contextmanager
+def temporary_directory(directory='.', prefix=''):
+    """Create temporary directory and yield its path."""
+    temp_directory = tempfile.mkdtemp(prefix=prefix, dir=directory)
+    try:
+        yield temp_directory
+    finally:
+        import shutil
+        shutil.rmtree(temp_directory)
+
+
+class StubFile(object):
+
+    """Fake file that ignores everything."""
+
+    def write(*_):
+        """Ignore."""
+        pass
 
 
 if __name__ == '__main__':
