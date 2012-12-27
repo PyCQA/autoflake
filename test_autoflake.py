@@ -18,6 +18,8 @@ except NameError:
 
 class UnitTests(unittest.TestCase):
 
+    """Unit tests."""
+
     def test_unused_import_line_numbers(self):
         self.assertEqual(
             [1],
@@ -139,8 +141,34 @@ print(1)
             self.assertEqual('latin-1',
                              autoflake.detect_encoding(filename))
 
+    def test_useless_pass_line_numbers(self):
+        self.assertEqual(
+            [1],
+            list(autoflake.useless_pass_line_numbers(
+                unicode('pass\n'))))
+
+        self.assertEqual(
+            [],
+            list(autoflake.useless_pass_line_numbers(
+                unicode('if True:\n    pass\n'))))
+
+    def test_useless_pass_line_numbers_with_more_complex(self):
+        self.assertEqual(
+            [6],
+            list(autoflake.useless_pass_line_numbers(
+                unicode("""\
+if True:
+    pass
+else:
+    True
+    x = 1
+    pass
+"""))))
+
 
 class SystemTests(unittest.TestCase):
+
+    """System tests."""
 
     def test_diff(self):
         with temporary_file("""\

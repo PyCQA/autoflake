@@ -110,6 +110,30 @@ def filter_code(source):
             yield line
 
 
+def useless_pass_line_numbers(source):
+    """Yield line numbers of commented-out code."""
+    sio = io.StringIO(source)
+    import tokenize
+    try:
+        previous_token_type = None
+        for token in tokenize.generate_tokens(sio.readline):
+            token_type = token[0]
+            start_row = token[2][0]
+            line = token[4]
+
+            is_pass = (token_type == tokenize.NAME and line.strip() == 'pass')
+
+            # TODO: Leading "pass".
+
+            # Trailing "pass".
+            if is_pass and previous_token_type != tokenize.INDENT:
+                yield start_row
+
+            previous_token_type = token_type
+    except (tokenize.TokenError, IndentationError):
+        pass
+
+
 def indentation(line):
     """Return leading whitespace."""
     if line.strip():
