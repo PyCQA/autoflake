@@ -150,12 +150,12 @@ def filter_useless_pass(source):
     try:
         marked_lines = list(useless_pass_line_numbers(source))
     except (tokenize.TokenError, IndentationError):
-        pass
-    else:
-        sio = io.StringIO(source)
-        for line_number, line in enumerate(sio.readlines(), start=1):
-            if line_number not in marked_lines:
-                yield line
+        marked_lines = []
+
+    sio = io.StringIO(source)
+    for line_number, line in enumerate(sio.readlines(), start=1):
+        if line_number not in marked_lines:
+            yield line
 
 
 def indentation(line):
