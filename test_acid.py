@@ -4,7 +4,6 @@
 import os
 import sys
 import subprocess
-import tempfile
 
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
