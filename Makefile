@@ -1,7 +1,7 @@
 check:
 	pep8 autoflake autoflake.py setup.py
 	pep257 autoflake autoflake.py setup.py
-	pylint --report=no --include-ids=yes --disable=C0103,R0914,W0404 --rcfile=/dev/null autoflake.py setup.py
+	pylint --report=no --include-ids=yes --disable=C0103,R0914,W0404,W0142 --rcfile=/dev/null autoflake.py setup.py
 	python setup.py --long-description | rst2html --strict > /dev/null
 	scspell autoflake autoflake.py setup.py test_autoflake.py README.rst
 
