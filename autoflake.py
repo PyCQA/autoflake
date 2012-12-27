@@ -162,7 +162,8 @@ def fix_code(source):
     """Return code with all filtering run on it."""
     filtered_source = None
     while True:
-        filtered_source = ''.join(filter_useless_pass(''.join(filter_code(source))))
+        filtered_source = ''.join(
+            filter_useless_pass(''.join(filter_code(source))))
         if filtered_source == source:
             break
         source = filtered_source
