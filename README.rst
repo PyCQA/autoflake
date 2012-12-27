@@ -53,6 +53,12 @@ results in
             pass
         return math.pi
 
+Installation
+------------
+::
+
+    $ pip install --upgrade autoflake
+
 Limitations
 -----------
 
