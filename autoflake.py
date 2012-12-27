@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import io
 import os
+import tokenize
 
 
 __version__ = '0.1.3'
@@ -127,34 +128,34 @@ def filter_code(source):
 def useless_pass_line_numbers(source):
     """Yield line numbers of commented-out code."""
     sio = io.StringIO(source)
-    import tokenize
-    try:
-        previous_token_type = None
-        for token in tokenize.generate_tokens(sio.readline):
-            token_type = token[0]
-            start_row = token[2][0]
-            line = token[4]
+    previous_token_type = None
+    for token in tokenize.generate_tokens(sio.readline):
+        token_type = token[0]
+        start_row = token[2][0]
+        line = token[4]
 
-            is_pass = (token_type == tokenize.NAME and line.strip() == 'pass')
+        is_pass = (token_type == tokenize.NAME and line.strip() == 'pass')
 
-            # TODO: Leading "pass".
+        # TODO: Leading "pass".
 
-            # Trailing "pass".
-            if is_pass and previous_token_type != tokenize.INDENT:
-                yield start_row
+        # Trailing "pass".
+        if is_pass and previous_token_type != tokenize.INDENT:
+            yield start_row
 
-            previous_token_type = token_type
-    except (tokenize.TokenError, IndentationError):
-        pass
+        previous_token_type = token_type
 
 
 def filter_useless_pass(source):
     """Yield code with useless "pass" lines removed."""
-    marked_lines = list(useless_pass_line_numbers(source))
-    sio = io.StringIO(source)
-    for line_number, line in enumerate(sio.readlines(), start=1):
-        if line_number not in marked_lines:
-            yield line
+    try:
+        marked_lines = list(useless_pass_line_numbers(source))
+    except (tokenize.TokenError, IndentationError):
+        pass
+    else:
+        sio = io.StringIO(source)
+        for line_number, line in enumerate(sio.readlines(), start=1):
+            if line_number not in marked_lines:
+                yield line
 
 
 def indentation(line):
