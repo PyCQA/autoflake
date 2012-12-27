@@ -12,6 +12,11 @@ __version__ = '0.0.1'
 PYFLAKES_BIN = 'pyflakes'
 
 
+class MissingExecutableException(Exception):
+
+    """Raised when executable is missing."""
+
+
 def standard_package_names():
     """Yield list of standard module names."""
     from distutils import sysconfig
@@ -51,10 +56,13 @@ def run_pyflakes(filename):
     assert ':' not in filename
 
     import subprocess
-    process = subprocess.Popen(
-        [PYFLAKES_BIN, filename],
-        stdout=subprocess.PIPE)
-    return process.communicate()[0].decode('utf-8')
+    try:
+        process = subprocess.Popen(
+            [PYFLAKES_BIN, filename],
+            stdout=subprocess.PIPE)
+        return process.communicate()[0].decode('utf-8')
+    except IOError:
+        raise MissingExecutableException()
 
 
 def extract_package_name(line):
@@ -189,5 +197,7 @@ def main(argv, standard_out, standard_error):
         else:
             try:
                 fix_file(name, args=args, standard_out=standard_out)
+            except MissingExecutableException:
+                print('Please install pyflakes', file=standard_error)
             except IOError as exception:
                 print(exception, file=standard_error)
