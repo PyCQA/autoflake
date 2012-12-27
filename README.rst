@@ -45,6 +45,5 @@ results in
 Limitations
 -----------
 
-autoflake currently only removes simple import statements. For example,
-it will not remove more complex statements such as
-``from os import path, sep```.
+autoflake currently only removes simple import statements. It will not
+remove more complex statements such as ``from os import path, sep```.
