@@ -61,7 +61,7 @@ def run_pyflakes(filename):
             [PYFLAKES_BIN, filename],
             stdout=subprocess.PIPE)
         return process.communicate()[0].decode('utf-8')
-    except IOError:
+    except OSError:
         raise MissingExecutableException()
 
 
