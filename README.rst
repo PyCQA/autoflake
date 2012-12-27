@@ -28,6 +28,9 @@ Example
 
     import math
     import re
+    import os
+    import random
+    import multiprocessing
 
     def foo():
         try:
