@@ -26,6 +26,6 @@ with open('README.rst') as readme:
                             'Programming Language :: Python :: 2.7',
                             'Programming Language :: Python :: 3',
                             'License :: OSI Approved :: MIT License'],
-               keywords='clean, format, commented-out code',
+               keywords='clean,automatic,unused,import',
                py_modules=['autoflake'],
                scripts=['autoflake'])
