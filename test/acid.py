@@ -35,7 +35,8 @@ def run(filename):
 
     """
     with tempfile.NamedTemporaryFile(suffix='.py') as tmp_file:
-        if 0 != subprocess.call([AUTOFLAKE_BIN, filename], stdout=tmp_file):
+        if 0 != subprocess.call([AUTOFLAKE_BIN, '--in-place', filename],
+                                stdout=tmp_file):
             sys.stderr.write('autoflake crashed on ' + filename + '\n')
             return False
 
