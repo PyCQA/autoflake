@@ -30,7 +30,10 @@ Example
     import re
 
     def foo():
-        import abc
+        try:
+            import abc
+        except ImportError:
+            import subprocess
         return math.pi
 
 results in
@@ -40,6 +43,10 @@ results in
     import math
 
     def foo():
+        try:
+            pass
+        except ImportError:
+            pass
         return math.pi
 
 Limitations
