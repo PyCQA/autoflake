@@ -31,6 +31,20 @@ class UnitTests(unittest.TestCase):
         self.assertNotIn('autoflake', list(autoflake.standard_module_names()))
         self.assertNotIn('pep8', list(autoflake.standard_module_names()))
 
+    def test_line_ending(self):
+        self.assertEqual('', autoflake.line_ending(''))
+        self.assertEqual('\n', autoflake.line_ending('\n'))
+        self.assertEqual('\n', autoflake.line_ending('abc\n'))
+        self.assertEqual('\t  \t\n', autoflake.line_ending('abc\t  \t\n'))
+
+    def test_indentation(self):
+        self.assertEqual('', autoflake.indentation(''))
+        self.assertEqual('    ', autoflake.indentation('    abc'))
+        self.assertEqual('    ', autoflake.indentation('    abc  \n\t'))
+        self.assertEqual('\t', autoflake.indentation('\tabc  \n\t'))
+        self.assertEqual(' \t ', autoflake.indentation(' \t abc  \n\t'))
+        self.assertEqual('', autoflake.indentation('    '))
+
     def test_filter_code(self):
         self.assertEqual(
             """\
