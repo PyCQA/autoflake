@@ -33,9 +33,9 @@ Example
     import multiprocessing
 
     def foo():
-        try:
+        if True:
             import abc
-        except ImportError:
+        else:
             import subprocess
             import sys
         return math.pi
@@ -47,9 +47,9 @@ results in
     import math
 
     def foo():
-        try:
+        if True:
             pass
-        except ImportError:
+        else:
             pass
         return math.pi
 
