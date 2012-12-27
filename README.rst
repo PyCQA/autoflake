@@ -11,9 +11,9 @@ Introduction
 *autoflake* removes unused imports from Python code. It makes use of pyflakes_
 to do this.
 
-autoflake only removes unused standard modules imports. This is necessary
-since other modules may have side effects, making them unsafe to remove
-automatically.
+autoflake only removes unused imports for modules that are part of the
+standard library. (Other modules may have side effects that make them
+unsafe to remove automatically.)
 
 .. _pyflakes: http://pypi.python.org/pypi/pyflakes
 
@@ -41,3 +41,10 @@ results in
 
    def foo():
        return math.pi
+
+Limitations
+-----------
+
+autoflake currently only removes simple import statements. For example,
+it will not remove more complex statements such as
+``from os import path, sep```.
