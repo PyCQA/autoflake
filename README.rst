@@ -1,8 +1,8 @@
 autoflake
 =========
 
-.. image:: https://secure.travis-ci.org/myint/autoflake.png
-   :target: https://secure.travis-ci.org/myint/autoflake
+.. image:: https://travis-ci.org/myint/autoflake.png?branch=master
+   :target: https://travis-ci.org/myint/autoflake
    :alt: Build status
 
 Introduction
