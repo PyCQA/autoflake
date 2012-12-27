@@ -32,43 +32,45 @@ def pyflakes_count(filename):
                 if '__all__' not in line])
 
 
-def run(filename):
+def run(filename, verbose=False):
     """Run autoflake on file at filename.
 
     Return True on success.
 
     """
-    with tempfile.NamedTemporaryFile(suffix='.py', delete=False) as tmp_file:
-        pass
+    import test_autoflake
+    with test_autoflake.temporary_directory() as temp_directory:
+        temp_filename = os.path.join(temp_directory,
+                                      os.path.basename(filename))
+        import shutil
+        shutil.copyfile(filename, temp_filename)
 
-    import shutil
-    shutil.copyfile(filename, tmp_file.name)
-
-    if 0 != subprocess.call([AUTOFLAKE_BIN, '--in-place', filename]):
-        sys.stderr.write('autoflake crashed on ' + filename + '\n')
-        return False
-
-    try:
-        if check_syntax(filename):
-            try:
-                check_syntax(tmp_file.name, raise_error=True)
-            except (SyntaxError, TypeError,
-                    UnicodeDecodeError) as exception:
-                sys.stderr.write('autoflake broke ' + filename + '\n' +
-                                 str(exception) + '\n')
-                return False
-
-        before_count = pyflakes_count(filename)
-        after_count = pyflakes_count(tmp_file.name)
-
-        if after_count > before_count:
-            sys.stderr.write('autoflake made ' + filename + ' worse\n')
+        if 0 != subprocess.call([AUTOFLAKE_BIN, '--in-place', temp_filename]):
+            sys.stderr.write('autoflake crashed on ' + filename + '\n')
             return False
-    except IOError as exception:
-        sys.stderr.write(str(exception) + '\n')
 
-    # Only clean up on success.
-    os.remove(tmp_file.name)
+        try:
+            if check_syntax(filename):
+                try:
+                    check_syntax(temp_filename, raise_error=True)
+                except (SyntaxError, TypeError,
+                        UnicodeDecodeError) as exception:
+                    sys.stderr.write('autoflake broke ' + filename + '\n' +
+                                     str(exception) + '\n')
+                    return False
+
+            before_count = pyflakes_count(filename)
+            after_count = pyflakes_count(temp_filename)
+
+            if verbose:
+                print('(before, after):', (before_count, after_count))
+
+            if after_count > before_count:
+                sys.stderr.write('autoflake made ' + filename + ' worse\n')
+                return False
+        except IOError as exception:
+            sys.stderr.write(str(exception) + '\n')
+
     return True
 
 
@@ -98,6 +100,9 @@ def process_args():
              '(default: %default)',
         default=-1,
         type=float)
+
+    parser.add_argument('--verbose', action='store_true',
+                        help='print verbose messages')
 
     parser.add_argument('files', nargs='*', help='files to format')
 
@@ -165,7 +170,7 @@ def check(args):
                     verbose_message += '...'
                 sys.stderr.write(colored(verbose_message + '\n', YELLOW))
 
-                if not run(os.path.join(name)):
+                if not run(os.path.join(name), verbose=args.verbose):
                     return False
     except TimeoutException:
         sys.stderr.write('Timed out\n')
