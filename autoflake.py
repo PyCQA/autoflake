@@ -134,6 +134,15 @@ def useless_pass_line_numbers(source):
         pass
 
 
+def filter_useless_pass(source):
+    """Yield code with useless "pass" lines removed."""
+    marked_lines = list(useless_pass_line_numbers(source))
+    sio = io.StringIO(source)
+    for line_number, line in enumerate(sio.readlines(), start=1):
+        if line_number not in marked_lines:
+            yield line
+
+
 def indentation(line):
     """Return leading whitespace."""
     if line.strip():

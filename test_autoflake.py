@@ -165,6 +165,64 @@ else:
     pass
 """))))
 
+    def test_filter_useless_pass(self):
+        self.assertEqual(
+            """\
+if True:
+    pass
+else:
+    True
+    x = 1
+""",
+            ''.join(autoflake.filter_useless_pass(
+                unicode("""\
+if True:
+    pass
+else:
+    True
+    x = 1
+    pass
+"""))))
+
+    def test_filter_useless_pass_more_complex(self):
+        self.assertEqual(
+            """\
+if True:
+    pass
+else:
+    def foo():
+        pass
+        # abc
+    def bar():
+        # abc
+        pass
+    def blah():
+        123
+        pass  # Nope.
+    True
+    x = 1
+""",
+            ''.join(autoflake.filter_useless_pass(
+                unicode("""\
+if True:
+    pass
+else:
+    def foo():
+        pass
+        # abc
+    def bar():
+        # abc
+        pass
+    def blah():
+        123
+        pass
+        pass  # Nope.
+        pass
+    True
+    x = 1
+    pass
+"""))))
+
 
 class SystemTests(unittest.TestCase):
 
