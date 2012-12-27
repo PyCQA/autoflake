@@ -6,7 +6,7 @@ import io
 import os
 
 
-__version__ = '0.1'
+__version__ = '0.1.1'
 
 
 PYFLAKES_BIN = 'pyflakes'
