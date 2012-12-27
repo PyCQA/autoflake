@@ -76,6 +76,8 @@ def extract_package_name(line):
     """Return package name in import statement."""
     assert ',' not in line
     assert '\\' not in line
+    assert '(' not in line
+    assert ')' not in line
 
     if line.lstrip().startswith('import'):
         word = line.split()[1]
@@ -89,14 +91,20 @@ def extract_package_name(line):
     return package
 
 
+def complex_import(line):
+    """Return True if import is too complex to handle for now."""
+    for symbol in ',\\()':
+        if symbol in line:
+            return True
+    return False
+
+
 def filter_code(source):
     """Yield code with unused imports removed."""
     marked_lines = list(unused_import_line_numbers(source))
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if (line_number in marked_lines and
-                ',' not in line and
-                '\\' not in line):
+        if (line_number in marked_lines and not complex_import(line)):
             package = extract_package_name(line)
             if package not in SAFE_IMPORTS:
                 yield line
