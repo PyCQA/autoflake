@@ -51,11 +51,11 @@ class UnitTests(unittest.TestCase):
 import os
 os.foo()
 """,
-            ''.join(autoflake.filter_code("""\
+            ''.join(autoflake.filter_code(unicode("""\
 import os
 import re
 os.foo()
-""")))
+"""))))
 
     def test_filter_code_should_ignore_complex_imports(self):
         self.assertEqual(
@@ -64,12 +64,12 @@ import os
 import os, math, subprocess
 os.foo()
 """,
-            ''.join(autoflake.filter_code("""\
+            ''.join(autoflake.filter_code(unicode("""\
 import os
 import re
 import os, math, subprocess
 os.foo()
-""")))
+"""))))
 
     def test_filter_code_should_ignore_non_standard_library(self):
         self.assertEqual(
@@ -78,11 +78,11 @@ import os
 import my_own_module
 os.foo()
 """,
-            ''.join(autoflake.filter_code("""\
+            ''.join(autoflake.filter_code(unicode("""\
 import os
 import my_own_module
 os.foo()
-""")))
+"""))))
 
     def test_detect_encoding_with_bad_encoding(self):
         with temporary_file('# -*- coding: blah -*-\n') as filename:
