@@ -26,21 +26,21 @@ Example
 
 .. code-block:: python
 
-   import math
-   import re
+    import math
+    import re
 
-   def foo():
-       import abc
-       return math.pi
+    def foo():
+        import abc
+        return math.pi
 
 results in
 
 .. code-block:: python
 
-   import math
+    import math
 
-   def foo():
-       return math.pi
+    def foo():
+        return math.pi
 
 Limitations
 -----------
