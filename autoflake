@@ -31,5 +31,8 @@ if __name__ == '__main__':
         sys.exit(autoflake.main(sys.argv,
                                 standard_out=sys.stdout,
                                 standard_error=sys.stderr))
+    except autoflake.MissingExecutableException:
+        print('Please install pyflakes', file=sys.stderr)
+        sys.exit(2)
     except KeyboardInterrupt:
         sys.exit(2)
