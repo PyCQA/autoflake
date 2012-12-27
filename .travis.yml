@@ -16,5 +16,6 @@ install:
 
 script:
     - python test_autoflake.py
+    - python test_acid.py test_acid.py
     - coverage run test_autoflake.py
     - coverage report --show-missing --omit='*/distutils/*'
