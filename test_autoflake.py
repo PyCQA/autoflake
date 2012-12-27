@@ -295,6 +295,17 @@ except ImportError:
     pass
 """, f.read())
 
+    def test_in_place_with_empty_file(self):
+        line = ''
+
+        with temporary_file(line) as filename:
+            output_file = io.StringIO()
+            autoflake.main(argv=['my_fake_program', '--in-place', filename],
+                           standard_out=output_file,
+                           standard_error=None)
+            with open(filename) as f:
+                self.assertEqual(line, f.read())
+
     def test_in_place_with_with_useless_pass(self):
         with temporary_file("""\
 import foo

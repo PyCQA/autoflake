@@ -12,6 +12,12 @@ __version__ = '0.1.2'
 PYFLAKES_BIN = 'pyflakes'
 
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
+
 class MissingExecutableException(Exception):
 
     """Raised when executable is missing."""
@@ -157,7 +163,7 @@ def indentation(line):
         non_whitespace_index = len(line) - len(line.lstrip())
         return line[:non_whitespace_index]
     else:
-        return ''
+        return unicode()
 
 
 def line_ending(line):
@@ -170,8 +176,8 @@ def fix_code(source):
     """Return code with all filtering run on it."""
     filtered_source = None
     while True:
-        filtered_source = ''.join(
-            filter_useless_pass(''.join(filter_code(source))))
+        filtered_source = unicode().join(
+            filter_useless_pass(unicode().join(filter_code(source))))
         if filtered_source == source:
             break
         source = filtered_source
@@ -200,7 +206,7 @@ def fix_file(filename, args, standard_out):
                 io.StringIO(filtered_source).readlines(),
                 'before/' + filename,
                 'after/' + filename)
-            standard_out.write(''.join(diff))
+            standard_out.write(unicode().join(diff))
 
 
 def open_with_encoding(filename, encoding, mode='r'):
