@@ -92,9 +92,16 @@ def fix_file(filename, args, standard_out):
     with open_with_encoding(filename, encoding=encoding) as input_file:
         source = input_file.read()
 
-    filtered_source = ''.join(filter_code(source))
+    original_source = source
 
-    if source != filtered_source:
+    filtered_source = None
+    while True:
+        filtered_source = ''.join(filter_code(source))
+        if filtered_source == source:
+            break
+        source = filtered_source
+
+    if original_source != filtered_source:
         if args.in_place:
             with open_with_encoding(filename, mode='w',
                                     encoding=encoding) as output_file:
