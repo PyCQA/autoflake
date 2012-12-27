@@ -53,7 +53,9 @@ x = foo
 import subprocess
 x()
 
-if True:
+try:
+    import os
+except ImportError:
     import os
 """) as filename:
             output_file = io.StringIO()
@@ -66,7 +68,9 @@ import foo
 x = foo
 x()
 
-if True:
+try:
+    pass
+except ImportError:
     pass
 """, f.read())
 
