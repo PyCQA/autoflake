@@ -158,6 +158,18 @@ def line_ending(line):
     return line[non_whitespace_index:]
 
 
+def fix_code(source):
+    """Return code with all filtering run on it."""
+    filtered_source = None
+    while True:
+        filtered_source = ''.join(filter_useless_pass(''.join(filter_code(source))))
+        if filtered_source == source:
+            break
+        source = filtered_source
+
+    return filtered_source
+
+
 def fix_file(filename, args, standard_out):
     """Run filter_code() on file."""
     encoding = detect_encoding(filename)
@@ -165,13 +177,7 @@ def fix_file(filename, args, standard_out):
         source = input_file.read()
 
     original_source = source
-
-    filtered_source = None
-    while True:
-        filtered_source = ''.join(filter_useless_pass(''.join(filter_code(source))))
-        if filtered_source == source:
-            break
-        source = filtered_source
+    filtered_source = fix_code(source)
 
     if original_source != filtered_source:
         if args.in_place:
