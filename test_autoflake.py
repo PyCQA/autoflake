@@ -223,6 +223,27 @@ else:
     pass
 """))))
 
+    def test_filter_useless_pass_with_try(self):
+        self.assertEqual(
+            """\
+import os
+os.foo()
+try:
+    pass
+except ImportError:
+    pass
+""",
+            ''.join(autoflake.filter_useless_pass(
+                unicode("""\
+import os
+os.foo()
+try:
+    pass
+    pass
+except ImportError:
+    pass
+"""))))
+
 
 class SystemTests(unittest.TestCase):
 
@@ -257,6 +278,35 @@ try:
     import os
 except ImportError:
     import os
+""") as filename:
+            output_file = io.StringIO()
+            autoflake.main(argv=['my_fake_program', '--in-place', filename],
+                           standard_out=output_file,
+                           standard_error=None)
+            with open(filename) as f:
+                self.assertEqual("""\
+import foo
+x = foo
+x()
+
+try:
+    pass
+except ImportError:
+    pass
+""", f.read())
+
+    def test_in_place_with_with_useless_pass(self):
+        with temporary_file("""\
+import foo
+x = foo
+import subprocess
+x()
+
+try:
+    import os
+except ImportError:
+    import os
+    import sys
 """) as filename:
             output_file = io.StringIO()
             autoflake.main(argv=['my_fake_program', '--in-place', filename],

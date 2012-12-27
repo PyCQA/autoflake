@@ -37,6 +37,7 @@ Example
             import abc
         except ImportError:
             import subprocess
+            import sys
         return math.pi
 
 results in
