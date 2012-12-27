@@ -184,6 +184,26 @@ else:
     pass
 """))))
 
+    def test_filter_useless_pass_with_syntax_error(self):
+        source = unicode("""\
+if True:
+if True:
+            if True:
+    if True:
+
+if True:
+    pass
+else:
+    True
+    pass
+    pass
+    x = 1
+""")
+
+        self.assertEqual(
+            source,
+            ''.join(autoflake.filter_useless_pass(source)))
+
     def test_filter_useless_pass_more_complex(self):
         self.assertEqual(
             """\
