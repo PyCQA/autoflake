@@ -13,18 +13,22 @@ __version__ = '0.0.1'
 PYFLAKES_BIN = 'pyflakes'
 
 
-def standard_module_names():
+def standard_package_names():
     """Yield list of standard module names."""
     from distutils import sysconfig
-    for _, __, filenames in os.walk(
-            sysconfig.get_python_lib(standard_lib=True)):
-        for name in filenames:
-            extension = '.py'
-            if name.endswith(extension) and not name.startswith('_'):
-                yield name[:-len(extension)]
+    for name in os.listdir(sysconfig.get_python_lib(standard_lib=True)):
+
+        if name.startswith('_'):
+            continue
+
+        extension = '.py'
+        if name.endswith(extension):
+            yield name[:-len(extension)]
+        else:
+            yield name
 
 
-SAFE_MODULES = set(standard_module_names()) - {'readline'}
+SAFE_PACKAGES = set(standard_package_names()) - {'readline'}
 
 
 def unused_import_line_numbers(source):
@@ -54,6 +58,23 @@ def run_pyflakes(filename):
     return process.communicate()[0].decode('utf-8')
 
 
+def extract_package_name(line):
+    """Return package name in import statement."""
+    assert ',' not in line
+    assert '\\' not in line
+
+    if line.lstrip().startswith('import'):
+        word = line.split()[1]
+    else:
+        assert line.lstrip().startswith('from')
+        word = line.split()[1]
+
+    package = word.split('.')[0]
+    assert ' ' not in package
+
+    return package
+
+
 def filter_code(source):
     """Yield code with unused imports removed."""
     marked_lines = list(unused_import_line_numbers(source))
@@ -61,12 +82,16 @@ def filter_code(source):
     for line_number, line in enumerate(sio.readlines(), start=1):
         if (line_number in marked_lines and
                 ',' not in line and
-                '\\' not in line and
-                'import' in line):
-            if re.split(r'\bimport\b', line)[1].strip() not in SAFE_MODULES:
+                '\\' not in line):
+            package = extract_package_name(line)
+            if package not in SAFE_PACKAGES:
                 yield line
             elif line.lstrip() != line:
+                # Remove indented unused import.
                 yield indentation(line) + 'pass' + line_ending(line)
+            else:
+                # Discard unused import line.
+                pass
         else:
             yield line
 
