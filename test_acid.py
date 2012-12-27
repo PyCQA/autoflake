@@ -25,30 +25,50 @@ def colored(text, color):
     return color + text + END
 
 
+def pyflakes_count(filename):
+    """Return pyflakes error count."""
+    # File location so we need to filter out __all__ complaints.
+    return len([line for line in autoflake.run_pyflakes(filename).splitlines()
+                if '__all__' not in line])
+
+
 def run(filename):
     """Run autoflake on file at filename.
 
     Return True on success.
 
     """
-    with tempfile.NamedTemporaryFile(suffix='.py') as tmp_file:
-        if 0 != subprocess.call([AUTOFLAKE_BIN, '--in-place', filename],
-                                stdout=tmp_file):
-            sys.stderr.write('autoflake crashed on ' + filename + '\n')
+    with tempfile.NamedTemporaryFile(suffix='.py', delete=False) as tmp_file:
+        pass
+
+    import shutil
+    shutil.copyfile(filename, tmp_file.name)
+
+    if 0 != subprocess.call([AUTOFLAKE_BIN, '--in-place', filename]):
+        sys.stderr.write('autoflake crashed on ' + filename + '\n')
+        return False
+
+    try:
+        if check_syntax(filename):
+            try:
+                check_syntax(tmp_file.name, raise_error=True)
+            except (SyntaxError, TypeError,
+                    UnicodeDecodeError) as exception:
+                sys.stderr.write('autoflake broke ' + filename + '\n' +
+                                 str(exception) + '\n')
+                return False
+
+        before_count = pyflakes_count(filename)
+        after_count = pyflakes_count(tmp_file.name)
+
+        if after_count > before_count:
+            sys.stderr.write('autoflake made ' + filename + ' worse\n')
             return False
+    except IOError as exception:
+        sys.stderr.write(str(exception) + '\n')
 
-        try:
-            if check_syntax(filename):
-                try:
-                    check_syntax(tmp_file.name, raise_error=True)
-                except (SyntaxError, TypeError,
-                        UnicodeDecodeError) as exception:
-                    sys.stderr.write('autoflake broke ' + filename + '\n' +
-                                     str(exception) + '\n')
-                    return False
-        except IOError as exception:
-            sys.stderr.write(str(exception) + '\n')
-
+    # Only clean up on success.
+    os.remove(tmp_file.name)
     return True
 
 
