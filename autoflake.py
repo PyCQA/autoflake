@@ -6,7 +6,7 @@ import io
 import os
 
 
-__version__ = '0.0.1'
+__version__ = '0.1'
 
 
 PYFLAKES_BIN = 'pyflakes'
@@ -34,7 +34,8 @@ def standard_package_names():
 
 IMPORTS_WITH_SIDE_EFFECTS = {'rlcompleter'}
 
-BINARY_IMPORTS = {'datetime', 'io', 'json', 'multiprocessing', 'parser', 'sys'}
+BINARY_IMPORTS = {'datetime', 'io', 'json', 'multiprocessing', 'parser', 'sys',
+                  'time'}
 
 SAFE_IMPORTS = (set(standard_package_names()) -
                 IMPORTS_WITH_SIDE_EFFECTS |
