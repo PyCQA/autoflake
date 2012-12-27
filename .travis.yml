@@ -15,6 +15,6 @@ install:
     - python setup.py --quiet install
 
 script:
-    - python ./test/test_autoflake.py
+    - python test_autoflake.py
     - coverage run test_autoflake.py
     - coverage report --show-missing --omit='*/distutils/*'
