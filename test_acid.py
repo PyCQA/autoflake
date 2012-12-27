@@ -102,7 +102,8 @@ def check(args):
     if args.files:
         dir_paths = args.files
     else:
-        dir_paths = sys.path
+        dir_paths = [path for path in sys.path
+                     if os.path.isdir(path)]
 
     filenames = dir_paths
     completed_filenames = set()
