@@ -197,7 +197,5 @@ def main(argv, standard_out, standard_error):
         else:
             try:
                 fix_file(name, args=args, standard_out=standard_out)
-            except MissingExecutableException:
-                print('Please install pyflakes', file=standard_error)
             except IOError as exception:
                 print(exception, file=standard_error)

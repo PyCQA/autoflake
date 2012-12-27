@@ -174,6 +174,20 @@ except ImportError:
     pass
 """, f.read())
 
+    def test_with_missing_pyflakes(self):
+        with temporary_file('') as filename:
+            output_file = io.StringIO()
+
+            original_pyflakes = autoflake.PYFLAKES_BIN
+            autoflake.PYFLAKES_BIN = 'non-existent-fake-program'
+            try:
+                with self.assertRaises(autoflake.MissingExecutableException):
+                    autoflake.main(argv=['my_fake_program', filename],
+                                   standard_out=output_file,
+                                   standard_error=None)
+            finally:
+                autoflake.PYFLAKES_BIN = original_pyflakes
+
     def test_with_missing_file(self):
         output_file = io.StringIO()
         ignore = StubFile()
