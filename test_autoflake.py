@@ -43,6 +43,20 @@ import re
 os.foo()
 """)))
 
+    def test_filter_code_should_ignore_complex_imports(self):
+        self.assertEqual(
+            """\
+import os
+import os, math, subprocess
+os.foo()
+""",
+            ''.join(autoflake.filter_code("""\
+import os
+import re
+import os, math, subprocess
+os.foo()
+""")))
+
 
 class SystemTests(unittest.TestCase):
 
