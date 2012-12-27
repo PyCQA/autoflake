@@ -7,12 +7,9 @@ import subprocess
 import tempfile
 
 
-ROOT_PATH = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-
+ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 AUTOFLAKE_BIN = os.path.join(ROOT_PATH, 'autoflake')
 
-# Override system-installed version of autoflake.
-sys.path = [ROOT_PATH] + sys.path
 import autoflake
 
 if sys.stdout.isatty():
