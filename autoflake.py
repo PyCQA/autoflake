@@ -44,7 +44,7 @@ def standard_package_names():
 
 IMPORTS_WITH_SIDE_EFFECTS = {'antigravity', 'rlcompleter', 'this'}
 
-# In case they are built compiled into CPython.
+# In case they are built into CPython.
 BINARY_IMPORTS = {'datetime', 'grp', 'io', 'json', 'multiprocessing', 'parser',
                   'pwd', 'string', 'os', 'sys', 'time'}
 
