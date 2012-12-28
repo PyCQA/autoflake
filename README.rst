@@ -15,6 +15,8 @@ autoflake only removes unused imports for modules that are part of the
 standard library. (Other modules may have side effects that make them
 unsafe to remove automatically.)
 
+autoflake also removes useless ``pass`` statements.
+
 .. _pyflakes: http://pypi.python.org/pypi/pyflakes
 
 Example
