@@ -40,7 +40,7 @@ def run(filename, verbose=False):
     import test_autoflake
     with test_autoflake.temporary_directory() as temp_directory:
         temp_filename = os.path.join(temp_directory,
-                                      os.path.basename(filename))
+                                     os.path.basename(filename))
         import shutil
         shutil.copyfile(filename, temp_filename)
 
