@@ -62,7 +62,7 @@ def unused_import_line_numbers(source):
     with open_with_encoding(temp_filename, encoding='utf-8', mode='w') as f:
         f.write(source)
 
-    for line in run_pyflakes(temp_filename).splitlines():
+    for line in run_pyflakes(temp_filename):
         if line.rstrip().endswith('imported but unused'):
             yield int(line.split(':')[1])
 
@@ -70,15 +70,18 @@ def unused_import_line_numbers(source):
 
 
 def run_pyflakes(filename):
-    """Return output of pyflakes."""
-    assert ':' not in filename
-
+    """Yield output of pyflakes."""
     import subprocess
     try:
         process = subprocess.Popen(
             [PYFLAKES_BIN, filename],
             stdout=subprocess.PIPE)
-        return process.communicate()[0].decode('utf-8')
+
+        while process.poll() is None:
+            yield process.stdout.readline().decode('utf-8')
+
+        yield process.communicate()[0].decode('utf-8')
+
     except OSError:
         raise MissingExecutableException()
 
