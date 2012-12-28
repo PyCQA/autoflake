@@ -88,10 +88,11 @@ def run(filename, verbose=False):
                 print('(before, after):', (before_count, after_count))
 
             file_diff = diff(filename, temp_filename)
+            if verbose:
+                sys.stderr.write(file_diff)
+
             if file_diff and after_count > before_count:
                 sys.stderr.write('autoflake made ' + filename + ' worse\n')
-                if verbose:
-                    sys.stderr.write(file_diff)
                 return False
         except IOError as exception:
             sys.stderr.write(str(exception) + '\n')
