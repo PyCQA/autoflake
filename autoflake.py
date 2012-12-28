@@ -27,8 +27,9 @@ class MissingExecutableException(Exception):
 def standard_package_names():
     """Yield list of standard module names."""
     from distutils import sysconfig
-    for name in os.listdir(sysconfig.get_python_lib(standard_lib=True)):
+    path = sysconfig.get_python_lib(standard_lib=True)
 
+    for name in os.listdir(path):
         if name.startswith('_'):
             continue
 
@@ -37,6 +38,14 @@ def standard_package_names():
             yield name[:-len(extension)]
         else:
             yield name
+
+    for name in os.listdir(os.path.join(path,'lib-dynload')):
+        if name.startswith('_'):
+            continue
+
+        extension = '.so'
+        if name.endswith(extension):
+            yield name[:-len(extension)]
 
 
 IMPORTS_WITH_SIDE_EFFECTS = {'rlcompleter'}
