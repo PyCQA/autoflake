@@ -29,23 +29,22 @@ def standard_package_names():
     from distutils import sysconfig
     path = sysconfig.get_python_lib(standard_lib=True)
 
-    for name in os.listdir(path):
-        if name.startswith('_'):
+    for name in (
+            set(os.listdir(path)) |
+            set(os.listdir(os.path.join(path, 'lib-dynload')))):
+
+        if name.startswith('_') or '-' in name:
             continue
 
-        extension = '.py'
-        if name.endswith(extension):
-            yield name[:-len(extension)]
-        else:
-            yield name
-
-    for name in os.listdir(os.path.join(path,'lib-dynload')):
-        if name.startswith('_'):
+        if name.rsplit('.')[-1] not in ['so', 'py', 'pyc']:
             continue
 
-        extension = '.so'
-        if name.endswith(extension):
-            yield name[:-len(extension)]
+        first_part = name.split('.')[0]
+
+        if first_part in ['antigravity', 'this']:
+            continue
+
+        yield first_part
 
 
 IMPORTS_WITH_SIDE_EFFECTS = {'rlcompleter'}
