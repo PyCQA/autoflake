@@ -159,7 +159,7 @@ def filter_useless_pass(source):
     try:
         marked_lines = frozenset(useless_pass_line_numbers(source))
     except (tokenize.TokenError, IndentationError):
-        marked_lines = []
+        marked_lines = frozenset()
 
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
