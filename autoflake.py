@@ -80,9 +80,13 @@ def run_pyflakes(filename):
             stdout=subprocess.PIPE)
 
         while process.poll() is None:
-            yield process.stdout.readline().decode('utf-8')
+            line = process.stdout.readline().decode('utf-8').strip()
+            if ':' in line:
+                yield line
 
-        yield process.communicate()[0].decode('utf-8')
+        line = process.communicate()[0].decode('utf-8').strip()
+        if ':' in line:
+            yield line
 
     except OSError:
         raise MissingExecutableException()
