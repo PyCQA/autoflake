@@ -22,7 +22,7 @@ autoflake also removes useless ``pass`` statements.
 Example
 -------
 
-::
+Running autoflake on the below example::
 
     $ autoflake --in-place example.py
 
