@@ -4,6 +4,11 @@
 import sys
 
 
+if sys.version_info < (2, 7):
+    sys.stderr.write('autoflake requires Python >= 2.7\n')
+    sys.exit(1)
+
+
 def version():
     """Return version string."""
     with open('autoflake.py') as input_file:
