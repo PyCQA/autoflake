@@ -71,6 +71,8 @@ def unused_import_line_numbers(source):
 
 def run_pyflakes(filename):
     """Yield output of pyflakes."""
+    assert ':' not in filename
+
     import subprocess
     try:
         process = subprocess.Popen(
