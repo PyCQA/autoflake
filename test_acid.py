@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Test that autoflake runs without crashing on various Python files."""
 
+import io
 import os
 import sys
 import subprocess
@@ -18,6 +19,11 @@ else:
     YELLOW = ''
     END = ''
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 
 def colored(text, color):
     """Return color coded text."""
@@ -29,6 +35,24 @@ def pyflakes_count(filename):
     # File location so we need to filter out __all__ complaints.
     return len([line for line in autoflake.run_pyflakes(filename)
                 if '__all__' not in line])
+
+
+def readlines(filename):
+    """Return contents of file as a list of lines."""
+    with autoflake.open_with_encoding(
+            filename,
+            encoding=autoflake.detect_encoding(filename)) as f:
+        return f.read()
+
+
+def diff(before, after):
+    """Return diff of two files."""
+    import difflib
+    return unicode().join(difflib.unified_diff(
+        readlines(before),
+        readlines(after),
+        before,
+        after))
 
 
 def run(filename, verbose=False):
@@ -64,8 +88,11 @@ def run(filename, verbose=False):
             if verbose:
                 print('(before, after):', (before_count, after_count))
 
-            if after_count > before_count:
+            file_diff = diff(filename, temp_filename)
+            if file_diff and after_count > before_count:
                 sys.stderr.write('autoflake made ' + filename + ' worse\n')
+                if verbose:
+                    sys.stderr.write(file_diff)
                 return False
         except IOError as exception:
             sys.stderr.write(str(exception) + '\n')
