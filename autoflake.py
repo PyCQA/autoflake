@@ -117,7 +117,7 @@ def complex_import(line):
 
 def filter_code(source):
     """Yield code with unused imports removed."""
-    marked_lines = list(unused_import_line_numbers(source))
+    marked_lines = frozenset(unused_import_line_numbers(source))
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
         if (line_number in marked_lines and not complex_import(line)):
@@ -157,7 +157,7 @@ def useless_pass_line_numbers(source):
 def filter_useless_pass(source):
     """Yield code with useless "pass" lines removed."""
     try:
-        marked_lines = list(useless_pass_line_numbers(source))
+        marked_lines = frozenset(useless_pass_line_numbers(source))
     except (tokenize.TokenError, IndentationError):
         marked_lines = []
 
