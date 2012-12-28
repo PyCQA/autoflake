@@ -42,7 +42,7 @@ def readlines(filename):
     with autoflake.open_with_encoding(
             filename,
             encoding=autoflake.detect_encoding(filename)) as f:
-        return f.read()
+        return f.readlines()
 
 
 def diff(before, after):
