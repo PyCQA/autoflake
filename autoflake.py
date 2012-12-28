@@ -49,8 +49,9 @@ def standard_package_names():
 
 IMPORTS_WITH_SIDE_EFFECTS = {'rlcompleter'}
 
+# In case they are built compiled into CPython.
 BINARY_IMPORTS = {'datetime', 'grp', 'io', 'json', 'multiprocessing', 'parser',
-                  'sys', 'time'}
+                  'pwd', 'string', 'os', 'sys', 'time'}
 
 SAFE_IMPORTS = (set(standard_package_names()) -
                 IMPORTS_WITH_SIDE_EFFECTS |
