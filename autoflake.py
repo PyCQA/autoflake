@@ -30,8 +30,8 @@ def standard_package_names():
     path = sysconfig.get_python_lib(standard_lib=True)
 
     for name in (
-            set(os.listdir(path)) |
-            set(os.listdir(os.path.join(path, 'lib-dynload')))):
+            frozenset(os.listdir(path)) |
+            frozenset(os.listdir(os.path.join(path, 'lib-dynload')))):
 
         if name.startswith('_') or '-' in name:
             continue
@@ -48,7 +48,7 @@ IMPORTS_WITH_SIDE_EFFECTS = {'antigravity', 'rlcompleter', 'this'}
 BINARY_IMPORTS = {'datetime', 'grp', 'io', 'json', 'multiprocessing', 'parser',
                   'pwd', 'string', 'os', 'sys', 'time'}
 
-SAFE_IMPORTS = (set(standard_package_names()) -
+SAFE_IMPORTS = (frozenset(standard_package_names()) -
                 IMPORTS_WITH_SIDE_EFFECTS |
                 BINARY_IMPORTS)
 
