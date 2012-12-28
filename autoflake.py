@@ -39,15 +39,10 @@ def standard_package_names():
         if name.rsplit('.')[-1] not in ['so', 'py', 'pyc']:
             continue
 
-        first_part = name.split('.')[0]
-
-        if first_part in ['antigravity', 'this']:
-            continue
-
-        yield first_part
+        yield name.split('.')[0]
 
 
-IMPORTS_WITH_SIDE_EFFECTS = {'rlcompleter'}
+IMPORTS_WITH_SIDE_EFFECTS = {'antigravity', 'rlcompleter', 'this'}
 
 # In case they are built compiled into CPython.
 BINARY_IMPORTS = {'datetime', 'grp', 'io', 'json', 'multiprocessing', 'parser',
