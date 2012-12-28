@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Test that autoflake runs without crashing on various Python files."""
 
-import io
 import os
 import sys
 import subprocess
