@@ -290,9 +290,9 @@ def main(argv, standard_out, standard_error):
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='drill down directories recursively')
     parser.add_argument('--imports',
-                        help='by default, only remove unused standard library '
-                             'imports; specify a comma-separated list of '
-                             'additional modules/packages')
+                        help='by default, only unused standard library '
+                             'imports are removed; specify a comma-separated '
+                             'list of additional modules/packages')
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument('files', nargs='+', help='files to format')
 
