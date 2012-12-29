@@ -185,13 +185,16 @@ def foo():
         self.assertEqual(
             """\
 import os
+import math
 os.foo()
+math.pi
 """,
             ''.join(autoflake.fix_code(unicode("""\
 import os
 import re
 import abc, math, subprocess
 os.foo()
+math.pi
 """))))
 
     def test_detect_encoding_with_bad_encoding(self):
