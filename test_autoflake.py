@@ -124,6 +124,20 @@ import os, \
 os.foo()
 """))))
 
+    def test_filter_code_should_ignore_semicolons(self):
+        self.assertEqual(
+            r"""\
+import os
+import os; import math, subprocess
+os.foo()
+""",
+            ''.join(autoflake.filter_code(unicode(r"""\
+import os
+import re
+import os; import math, subprocess
+os.foo()
+"""))))
+
     def test_filter_code_should_ignore_non_standard_library(self):
         self.assertEqual(
             """\
