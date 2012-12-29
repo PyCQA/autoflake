@@ -36,7 +36,7 @@ def standard_package_names():
         if name.startswith('_') or '-' in name:
             continue
 
-        if name.rsplit('.')[-1] not in ['so', 'py', 'pyc']:
+        if '.' in name and name.rsplit('.')[-1] not in ['so', 'py', 'pyc']:
             continue
 
         yield name.split('.')[0]
