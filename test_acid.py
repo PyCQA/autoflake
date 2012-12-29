@@ -31,9 +31,7 @@ def colored(text, color):
 
 def pyflakes_count(filename):
     """Return pyflakes error count."""
-    # File location so we need to filter out __all__ complaints.
-    return len([line for line in autoflake.run_pyflakes(filename)
-                if '__all__' not in line])
+    return len(list(autoflake.run_pyflakes(filename)))
 
 
 def readlines(filename):
