@@ -66,4 +66,4 @@ Limitations
 -----------
 
 autoflake currently only removes simple import statements. It will not
-remove more complex statements such as ``from os import path, sep``.
+remove more complex statements such as ``from os import path, sep, stat``.
