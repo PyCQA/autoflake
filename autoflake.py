@@ -84,9 +84,9 @@ def run_pyflakes(filename):
             if ':' in line:
                 yield line
 
-        line = process.communicate()[0].decode('utf-8').strip()
-        if ':' in line:
-            yield line
+        for line in process.communicate()[0].decode('utf-8').splitlines():
+            if ':' in line:
+                yield line
 
     except OSError:
         raise MissingExecutableException()
