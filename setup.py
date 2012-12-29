@@ -57,9 +57,6 @@ if pyflakes_installed():
     core.setup(**setup_arguments)
 else:
     # Only resort to setuptools if necessary.
-    setup_arguments['install_requires'] = [
-        'pyflakes' if sys.version_info[0] < 3 else 'pyflakes3k']
-
     setup_arguments['dependency_links'] = [
         'http://github.com/myint/pyflakes/tarball/master#egg=pyflakes']
     setup_arguments['install_requires'] = ['pyflakes']
