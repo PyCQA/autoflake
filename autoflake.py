@@ -142,8 +142,13 @@ def break_up_import(line):
                     for i in imports.split(',')])
 
 
-def filter_code(source):
+def filter_code(source, additional_imports=None):
     """Yield code with unused imports removed."""
+    imports = SAFE_IMPORTS
+    if additional_imports:
+        imports |= frozenset(additional_imports)
+    del additional_imports
+
     marked_lines = frozenset(unused_import_line_numbers(source))
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
@@ -153,7 +158,7 @@ def filter_code(source):
                 continue
 
             package = extract_package_name(line)
-            if package not in SAFE_IMPORTS:
+            if package not in imports:
                 yield line
             elif line.lstrip() != line:
                 # Remove indented unused import.
@@ -213,12 +218,14 @@ def get_line_ending(line):
     return line[non_whitespace_index:]
 
 
-def fix_code(source):
+def fix_code(source, additional_imports=None):
     """Return code with all filtering run on it."""
     filtered_source = None
     while True:
         filtered_source = unicode().join(
-            filter_useless_pass(unicode().join(filter_code(source))))
+            filter_useless_pass(unicode().join(
+                filter_code(source,
+                            additional_imports=additional_imports))))
         if filtered_source == source:
             break
         source = filtered_source
@@ -227,13 +234,15 @@ def fix_code(source):
 
 
 def fix_file(filename, args, standard_out):
-    """Run filter_code() on file."""
+    """Run fix_code() on file."""
     encoding = detect_encoding(filename)
     with open_with_encoding(filename, encoding=encoding) as input_file:
         source = input_file.read()
 
     original_source = source
-    filtered_source = fix_code(source)
+    filtered_source = fix_code(
+        source,
+        additional_imports=args.imports.split(',') if args.imports else None)
 
     if original_source != filtered_source:
         if args.in_place:
@@ -280,6 +289,10 @@ def main(argv, standard_out, standard_error):
                         help='make changes to files instead of printing diffs')
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='drill down directories recursively')
+    parser.add_argument('--imports',
+                        help='by default, only remove unused standard library '
+                             'imports; specify a comma-separated list of '
+                             'additional modules/packages')
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument('files', nargs='+', help='files to format')
 
