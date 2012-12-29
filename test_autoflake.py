@@ -48,6 +48,7 @@ class UnitTests(unittest.TestCase):
     def test_standard_package_names(self):
         self.assertIn('os', list(autoflake.standard_package_names()))
         self.assertIn('subprocess', list(autoflake.standard_package_names()))
+        self.assertIn('urllib', list(autoflake.standard_package_names()))
 
         self.assertNotIn('autoflake', list(autoflake.standard_package_names()))
         self.assertNotIn('pep8', list(autoflake.standard_package_names()))
