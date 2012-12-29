@@ -186,6 +186,7 @@ def foo():
             """\
 import os
 import math
+from sys import exit, version
 os.foo()
 math.pi
 """,
@@ -193,6 +194,7 @@ math.pi
 import os
 import re
 import abc, math, subprocess
+from sys import exit, version
 os.foo()
 math.pi
 """))))
