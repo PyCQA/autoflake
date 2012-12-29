@@ -128,9 +128,7 @@ def filter_code(source):
     for line_number, line in enumerate(sio.readlines(), start=1):
         if (line_number in marked_lines and not complex_import(line)):
             package = extract_package_name(line)
-            if not package:
-                yield line
-            elif package not in SAFE_IMPORTS:
+            if package not in SAFE_IMPORTS:
                 yield line
             elif line.lstrip() != line:
                 # Remove indented unused import.
