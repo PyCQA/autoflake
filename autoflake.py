@@ -104,7 +104,7 @@ def extract_package_name(line):
     elif line.lstrip().startswith('from'):
         word = line.split()[1]
     else:
-        # Ignore docstests.
+        # Ignore doctests.
         return None
 
     package = word.split('.')[0]
@@ -135,7 +135,7 @@ def break_up_import(line):
     (indentation, imports) = re.split(pattern=r'\bimport\b',
                                       string=line, maxsplit=1)
     indentation += 'import '
-    newline = line_ending(line)
+    newline = get_line_ending(line)
     assert newline
 
     return ''.join([indentation + i.strip() + newline
@@ -157,7 +157,7 @@ def filter_code(source):
                 yield line
             elif line.lstrip() != line:
                 # Remove indented unused import.
-                yield indentation(line) + 'pass' + line_ending(line)
+                yield get_indentation(line) + 'pass' + get_line_ending(line)
             else:
                 # Discard unused import line.
                 pass
@@ -198,7 +198,7 @@ def filter_useless_pass(source):
             yield line
 
 
-def indentation(line):
+def get_indentation(line):
     """Return leading whitespace."""
     if line.strip():
         non_whitespace_index = len(line) - len(line.lstrip())
@@ -207,7 +207,7 @@ def indentation(line):
         return unicode()
 
 
-def line_ending(line):
+def get_line_ending(line):
     """Return line ending."""
     non_whitespace_index = len(line.rstrip()) - len(line)
     return line[non_whitespace_index:]

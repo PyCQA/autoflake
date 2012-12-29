@@ -52,19 +52,19 @@ class UnitTests(unittest.TestCase):
         self.assertNotIn('autoflake', list(autoflake.standard_package_names()))
         self.assertNotIn('pep8', list(autoflake.standard_package_names()))
 
-    def test_line_ending(self):
-        self.assertEqual('', autoflake.line_ending(''))
-        self.assertEqual('\n', autoflake.line_ending('\n'))
-        self.assertEqual('\n', autoflake.line_ending('abc\n'))
-        self.assertEqual('\t  \t\n', autoflake.line_ending('abc\t  \t\n'))
+    def test_get_line_ending(self):
+        self.assertEqual('', autoflake.get_line_ending(''))
+        self.assertEqual('\n', autoflake.get_line_ending('\n'))
+        self.assertEqual('\n', autoflake.get_line_ending('abc\n'))
+        self.assertEqual('\t  \t\n', autoflake.get_line_ending('abc\t  \t\n'))
 
-    def test_indentation(self):
-        self.assertEqual('', autoflake.indentation(''))
-        self.assertEqual('    ', autoflake.indentation('    abc'))
-        self.assertEqual('    ', autoflake.indentation('    abc  \n\t'))
-        self.assertEqual('\t', autoflake.indentation('\tabc  \n\t'))
-        self.assertEqual(' \t ', autoflake.indentation(' \t abc  \n\t'))
-        self.assertEqual('', autoflake.indentation('    '))
+    def test_get_indentation(self):
+        self.assertEqual('', autoflake.get_indentation(''))
+        self.assertEqual('    ', autoflake.get_indentation('    abc'))
+        self.assertEqual('    ', autoflake.get_indentation('    abc  \n\t'))
+        self.assertEqual('\t', autoflake.get_indentation('\tabc  \n\t'))
+        self.assertEqual(' \t ', autoflake.get_indentation(' \t abc  \n\t'))
+        self.assertEqual('', autoflake.get_indentation('    '))
 
     def test_filter_code(self):
         self.assertEqual(
