@@ -88,17 +88,39 @@ from os import path
 x = 1
 """))))
 
-    def test_filter_code_should_ignore_complex_imports(self):
-        self.assertEqual(
-            """\
-import os
+    def test_multiline_import(self):
+        self.assertTrue(autoflake.multiline_import(r"""\
+import os, \
+    math, subprocess
+"""))
+
+        self.assertFalse(autoflake.multiline_import("""\
 import os, math, subprocess
+"""))
+
+    def test_break_up_import(self):
+        self.assertEqual(
+            'import abc\nimport subprocess\nimport math\n',
+            autoflake.break_up_import('import abc, subprocess, math\n'))
+
+    def test_break_up_import_with_indentation(self):
+        self.assertEqual(
+            '    import abc\n    import subprocess\n    import math\n',
+            autoflake.break_up_import('    import abc, subprocess, math\n'))
+
+    def test_filter_code_should_ignore_multiline_imports(self):
+        self.assertEqual(
+            r"""\
+import os
+import os, \
+    math, subprocess
 os.foo()
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code(unicode(r"""\
 import os
 import re
-import os, math, subprocess
+import os, \
+    math, subprocess
 os.foo()
 """))))
 
@@ -144,6 +166,19 @@ def foo():
     '''
 """)
         self.assertEqual(line, ''.join(autoflake.filter_code(line)))
+
+    def test_fix_code(self):
+        self.assertEqual(
+            """\
+import os
+os.foo()
+""",
+            ''.join(autoflake.fix_code(unicode("""\
+import os
+import re
+import abc, math, subprocess
+os.foo()
+"""))))
 
     def test_detect_encoding_with_bad_encoding(self):
         with temporary_file('# -*- coding: blah -*-\n') as filename:
