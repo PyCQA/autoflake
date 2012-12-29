@@ -461,6 +461,28 @@ import os
                         '',
                         output_file.getvalue().strip())
 
+    def test_end_to_end(self):
+        with temporary_file("""\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os
+x = os.sep
+print(x)
+""") as filename:
+            import subprocess
+            process = subprocess.Popen(['./autoflake',
+                                        '--imports=fake_foo,fake_bar',
+                                        filename],
+                                       stdout=subprocess.PIPE)
+            self.assertEqual("""\
+-import fake_fake, fake_foo, fake_bar, fake_zoo
+-import re, os
++import fake_fake
++import fake_zoo
++import os
+ x = os.sep
+ print(x)
+""", '\n'.join(process.communicate()[0].decode('utf-8').split('\n')[3:]))
+
 
 @contextlib.contextmanager
 def temporary_file(contents, directory='.', prefix=''):
