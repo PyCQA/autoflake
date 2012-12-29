@@ -8,9 +8,6 @@ python:
 before_install:
     - pip --quiet install coverage
 
-    # Install via apt-get since the standard pyflakes is Python 2 only.
-    - sudo apt-get --quiet=2 install pyflakes
-
 install:
     - python setup.py --quiet install
 
