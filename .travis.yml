@@ -5,8 +5,13 @@ python:
     - "3.2"
     - "3.3"
 
+env:
+    - PYFLAKES=''
+    - PYFLAKES='apt-get'
+
 before_install:
     - pip --quiet install coverage
+    - if [ "$PYFLAKES" == "apt-get" ]; sudo apt-get install --quiet=2 pyflakes then; fi
 
 install:
     - python setup.py --quiet install
