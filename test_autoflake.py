@@ -136,6 +136,15 @@ import os
 print(1)
 """))))
 
+    def test_filter_code_should_ignore_docstring(self):
+        line = unicode("""
+def foo():
+    '''
+    >>> import math
+    '''
+""")
+        self.assertEqual(line, ''.join(autoflake.filter_code(line)))
+
     def test_detect_encoding_with_bad_encoding(self):
         with temporary_file('# -*- coding: blah -*-\n') as filename:
             self.assertEqual('latin-1',
