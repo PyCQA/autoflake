@@ -94,10 +94,10 @@ def run_pyflakes(filename):
 
 def extract_package_name(line):
     """Return package name in import statement."""
-    assert ',' not in line
     assert '\\' not in line
     assert '(' not in line
     assert ')' not in line
+    assert ';' not in line
 
     if line.lstrip().startswith('import'):
         word = line.split()[1]
@@ -113,12 +113,33 @@ def extract_package_name(line):
     return package
 
 
-def complex_import(line):
-    """Return True if import is too complex to handle for now."""
-    for symbol in ',\\()':
+def multiline_import(line):
+    """Return True if import is spans multiples lines."""
+    for symbol in '\\();':
         if symbol in line:
             return True
     return False
+
+
+def break_up_import(line):
+    """Return line with imports on separate lines."""
+    assert '\\' not in line
+    assert '(' not in line
+    assert ')' not in line
+    assert ';' not in line
+
+    if not line.lstrip().startswith('import'):
+        return line
+
+    import re
+    (indentation, imports) = re.split(pattern=r'\bimport\b',
+                                      string=line, maxsplit=1)
+    indentation += 'import '
+    newline = line_ending(line)
+    assert newline
+
+    return ''.join([indentation + i.strip() + newline
+                    for i in imports.split(',')])
 
 
 def filter_code(source):
@@ -126,7 +147,11 @@ def filter_code(source):
     marked_lines = frozenset(unused_import_line_numbers(source))
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if (line_number in marked_lines and not complex_import(line)):
+        if (line_number in marked_lines and not multiline_import(line)):
+            if ',' in line:
+                yield break_up_import(line)
+                continue
+
             package = extract_package_name(line)
             if package not in SAFE_IMPORTS:
                 yield line
