@@ -52,14 +52,17 @@ with open('README.rst') as readme:
     }
 
 
-# Don't bother trying to install pyflakes3k on 3.3. It is not compatible.
-if pyflakes_installed() or sys.version_info >= (3, 3):
+if pyflakes_installed():
     from distutils import core
     core.setup(**setup_arguments)
 else:
     # Only resort to setuptools if necessary.
     setup_arguments['install_requires'] = [
         'pyflakes' if sys.version_info[0] < 3 else 'pyflakes3k']
+
+    setup_arguments['dependency_links'] = [
+        'http://github.com/myint/pyflakes/tarball/master#egg=pyflakes']
+    setup_arguments['install_requires'] = ['pyflakes']
 
     import setuptools
     setuptools.setup(**setup_arguments)
