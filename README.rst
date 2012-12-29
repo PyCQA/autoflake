@@ -33,6 +33,7 @@ Running autoflake on the below example::
     import os
     import random
     import multiprocessing
+    import grp, pwd, platform
 
     def foo():
         if True:
