@@ -139,7 +139,7 @@ def filter_code(source):
 
 
 def useless_pass_line_numbers(source):
-    """Yield line numbers of commented-out code."""
+    """Yield line numbers of unneeded "pass" statements."""
     sio = io.StringIO(source)
     previous_token_type = None
     for token in tokenize.generate_tokens(sio.readline):
