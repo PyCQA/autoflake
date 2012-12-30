@@ -128,9 +128,6 @@ def break_up_import(line):
     assert ')' not in line
     assert ';' not in line
 
-    if not line.lstrip().startswith('import'):
-        return line
-
     import re
     (indentation, imports) = re.split(pattern=r'\bimport\b',
                                       string=line, maxsplit=1)

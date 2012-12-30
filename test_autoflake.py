@@ -109,6 +109,11 @@ import os, math, subprocess
             '    import abc\n    import subprocess\n    import math\n',
             autoflake.break_up_import('    import abc, subprocess, math\n'))
 
+    def test_break_up_import_with_from(self):
+        self.assertEqual(
+            '    from foo import abc\n    from foo import subprocess\n    from foo import math\n',
+            autoflake.break_up_import('    from foo import abc, subprocess, math\n'))
+
     def test_filter_code_should_ignore_multiline_imports(self):
         self.assertEqual(
             r"""\
@@ -187,9 +192,10 @@ def foo():
             """\
 import os
 import math
-from sys import exit, version
+from sys import version
 os.foo()
 math.pi
+x = version
 """,
             ''.join(autoflake.fix_code(unicode("""\
 import os
@@ -198,6 +204,7 @@ import abc, math, subprocess
 from sys import exit, version
 os.foo()
 math.pi
+x = version
 """))))
 
     def test_detect_encoding_with_bad_encoding(self):
