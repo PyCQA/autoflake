@@ -111,8 +111,13 @@ import os, math, subprocess
 
     def test_break_up_import_with_from(self):
         self.assertEqual(
-            '    from foo import abc\n    from foo import subprocess\n    from foo import math\n',
-            autoflake.break_up_import('    from foo import abc, subprocess, math\n'))
+            """\
+    from foo import abc
+    from foo import subprocess
+    from foo import math
+""",
+            autoflake.break_up_import(
+                '    from foo import abc, subprocess, math\n'))
 
     def test_filter_code_should_ignore_multiline_imports(self):
         self.assertEqual(
