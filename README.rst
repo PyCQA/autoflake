@@ -34,13 +34,13 @@ Running autoflake on the below example::
     import random
     import multiprocessing
     import grp, pwd, platform
+    import subprocess, sys
 
     def foo():
         if True:
-            import abc
+            from abc import ABCMeta, WeakSet
         else:
-            import subprocess
-            import sys
+            print(sys.version)
         return math.pi
 
 results in
@@ -48,12 +48,13 @@ results in
 .. code-block:: python
 
     import math
+    import sys
 
     def foo():
         if True:
             pass
         else:
-            pass
+            print(sys.version)
         return math.pi
 
 Installation
