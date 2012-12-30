@@ -7,7 +7,7 @@ import os
 import tokenize
 
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 
 PYFLAKES_BIN = 'pyflakes'
