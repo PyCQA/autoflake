@@ -89,6 +89,16 @@ from os import path
 x = 1
 """))))
 
+    def test_filter_code_with_from_and_inline(self):
+        self.assertEqual(
+            """\
+x = 1
+""",
+            ''.join(autoflake.filter_code(unicode("""\
+from os import path  # foo
+x = 1
+"""))))
+
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
 import os, \
