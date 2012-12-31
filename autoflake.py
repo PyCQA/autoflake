@@ -129,6 +129,8 @@ def break_up_import(line):
     assert ';' not in line
 
     newline = get_line_ending(line)
+    if not newline:
+        return line
 
     import re
     (indentation, imports) = re.split(pattern=r'\bimport\b',
@@ -220,7 +222,10 @@ def get_indentation(line):
 def get_line_ending(line):
     """Return line ending."""
     non_whitespace_index = len(line.rstrip()) - len(line)
-    return line[non_whitespace_index:]
+    if not non_whitespace_index:
+        return ''
+    else:
+        return line[non_whitespace_index:]
 
 
 def fix_code(source, additional_imports=None):
