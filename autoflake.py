@@ -135,7 +135,7 @@ def break_up_import(line):
                                       string=line, maxsplit=1)
 
     if '#' in imports:
-        (imports, comment) = imports.split('#', maxsplit=1)
+        (imports, comment) = imports.split('#', 1)
         comment = '  # ' + comment.strip()
     else:
         comment = ''

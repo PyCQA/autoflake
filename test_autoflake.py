@@ -92,10 +92,12 @@ x = 1
     def test_filter_code_with_from_and_inline(self):
         self.assertEqual(
             """\
+from fake_foo import z  # foo, foo, zap
 x = 1
 """,
             ''.join(autoflake.filter_code(unicode("""\
 from os import path  # foo
+from fake_foo import z  # foo, foo, zap
 x = 1
 """))))
 
