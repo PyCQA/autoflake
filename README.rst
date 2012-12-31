@@ -57,6 +57,16 @@ results in
             print(sys.version)
         return math.pi
 
+Advanced usage
+--------------
+
+To prevent autoflake from removing certain lines, add ``NOQA`` as an
+inline comment.
+
+.. code-block:: python
+
+    import math  # NOQA
+
 Installation
 ------------
 ::
