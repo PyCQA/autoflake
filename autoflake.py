@@ -160,7 +160,7 @@ def filter_code(source, additional_imports=None):
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
         if (line_number in marked_lines and not multiline_import(line)):
-            if 'noqa' in line.split('#', 1)[-1].lower():
+            if line.strip().lower().endswith('# noqa'):
                 yield line
                 continue
 
