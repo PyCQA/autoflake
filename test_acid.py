@@ -70,6 +70,10 @@ def run(filename, verbose=False):
             return False
 
         try:
+            file_diff = diff(filename, temp_filename)
+            if verbose:
+                sys.stderr.write(file_diff)
+
             if check_syntax(filename):
                 try:
                     check_syntax(temp_filename, raise_error=True)
@@ -84,10 +88,6 @@ def run(filename, verbose=False):
 
             if verbose:
                 print('(before, after):', (before_count, after_count))
-
-            file_diff = diff(filename, temp_filename)
-            if verbose:
-                sys.stderr.write(file_diff)
 
             if file_diff and after_count > before_count:
                 sys.stderr.write('autoflake made ' + filename + ' worse\n')
