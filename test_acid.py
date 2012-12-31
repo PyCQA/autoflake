@@ -52,12 +52,15 @@ def diff(before, after):
         after))
 
 
-def run(filename, verbose=False):
+def run(filename, verbose=False, options=None):
     """Run autoflake on file at filename.
 
     Return True on success.
 
     """
+    if not options:
+        options = []
+
     import test_autoflake
     with test_autoflake.temporary_directory() as temp_directory:
         temp_filename = os.path.join(temp_directory,
@@ -65,7 +68,8 @@ def run(filename, verbose=False):
         import shutil
         shutil.copyfile(filename, temp_filename)
 
-        if 0 != subprocess.call([AUTOFLAKE_BIN, '--in-place', temp_filename]):
+        if 0 != subprocess.call([AUTOFLAKE_BIN, '--in-place', temp_filename] +
+                                options):
             sys.stderr.write('autoflake crashed on ' + filename + '\n')
             return False
 
@@ -125,6 +129,9 @@ def process_args():
         default=-1,
         type=float)
 
+    parser.add_argument('--imports',
+                        help='pass to the autoflake "--imports" option')
+
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='print verbose messages')
 
@@ -153,6 +160,10 @@ def check(args):
     else:
         dir_paths = [path for path in sys.path
                      if os.path.isdir(path)]
+
+    options = []
+    if args.imports:
+        options.append('--import=' + args.imports)
 
     filenames = dir_paths
     completed_filenames = set()
@@ -198,7 +209,8 @@ def check(args):
                     verbose_message += '...'
                 sys.stderr.write(colored(verbose_message + '\n', YELLOW))
 
-                if not run(os.path.join(name), verbose=args.verbose):
+                if not run(os.path.join(name), verbose=args.verbose,
+                           options=options):
                     return False
     except TimeoutException:
         sys.stderr.write('Timed out\n')
