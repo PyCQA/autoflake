@@ -103,6 +103,20 @@ from fake_foo import z  # foo, foo, zap
 x = 1
 """))))
 
+    def test_filter_code_should_respect_noqa(self):
+        self.assertEqual(
+            """\
+import re  # noqa
+from subprocess import Popen  # NOQA
+x = 1
+""",
+            ''.join(autoflake.filter_code(unicode("""\
+from os import path  # foo
+import re  # noqa
+from subprocess import Popen  # NOQA
+x = 1
+"""))))
+
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
 import os, \
