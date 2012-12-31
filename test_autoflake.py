@@ -54,10 +54,12 @@ class UnitTests(unittest.TestCase):
         self.assertNotIn('pep8', list(autoflake.standard_package_names()))
 
     def test_get_line_ending(self):
-        self.assertEqual('', autoflake.get_line_ending(''))
         self.assertEqual('\n', autoflake.get_line_ending('\n'))
         self.assertEqual('\n', autoflake.get_line_ending('abc\n'))
         self.assertEqual('\t  \t\n', autoflake.get_line_ending('abc\t  \t\n'))
+
+        self.assertEqual('', autoflake.get_line_ending('abc'))
+        self.assertEqual('', autoflake.get_line_ending(''))
 
     def test_get_indentation(self):
         self.assertEqual('', autoflake.get_indentation(''))
