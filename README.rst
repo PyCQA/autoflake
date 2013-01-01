@@ -68,7 +68,7 @@ inline comment.
     import math  # NOQA
 
 To allow autoflake to remove additional unused imports (other than
-than those from the standard library), used the ``--imports`` option. It
+than those from the standard library), use the ``--imports`` option. It
 accepts a comma-separated list of names::
 
     $ autoflake --imports=django,requests,urllib3 <filename>
