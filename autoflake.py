@@ -46,7 +46,7 @@ IMPORTS_WITH_SIDE_EFFECTS = {'antigravity', 'rlcompleter', 'this'}
 
 # In case they are built into CPython.
 BINARY_IMPORTS = {'datetime', 'grp', 'io', 'json', 'math', 'multiprocessing',
-                  'parser', 'pwd', 'string', 'os', 'sys', 'time'}
+                  'parser', 'pwd', 'string', 'operator', 'os', 'sys', 'time'}
 
 SAFE_IMPORTS = (frozenset(standard_package_names()) -
                 IMPORTS_WITH_SIDE_EFFECTS |
