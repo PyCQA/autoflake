@@ -20,6 +20,9 @@ class UnitTests(unittest.TestCase):
 
     """Unit tests."""
 
+    def test_imports(self):
+        self.assertGreater(len(autoflake.SAFE_IMPORTS), 0)
+
     def test_unused_import_line_numbers(self):
         self.assertEqual(
             [1],
