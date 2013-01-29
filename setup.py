@@ -39,7 +39,7 @@ with open('README.rst') as readme:
         'description': 'Removes unused imports.',
         'long_description': readme.read(),
         'license': 'Expat License',
-        'author': 'myint',
+        'author': 'Steven Myint',
         'url': 'https://github.com/myint/autoflake',
         'classifiers': ['Intended Audience :: Developers',
                         'Environment :: Console',
@@ -60,6 +60,4 @@ else:
     import setuptools
     setuptools.setup(
         install_requires=['pyflakes'],
-        dependency_links=[
-            'http://github.com/myint/pyflakes/tarball/master#egg=pyflakes'],
         **setup_arguments)
