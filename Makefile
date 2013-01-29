@@ -14,7 +14,7 @@ coverage:
 	@python -m webbrowser -n "file://${PWD}/htmlcov/index.html"
 
 mutant:
-	@mut.py -t autoflake -u test_autoflake -mc
+	@mut.py --disable-operator RIL -t autoflake -u test_autoflake -mc
 
 readme:
 	@restview --long-description
