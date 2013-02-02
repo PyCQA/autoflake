@@ -206,14 +206,26 @@ def useless_pass_line_numbers(source):
     """Yield line numbers of unneeded "pass" statements."""
     sio = io.StringIO(source)
     previous_token_type = None
+    last_pass_row = None
+    last_pass_indentation = None
     for token in tokenize.generate_tokens(sio.readline):
         token_type = token[0]
+        token_string = token[1]
         start_row = token[2][0]
         line = token[4]
 
+        # Leading "pass".
+        if (start_row - 1 == last_pass_row and
+                get_indentation(line) == last_pass_indentation and
+                token_type == tokenize.NAME and
+                token_string != 'pass'):
+            yield start_row - 1
+
         is_pass = (token_type == tokenize.NAME and line.strip() == 'pass')
 
-        # TODO: Leading "pass".
+        if is_pass:
+            last_pass_row = start_row
+            last_pass_indentation = get_indentation(line)
 
         # Trailing "pass".
         if is_pass and previous_token_type != tokenize.INDENT:
