@@ -464,8 +464,10 @@ import subprocess
 x()
 
 try:
+    pass
     import os
 except ImportError:
+    pass
     import os
     import sys
 """) as filename:
