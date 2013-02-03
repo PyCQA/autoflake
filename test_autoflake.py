@@ -94,6 +94,18 @@ from os import path
 x = 1
 """))))
 
+    def test_filter_code_with_additional_imports(self):
+        self.assertEqual(
+            """\
+import zap
+x = 1
+""",
+            ''.join(autoflake.filter_code(unicode("""\
+import foo
+import zap
+x = 1
+"""), additional_imports=['foo', 'bar'])))
+
     def test_filter_code_with_from_and_inline(self):
         self.assertEqual(
             """\
@@ -149,6 +161,11 @@ import os, math, subprocess
 """,
             autoflake.break_up_import(
                 '    from foo import abc, subprocess, math\n'))
+
+    def test_break_up_import_should_do_nothing_on_no_line_ending(self):
+        self.assertEqual(
+            'import abc, subprocess, math',
+            autoflake.break_up_import('import abc, subprocess, math'))
 
     def test_filter_code_should_ignore_multiline_imports(self):
         self.assertEqual(
