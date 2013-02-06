@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """Setup for autoflake."""
 
+import ast
 import sys
 
 
 if sys.version_info < (2, 7):
-    raise SystemExit('autoflake requires Python >= 2.7\n')
+    raise SystemExit('autoflake requires Python >= 2.7')
 
 
 def version():
@@ -13,8 +14,7 @@ def version():
     with open('autoflake.py') as input_file:
         for line in input_file:
             if line.startswith('__version__'):
-                import ast
-                return ast.literal_eval(line.split('=')[1].strip())
+                return ast.parse(line).body[0].value.s
 
 
 def pyflakes_installed():
