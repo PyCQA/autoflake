@@ -12,8 +12,8 @@ AUTOFLAKE_BIN = os.path.join(ROOT_PATH, 'autoflake')
 import autoflake
 
 if sys.stdout.isatty():
-    YELLOW = '\033[33m'
-    END = '\033[0m'
+    YELLOW = '\x1b[33m'
+    END = '\x1b[0m'
 else:
     YELLOW = ''
     END = ''
