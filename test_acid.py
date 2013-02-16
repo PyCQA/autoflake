@@ -132,6 +132,9 @@ def process_args():
     parser.add_argument('--imports',
                         help='pass to the autoflake "--imports" option')
 
+    parser.add_argument('--remove-all', action='store_true',
+                        help='pass to the autoflake "--remove-all" option')
+
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='print verbose messages')
 
@@ -163,7 +166,10 @@ def check(args):
 
     options = []
     if args.imports:
-        options.append('--import=' + args.imports)
+        options.append('--imports=' + args.imports)
+
+    if args.remove_all:
+        options.append('--remove-all')
 
     filenames = dir_paths
     completed_filenames = set()
