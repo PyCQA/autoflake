@@ -170,7 +170,7 @@ def break_up_import(line):
                     for i in imports.split(',')])
 
 
-def filter_code(source, additional_imports=None):
+def filter_code(source, additional_imports=None, remove_all=False):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
@@ -190,7 +190,7 @@ def filter_code(source, additional_imports=None):
                 continue
 
             package = extract_package_name(line)
-            if package not in imports:
+            if not remove_all and package not in imports:
                 yield line
             elif line.lstrip() != line:
                 # Remove indented unused import.
@@ -264,14 +264,15 @@ def get_line_ending(line):
         return line[non_whitespace_index:]
 
 
-def fix_code(source, additional_imports=None):
+def fix_code(source, additional_imports=None, remove_all=False):
     """Return code with all filtering run on it."""
     filtered_source = None
     while True:
         filtered_source = unicode().join(
             filter_useless_pass(unicode().join(
                 filter_code(source,
-                            additional_imports=additional_imports))))
+                            additional_imports=additional_imports,
+                            remove_all=remove_all))))
         if filtered_source == source:
             break
         source = filtered_source
@@ -286,9 +287,11 @@ def fix_file(filename, args, standard_out):
         source = input_file.read()
 
     original_source = source
+
     filtered_source = fix_code(
         source,
-        additional_imports=args.imports.split(',') if args.imports else None)
+        additional_imports=args.imports.split(',') if args.imports else None,
+        remove_all=args.remove_all)
 
     if original_source != filtered_source:
         if args.in_place:
@@ -339,11 +342,17 @@ def main(argv, standard_out, standard_error):
                         help='by default, only unused standard library '
                              'imports are removed; specify a comma-separated '
                              'list of additional modules/packages')
+    parser.add_argument('--remove-all', action='store_true',
+                        help='remove all unused imports (not just those from '
+                             'the standard library')
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
     parser.add_argument('files', nargs='+', help='files to format')
 
     args = parser.parse_args(argv[1:])
+
+    if args.remove_all and args.imports:
+        parser.error('Using both --remove-all and --imports is redundant')
 
     filenames = list(set(args.files))
     while filenames:

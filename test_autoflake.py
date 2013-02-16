@@ -94,6 +94,17 @@ from os import path
 x = 1
 """))))
 
+    def test_filter_code_with_remove_all(self):
+        self.assertEqual(
+            """\
+x = 1
+""",
+            ''.join(autoflake.filter_code(unicode("""\
+import foo
+import zap
+x = 1
+"""), remove_all=True)))
+
     def test_filter_code_with_additional_imports(self):
         self.assertEqual(
             """\
@@ -567,6 +578,43 @@ print(x)
  x = os.sep
  print(x)
 """, '\n'.join(process.communicate()[0].decode('utf-8').split('\n')[3:]))
+
+    def test_end_to_end_with_remove_all(self):
+        with temporary_file("""\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os
+x = os.sep
+print(x)
+""") as filename:
+            import subprocess
+            process = subprocess.Popen(['./autoflake',
+                                        '--remove-all',
+                                        filename],
+                                       stdout=subprocess.PIPE)
+            self.assertEqual("""\
+-import fake_fake, fake_foo, fake_bar, fake_zoo
+-import re, os
++import os
+ x = os.sep
+ print(x)
+""", '\n'.join(process.communicate()[0].decode('utf-8').split('\n')[3:]))
+
+    def test_end_to_end_with_error(self):
+        with temporary_file("""\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os
+x = os.sep
+print(x)
+""") as filename:
+            import subprocess
+            process = subprocess.Popen(['./autoflake',
+                                        '--imports=fake_foo,fake_bar',
+                                        '--remove-all',
+                                        filename],
+                                       stderr=subprocess.PIPE)
+            self.assertIn(
+                'redundant',
+                process.communicate()[1].decode('utf-8'))
 
 
 @contextlib.contextmanager

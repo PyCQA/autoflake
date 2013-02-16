@@ -11,8 +11,8 @@ Introduction
 *autoflake* removes unused imports from Python code. It makes use of pyflakes_
 to do this.
 
-autoflake only removes unused imports for modules that are part of the
-standard library. (Other modules may have side effects that make them
+By default, autoflake only removes unused imports for modules that are part of
+the standard library. (Other modules may have side effects that make them
 unsafe to remove automatically.)
 
 autoflake also removes useless ``pass`` statements.
@@ -72,6 +72,9 @@ than those from the standard library), use the ``--imports`` option. It
 accepts a comma-separated list of names::
 
     $ autoflake --imports=django,requests,urllib3 <filename>
+
+To remove all unused imports (whether or not they are from the standard
+library), use the ``--remove-all`` option.
 
 Installation
 ------------
