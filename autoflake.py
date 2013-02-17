@@ -208,6 +208,7 @@ def useless_pass_line_numbers(source):
     previous_token_type = None
     last_pass_row = None
     last_pass_indentation = None
+    previous_line = ''
     for token in tokenize.generate_tokens(sio.readline):
         token_type = token[0]
         start_row = token[2][0]
@@ -227,10 +228,13 @@ def useless_pass_line_numbers(source):
             last_pass_indentation = get_indentation(line)
 
         # Trailing "pass".
-        if is_pass and previous_token_type != tokenize.INDENT:
+        if (is_pass and
+                previous_token_type != tokenize.INDENT and
+                not previous_line.rstrip().endswith('\\')):
             yield start_row
 
         previous_token_type = token_type
+        previous_line = line
 
 
 def filter_useless_pass(source):

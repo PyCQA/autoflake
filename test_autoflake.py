@@ -287,6 +287,12 @@ x = version
             list(autoflake.useless_pass_line_numbers(
                 unicode('if True:\n    pass\n'))))
 
+    def test_useless_pass_line_numbers_with_escaped_newline(self):
+        self.assertEqual(
+            [],
+            list(autoflake.useless_pass_line_numbers(
+                unicode('if True:\\\n    pass\n'))))
+
     def test_useless_pass_line_numbers_with_more_complex(self):
         self.assertEqual(
             [6],
