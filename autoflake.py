@@ -28,7 +28,7 @@ import os
 import tokenize
 
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 
 PYFLAKES_BIN = 'pyflakes'
