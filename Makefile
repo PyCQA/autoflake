@@ -20,6 +20,5 @@ readme:
 	@restview --long-description
 
 register:
-	@python setup.py register
-	@python setup.py sdist upload
+	@python setup.py register sdist upload --repository=https://pypi.python.org/pypi
 	@srm ~/.pypirc
