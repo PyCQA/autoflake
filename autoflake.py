@@ -77,17 +77,13 @@ SAFE_IMPORTS = (frozenset(standard_package_names()) -
 def unused_import_line_numbers(source):
     """Yield line numbers of unused imports."""
     import tempfile
-    (_temp_open_file, temp_filename) = tempfile.mkstemp()
-    os.close(_temp_open_file)
+    with tempfile.NamedTemporaryFile() as temporary:
+        temporary.write(source.encode('utf-8'))
+        temporary.flush()
 
-    with open_with_encoding(temp_filename, encoding='utf-8', mode='w') as f:
-        f.write(source)
-
-    for line in run_pyflakes(temp_filename):
-        if line.rstrip().endswith('imported but unused'):
-            yield int(line.split(':')[1])
-
-    os.remove(temp_filename)
+        for line in run_pyflakes(temporary.name):
+            if line.rstrip().endswith('imported but unused'):
+                yield int(line.split(':')[1])
 
 
 def run_pyflakes(filename):
