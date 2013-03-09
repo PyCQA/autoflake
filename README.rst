@@ -57,6 +57,12 @@ results in
             print(sys.version)
         return math.pi
 
+Installation
+------------
+::
+
+    $ pip install --upgrade autoflake
+
 Advanced usage
 --------------
 
@@ -96,9 +102,3 @@ Below is the full listing of options::
       --remove-all       remove all unused imports (not just those from the
                          standard library
       --version          show program's version number and exit
-
-Installation
-------------
-::
-
-    $ pip install --upgrade autoflake
