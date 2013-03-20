@@ -25,6 +25,7 @@ from __future__ import print_function
 
 import io
 import os
+import socket
 import tokenize
 
 
@@ -281,7 +282,7 @@ def fix_code(source, additional_imports=None, remove_all=False):
 
 
 def fix_file(filename, args, standard_out):
-    """Run fix_code() on file."""
+    """Run fix_code() on a file."""
     encoding = detect_encoding(filename)
     with open_with_encoding(filename, encoding=encoding) as input_file:
         source = input_file.read()
@@ -368,5 +369,8 @@ def main(argv, standard_out, standard_error):
         else:
             try:
                 fix_file(name, args=args, standard_out=standard_out)
+            except socket.error:
+                # Broken pipe.
+                break
             except IOError as exception:
                 print(exception, file=standard_error)
