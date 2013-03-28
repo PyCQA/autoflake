@@ -267,6 +267,9 @@ def get_line_ending(line):
 
 def fix_code(source, additional_imports=None, remove_all=False):
     """Return code with all filtering run on it."""
+    if not source:
+        return source
+
     filtered_source = None
     while True:
         filtered_source = unicode().join(

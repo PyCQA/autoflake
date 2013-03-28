@@ -261,7 +261,7 @@ os.foo()
 math.pi
 x = version
 """,
-            ''.join(autoflake.fix_code(unicode("""\
+            autoflake.fix_code(unicode("""\
 import os
 import re
 import abc, math, subprocess
@@ -269,7 +269,12 @@ from sys import exit, version
 os.foo()
 math.pi
 x = version
-"""))))
+""")))
+
+    def test_fix_code_with_empty_string(self):
+        self.assertEqual(
+            '',
+            autoflake.fix_code(''))
 
     def test_detect_encoding_with_bad_encoding(self):
         with temporary_file('# -*- coding: blah -*-\n') as filename:
@@ -522,7 +527,7 @@ except ImportError:
 """, f.read())
 
     def test_with_missing_pyflakes(self):
-        with temporary_file('') as filename:
+        with temporary_file('import os') as filename:
             output_file = io.StringIO()
 
             original_pyflakes = autoflake.PYFLAKES_BIN
