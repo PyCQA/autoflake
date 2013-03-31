@@ -31,7 +31,10 @@ def colored(text, color):
 
 def pyflakes_count(filename):
     """Return pyflakes error count."""
-    return len(list(autoflake.run_pyflakes(filename)))
+    with autoflake.open_with_encoding(
+            filename,
+            encoding=autoflake.detect_encoding(filename)) as f:
+        return len(list(autoflake.check(f.read())))
 
 
 def readlines(filename):

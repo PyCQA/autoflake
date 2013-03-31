@@ -28,6 +28,10 @@ import io
 import os
 import tokenize
 
+import pyflakes.api
+import pyflakes.messages
+import pyflakes.reporter
+
 
 __version__ = '0.2.3'
 
@@ -39,11 +43,6 @@ try:
     unicode
 except NameError:
     unicode = str
-
-
-class MissingExecutableException(Exception):
-
-    """Raised when executable is missing."""
 
 
 def standard_package_names():
@@ -77,37 +76,35 @@ SAFE_IMPORTS = (frozenset(standard_package_names()) -
 
 def unused_import_line_numbers(source):
     """Yield line numbers of unused imports."""
-    import tempfile
-    with tempfile.NamedTemporaryFile() as temporary:
-        temporary.write(source.encode('utf-8'))
-        temporary.flush()
-
-        for line in run_pyflakes(temporary.name):
-            if line.rstrip().endswith('imported but unused'):
-                yield int(line.split(':')[1])
+    for message in check(source):
+        if isinstance(message, pyflakes.messages.UnusedImport):
+            yield message.lineno
 
 
-def run_pyflakes(filename):
-    """Yield output of pyflakes."""
-    assert ':' not in filename
+def check(source):
+    """Return messages from pyflakes."""
+    reporter = ListReporter()
+    pyflakes.api.check(source, filename='<string>', reporter=reporter)
+    return reporter.messages
 
-    import subprocess
-    try:
-        process = subprocess.Popen(
-            [PYFLAKES_BIN, filename],
-            stdout=subprocess.PIPE)
 
-        while process.poll() is None:
-            line = process.stdout.readline().decode('utf-8').strip()
-            if ':' in line:
-                yield line
+class ListReporter(pyflakes.reporter.Reporter):
 
-        for line in process.communicate()[0].decode('utf-8').splitlines():
-            if ':' in line:
-                yield line
+    """Accumulate messages in messages list."""
 
-    except OSError:
-        raise MissingExecutableException()
+    def __init__(self):
+        """Initialize.
+
+        Ignore errors from Reporter.
+
+        """
+        ignore = io.StringIO()
+        pyflakes.reporter.Reporter.__init__(self, ignore, ignore)
+        self.messages = []
+
+    def flake(self, message):
+        """Override Reporter.flake()."""
+        self.messages.append(message)
 
 
 def extract_package_name(line):
