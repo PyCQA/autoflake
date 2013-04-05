@@ -92,7 +92,7 @@ class StubFile(object):
 
     """Stub for ignoring output."""
 
-    def write(_):
+    def write(_, __):
         """Stub write()."""
         pass
 
