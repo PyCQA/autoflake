@@ -84,17 +84,11 @@ def unused_import_line_numbers(source):
 def check(source):
     """Return messages from pyflakes."""
     reporter = ListReporter()
-    pyflakes.api.check(source, filename='<string>', reporter=reporter)
-    return reporter.messages
-
-
-class StubFile(object):
-
-    """Stub for ignoring output."""
-
-    def write(_, __):
-        """Stub write()."""
+    try:
+        pyflakes.api.check(source, filename='<string>', reporter=reporter)
+    except UnicodeDecodeError:
         pass
+    return reporter.messages
 
 
 class ListReporter(pyflakes.reporter.Reporter):
@@ -107,7 +101,7 @@ class ListReporter(pyflakes.reporter.Reporter):
         Ignore errors from Reporter.
 
         """
-        ignore = StubFile()
+        ignore = io.StringIO()
         pyflakes.reporter.Reporter.__init__(self, ignore, ignore)
         self.messages = []
 

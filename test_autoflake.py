@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 
 """Test suite for autoflake."""
 
@@ -438,6 +439,9 @@ else:
 
     def test_check_with_bad_syntax(self):
         self.assertFalse(autoflake.check('foo('))
+
+    def test_check_with_unicode(self):
+        self.assertFalse(autoflake.check('print("∑"'))
 
 
 class SystemTests(unittest.TestCase):
