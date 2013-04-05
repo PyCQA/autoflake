@@ -433,6 +433,12 @@ else:
     pass
 """))))
 
+    def test_check(self):
+        self.assertTrue(autoflake.check('import os'))
+
+    def test_check_with_bad_syntax(self):
+        self.assertFalse(autoflake.check('foo('))
+
 
 class SystemTests(unittest.TestCase):
 
