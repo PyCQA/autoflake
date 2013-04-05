@@ -128,7 +128,7 @@ def process_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--command', default=AUTOFLAKE_BIN,
-                        help='autoflake command')
+                        help='autoflake command (default: %(default)s)')
 
     parser.add_argument(
         '--timeout',
