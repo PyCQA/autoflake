@@ -4,6 +4,7 @@ autoflake
 .. image:: https://travis-ci.org/myint/autoflake.png?branch=master
    :target: https://travis-ci.org/myint/autoflake
    :alt: Build status
+
 .. image:: https://coveralls.io/repos/myint/autoflake/badge.png?branch=master
    :target: https://coveralls.io/r/myint/autoflake
    :alt: Test coverage status
