@@ -2,6 +2,7 @@
 """Test that autoflake runs without crashing on various Python files."""
 
 import os
+import shlex
 import sys
 import subprocess
 
@@ -55,7 +56,7 @@ def diff(before, after):
         after))
 
 
-def run(filename, verbose=False, options=None):
+def run(filename, command, verbose=False, options=None):
     """Run autoflake on file at filename.
 
     Return True on success.
@@ -71,7 +72,8 @@ def run(filename, verbose=False, options=None):
         import shutil
         shutil.copyfile(filename, temp_filename)
 
-        if 0 != subprocess.call([AUTOFLAKE_BIN, '--in-place', temp_filename] +
+        if 0 != subprocess.call(shlex.split(command) +
+                                ['--in-place', temp_filename] +
                                 options):
             sys.stderr.write('autoflake crashed on ' + filename + '\n')
             return False
@@ -125,12 +127,15 @@ def process_args():
     import argparse
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--command', default=AUTOFLAKE_BIN,
+                        help='autoflake command')
+
     parser.add_argument(
         '--timeout',
+        default=-1.,
+        type=float,
         help='stop testing additional files after this amount of time '
-             '(default: %default)',
-        default=-1,
-        type=float)
+             '(default: %(default)s)')
 
     parser.add_argument('--imports',
                         help='pass to the autoflake "--imports" option')
@@ -218,7 +223,9 @@ def check(args):
                     verbose_message += '...'
                 sys.stderr.write(colored(verbose_message + '\n', YELLOW))
 
-                if not run(os.path.join(name), verbose=args.verbose,
+                if not run(os.path.join(name),
+                           command=args.command,
+                           verbose=args.verbose,
                            options=options):
                     return False
     except TimeoutException:
