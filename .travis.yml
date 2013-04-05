@@ -22,3 +22,6 @@ script:
     - python test_acid.py test_acid.py
     - coverage run --omit='*/virtualenv/*' test_autoflake.py
     - coverage report --show-missing
+
+after_script:
+    - coveralls
