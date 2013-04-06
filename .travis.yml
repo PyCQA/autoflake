@@ -20,7 +20,7 @@ install:
 script:
     - python test_autoflake.py
     - python test_acid.py test_acid.py
-    - coverage run --omit='*/virtualenv/*' test_autoflake.py
+    - coverage run --omit='*/site-packages/*' test_autoflake.py
     - coverage report --show-missing
 
 after_script:
