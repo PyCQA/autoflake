@@ -23,7 +23,6 @@
 
 from __future__ import print_function
 
-import errno
 import io
 import os
 import tokenize
@@ -373,6 +372,4 @@ def main(argv, standard_out, standard_error):
             try:
                 fix_file(name, args=args, standard_out=standard_out)
             except IOError as exception:
-                if exception.errno == errno.EPIPE:
-                    return
                 print(exception, file=standard_error)
