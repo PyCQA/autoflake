@@ -191,9 +191,7 @@ def filter_code(source, additional_imports=None, remove_all=False):
             elif line.lstrip() != line:
                 # Remove indented unused import.
                 yield get_indentation(line) + 'pass' + get_line_ending(line)
-            else:
-                # Discard unused import line.
-                pass
+            # Otherwise, discard unused import line.
         else:
             yield line
 
