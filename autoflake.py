@@ -353,7 +353,9 @@ def main(argv, standard_out, standard_error):
     args = parser.parse_args(argv[1:])
 
     if args.remove_all and args.imports:
-        parser.error('Using both --remove-all and --imports is redundant')
+        print(unicode('Using both --remove-all and --imports is redundant'),
+              file=standard_error)
+        return 1
 
     filenames = list(set(args.files))
     while filenames:

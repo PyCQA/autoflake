@@ -574,6 +574,15 @@ import os
                         '',
                         output_file.getvalue().strip())
 
+    def test_redundant_options(self):
+        output_file = io.StringIO()
+        autoflake.main(argv=['my_fake_program',
+                             '--remove-all', '--imports=blah', __file__],
+                       standard_out=output_file,
+                       standard_error=output_file)
+
+        self.assertIn('redundant', output_file.getvalue())
+
     def test_end_to_end(self):
         with temporary_file("""\
 import fake_fake, fake_foo, fake_bar, fake_zoo
