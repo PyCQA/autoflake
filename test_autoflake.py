@@ -49,6 +49,9 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(
             'os', autoflake.extract_package_name('import os.path'))
 
+    def test_extract_package_name_should_ignore_doctest_for_now(self):
+        self.assertFalse(autoflake.extract_package_name('>>> import os'))
+
     def test_standard_package_names(self):
         self.assertIn('os', list(autoflake.standard_package_names()))
         self.assertIn('subprocess', list(autoflake.standard_package_names()))
