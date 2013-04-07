@@ -27,6 +27,8 @@ with open('README.rst') as readme:
                      'Environment :: Console',
                      'Programming Language :: Python :: 2.7',
                      'Programming Language :: Python :: 3',
+                     'Programming Language :: Python :: 3.2',
+                     'Programming Language :: Python :: 3.3',
                      'License :: OSI Approved :: MIT License'],
         keywords='clean,automatic,unused,import',
         py_modules=['autoflake'],
