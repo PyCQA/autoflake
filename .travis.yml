@@ -12,7 +12,7 @@ env:
 before_install:
     - pip --quiet install coverage
     - if [ "$PYFLAKES" == "apt-get" ]; then sudo apt-get install --quiet pyflakes; fi
-    - pip install --quiet coveralls
+    - pip install --quiet coverage
 
 install:
     - python setup.py --quiet install
@@ -23,5 +23,6 @@ script:
     - coverage run --omit='*/site-packages/*,*/distutils/*' test_autoflake.py
     - coverage report --show-missing
 
-after_script:
+after_success:
+    - pip install --quiet coveralls
     - coveralls
