@@ -110,9 +110,9 @@ except: from zap import bar
 
     def test_filter_code_should_avoid_escaped_newlines(self):
         line = unicode("""\
-try:\
+try:\\
 from zap import foo
-except:\
+except:\\
 from zap import bar
 """)
         self.assertEqual(
