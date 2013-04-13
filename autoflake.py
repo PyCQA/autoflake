@@ -185,6 +185,9 @@ def filter_code(source, additional_imports=None, remove_all=False):
                 yield break_up_import(line)
                 continue
 
+            if ':' in line:
+                yield line
+
             package = extract_package_name(line)
             if not remove_all and package not in imports:
                 yield line

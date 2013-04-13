@@ -98,6 +98,16 @@ from os import path
 x = 1
 """))))
 
+    def test_filter_code_should_ignore_inline_except(self):
+        line = unicode("""\
+try: from zap import foo
+except: from zap import bar
+""")
+        self.assertEqual(
+            line,
+            ''.join(autoflake.filter_code(line,
+                                          remove_all=True)))
+
     def test_filter_code_with_remove_all(self):
         self.assertEqual(
             """\
