@@ -130,12 +130,13 @@ def extract_package_name(line):
     return package
 
 
-def multiline_import(line):
+def multiline_import(line, previous_line=''):
     """Return True if import is spans multiples lines."""
     for symbol in '\\();:':
         if symbol in line:
             return True
-    return False
+
+    return previous_line.rstrip().endswith('\\')
 
 
 def break_up_import(line):
@@ -177,13 +178,12 @@ def filter_code(source, additional_imports=None, remove_all=False):
     sio = io.StringIO(source)
     previous_line = ''
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if line_number in marked_lines and not multiline_import(line):
+        if line_number in marked_lines and not multiline_import(line,
+                                                                previous_line):
             if line.strip().lower().endswith('# noqa'):
                 yield line
             elif ',' in line:
                 yield break_up_import(line)
-            elif previous_line.rstrip().endswith('\\'):
-                yield line
             else:
                 package = extract_package_name(line)
                 if not remove_all and package not in imports:

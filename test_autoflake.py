@@ -179,6 +179,10 @@ import os, \
 import os, math, subprocess
 """))
 
+        self.assertTrue(autoflake.multiline_import("""\
+import os, math, subprocess
+""", previous_line='if: \\\n'))
+
     def test_break_up_import(self):
         self.assertEqual(
             'import abc\nimport subprocess\nimport math\n',
