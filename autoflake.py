@@ -132,7 +132,7 @@ def extract_package_name(line):
 
 def multiline_import(line):
     """Return True if import is spans multiples lines."""
-    for symbol in '\\();':
+    for symbol in '\\();:':
         if symbol in line:
             return True
     return False
@@ -182,8 +182,6 @@ def filter_code(source, additional_imports=None, remove_all=False):
                 yield line
             elif ',' in line:
                 yield break_up_import(line)
-            elif ':' in line:
-                yield line
             elif previous_line.rstrip().endswith('\\'):
                 yield line
             else:
