@@ -472,6 +472,29 @@ else:
     def test_check_with_unicode(self):
         self.assertFalse(autoflake.check('print("∑"'))
 
+    def test_get_diff_text(self):
+        # We ignore the first two lines since it differs on Python 2.6.
+        self.assertEqual(
+            """\
+-foo
++bar
+""",
+            '\n'.join(autoflake.get_diff_text(['foo\n'],
+                                              ['bar\n'],
+                                              '').split('\n')[3:]))
+
+    def test_get_diff_text_without_newline(self):
+        # We ignore the first two lines since it differs on Python 2.6.
+        self.assertEqual(
+            """\
+-foo
+\ No newline at end of file
++foo
+""",
+            '\n'.join(autoflake.get_diff_text(['foo'],
+                                              ['foo\n'],
+                                              '').split('\n')[3:]))
+
 
 class SystemTests(unittest.TestCase):
 

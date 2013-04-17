@@ -23,6 +23,7 @@
 
 from __future__ import print_function
 
+import difflib
 import io
 import os
 import tokenize
@@ -304,12 +305,10 @@ def fix_file(filename, args, standard_out):
                                     encoding=encoding) as output_file:
                 output_file.write(filtered_source)
         else:
-            import difflib
-            diff = difflib.unified_diff(
+            diff = get_diff_text(
                 io.StringIO(original_source).readlines(),
                 io.StringIO(filtered_source).readlines(),
-                'before/' + filename,
-                'after/' + filename)
+                filename)
             standard_out.write(unicode().join(diff))
 
 
@@ -333,6 +332,26 @@ def detect_encoding(filename):
         return encoding
     except (SyntaxError, LookupError, UnicodeDecodeError):
         return 'latin-1'
+
+
+def get_diff_text(old, new, filename):
+    """Return text of unified diff between old and new."""
+    newline = '\n'
+    diff = difflib.unified_diff(
+        old, new,
+        'original/' + filename,
+        'fixed/' + filename,
+        lineterm=newline)
+
+    text = ''
+    for line in diff:
+        text += line
+
+        # Work around missing newline (http://bugs.python.org/issue2142).
+        if not line.endswith(newline):
+            text += newline + r'\ No newline at end of file' + newline
+
+    return text
 
 
 def main(argv, standard_out, standard_error):
