@@ -6,11 +6,10 @@ check:
 	scspell autoflake autoflake.py setup.py test_autoflake.py README.rst
 
 coverage:
-	@rm -f .coverage
+	@coverage erase
 	@coverage run test_autoflake.py
 	@coverage report
 	@coverage html
-	@rm -f .coverage
 	@python -m webbrowser -n "file://${PWD}/htmlcov/index.html"
 
 mutant:
