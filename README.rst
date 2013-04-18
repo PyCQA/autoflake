@@ -70,12 +70,12 @@ Installation
 Advanced usage
 --------------
 
-To prevent autoflake from removing certain lines, add ``NOQA`` as an
+To prevent autoflake from removing certain lines, add ``noqa`` as an
 inline comment.
 
 .. code-block:: python
 
-    import math  # NOQA
+    import math  # noqa
 
 To allow autoflake to remove additional unused imports (other than
 than those from the standard library), use the ``--imports`` option. It
