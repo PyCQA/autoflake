@@ -1,3 +1,4 @@
+=========
 autoflake
 =========
 
@@ -9,8 +10,9 @@ autoflake
    :target: https://coveralls.io/r/myint/autoflake
    :alt: Test coverage status
 
+
 Introduction
-------------
+============
 
 *autoflake* removes unused imports from Python code. It makes use of pyflakes_
 to do this.
@@ -23,8 +25,9 @@ autoflake also removes useless ``pass`` statements.
 
 .. _pyflakes: http://pypi.python.org/pypi/pyflakes
 
+
 Example
--------
+=======
 
 Running autoflake on the below example::
 
@@ -61,14 +64,16 @@ results in
             print(sys.version)
         return math.pi
 
+
 Installation
-------------
+============
 ::
 
     $ pip install --upgrade autoflake
 
+
 Advanced usage
---------------
+==============
 
 To prevent autoflake from removing certain lines, add ``noqa`` as an
 inline comment.
