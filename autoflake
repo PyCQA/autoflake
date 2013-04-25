@@ -32,8 +32,12 @@ import autoflake
 
 
 if __name__ == '__main__':
-    # Exit on broken pipe.
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    try:
+        # Exit on broken pipe.
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    except AttributeError:
+        # SIGPIPE is not available on Windows.
+        pass
 
     try:
         sys.exit(autoflake.main(sys.argv,
