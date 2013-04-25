@@ -91,6 +91,14 @@ def check(source):
     return reporter.messages
 
 
+class StubFile(object):
+
+    """Stub out file for pyflakes."""
+
+    def write(self, *_):
+        """Stub out write()."""
+
+
 class ListReporter(pyflakes.reporter.Reporter):
 
     """Accumulate messages in messages list."""
@@ -101,7 +109,7 @@ class ListReporter(pyflakes.reporter.Reporter):
         Ignore errors from Reporter.
 
         """
-        ignore = io.StringIO()
+        ignore = StubFile()
         pyflakes.reporter.Reporter.__init__(self, ignore, ignore)
         self.messages = []
 
