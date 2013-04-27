@@ -394,9 +394,8 @@ def main(argv, standard_out, standard_error):
                 filenames += [os.path.join(root, f) for f in children
                               if f.endswith('.py') and
                               not f.startswith('.')]
-                for d in directories:
-                    if d.startswith('.'):
-                        directories.remove(d)
+                directories[:] = [d for d in directories
+                                  if not d.startswith('.')]
         else:
             try:
                 fix_file(name, args=args, standard_out=standard_out)
