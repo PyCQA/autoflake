@@ -361,7 +361,7 @@ def get_diff_text(old, new, filename):
 
 
 def main(argv, standard_out, standard_error):
-    """Main entry point."""
+    """Return 0 on success."""
     import argparse
     parser = argparse.ArgumentParser(description=__doc__, prog='autoflake')
     parser.add_argument('-i', '--in-place', action='store_true',
