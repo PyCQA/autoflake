@@ -34,5 +34,5 @@ with open('README.rst') as readme:
         keywords='clean,automatic,unused,import',
         py_modules=['autoflake'],
         scripts=['autoflake'],
-        install_requires=['pyflakes>=0.6.1'],
+        install_requires=['pyflakes>=0.7.2'],
         test_suite='test_autoflake')
