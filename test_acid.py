@@ -1,5 +1,8 @@
 #!/usr/bin/env python
+
 """Test that autoflake runs without crashing on various Python files."""
+
+from __future__ import unicode_literals
 
 import os
 import shlex
@@ -18,11 +21,6 @@ if sys.stdout.isatty():
 else:
     YELLOW = ''
     END = ''
-
-try:
-    unicode
-except NameError:
-    unicode = str
 
 
 def colored(text, color):
@@ -49,7 +47,7 @@ def readlines(filename):
 def diff(before, after):
     """Return diff of two files."""
     import difflib
-    return unicode().join(difflib.unified_diff(
+    return ''.join(difflib.unified_diff(
         readlines(before),
         readlines(after),
         before,

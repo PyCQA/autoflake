@@ -3,18 +3,14 @@
 
 """Test suite for autoflake."""
 
+from __future__ import unicode_literals
+
 import contextlib
 import io
 import tempfile
 import unittest
 
 import autoflake
-
-
-try:
-    unicode
-except NameError:
-    unicode = str
 
 
 class UnitTests(unittest.TestCase):
@@ -28,19 +24,19 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(
             [1],
             list(autoflake.unused_import_line_numbers(
-                unicode('import os\n'))))
+                'import os\n')))
 
     def test_unused_import_line_numbers_with_from(self):
         self.assertEqual(
             [1],
             list(autoflake.unused_import_line_numbers(
-                unicode('from os import path\n'))))
+                'from os import path\n')))
 
     def test_unused_import_line_numbers_with_dot(self):
         self.assertEqual(
             [1],
             list(autoflake.unused_import_line_numbers(
-                unicode('import os.path\n'))))
+                'import os.path\n')))
 
     def test_extract_package_name(self):
         self.assertEqual('os', autoflake.extract_package_name('import os'))
@@ -82,39 +78,39 @@ class UnitTests(unittest.TestCase):
 import os
 os.foo()
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code("""\
 import os
 import re
 os.foo()
-"""))))
+""")))
 
     def test_filter_code_with_from(self):
         self.assertEqual(
             """\
 x = 1
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code("""\
 from os import path
 x = 1
-"""))))
+""")))
 
     def test_filter_code_should_avoid_inline_except(self):
-        line = unicode("""\
+        line = """\
 try: from zap import foo
 except: from zap import bar
-""")
+"""
         self.assertEqual(
             line,
             ''.join(autoflake.filter_code(line,
                                           remove_all=True)))
 
     def test_filter_code_should_avoid_escaped_newlines(self):
-        line = unicode("""\
+        line = """\
 try:\\
 from zap import foo
 except:\\
 from zap import bar
-""")
+"""
         self.assertEqual(
             line,
             ''.join(autoflake.filter_code(line,
@@ -125,11 +121,11 @@ from zap import bar
             """\
 x = 1
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code("""\
 import foo
 import zap
 x = 1
-"""), remove_all=True)))
+""", remove_all=True)))
 
     def test_filter_code_with_additional_imports(self):
         self.assertEqual(
@@ -137,11 +133,11 @@ x = 1
 import zap
 x = 1
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code("""\
 import foo
 import zap
 x = 1
-"""), additional_imports=['foo', 'bar'])))
+""", additional_imports=['foo', 'bar'])))
 
     def test_filter_code_with_from_and_inline(self):
         self.assertEqual(
@@ -149,11 +145,11 @@ x = 1
 from fake_foo import z  # foo, foo, zap
 x = 1
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code("""\
 from os import path  # foo
 from fake_foo import z  # foo, foo, zap
 x = 1
-"""))))
+""")))
 
     def test_filter_code_should_respect_noqa(self):
         self.assertEqual(
@@ -162,12 +158,12 @@ import re  # noqa
 from subprocess import Popen  # NOQA
 x = 1
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code("""\
 from os import path  # foo
 import re  # noqa
 from subprocess import Popen  # NOQA
 x = 1
-"""))))
+""")))
 
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
@@ -216,13 +212,13 @@ import os, \
     math, subprocess
 os.foo()
 """,
-            ''.join(autoflake.filter_code(unicode(r"""\
+            ''.join(autoflake.filter_code(r"""\
 import os
 import re
 import os, \
     math, subprocess
 os.foo()
-"""))))
+""")))
 
     def test_filter_code_should_ignore_semicolons(self):
         self.assertEqual(
@@ -231,12 +227,12 @@ import os
 import os; import math, subprocess
 os.foo()
 """,
-            ''.join(autoflake.filter_code(unicode(r"""\
+            ''.join(autoflake.filter_code(r"""\
 import os
 import re
 import os; import math, subprocess
 os.foo()
-"""))))
+""")))
 
     def test_filter_code_should_ignore_non_standard_library(self):
         self.assertEqual(
@@ -248,7 +244,7 @@ from my_package import subprocess
 from my_blah.my_blah_blah import blah
 os.foo()
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code("""\
 import os
 import my_own_module
 import re
@@ -256,7 +252,7 @@ from my_package import another_module
 from my_package import subprocess
 from my_blah.my_blah_blah import blah
 os.foo()
-"""))))
+""")))
 
     def test_filter_code_should_ignore_unsafe_imports(self):
         self.assertEqual(
@@ -264,21 +260,21 @@ os.foo()
 import rlcompleter
 print(1)
 """,
-            ''.join(autoflake.filter_code(unicode("""\
+            ''.join(autoflake.filter_code("""\
 import rlcompleter
 import sys
 import io
 import os
 print(1)
-"""))))
+""")))
 
     def test_filter_code_should_ignore_docstring(self):
-        line = unicode("""
+        line = """
 def foo():
     '''
     >>> import math
     '''
-""")
+"""
         self.assertEqual(line, ''.join(autoflake.filter_code(line)))
 
     def test_fix_code(self):
@@ -291,7 +287,7 @@ os.foo()
 math.pi
 x = version
 """,
-            autoflake.fix_code(unicode("""\
+            autoflake.fix_code("""\
 import os
 import re
 import abc, math, subprocess
@@ -299,7 +295,7 @@ from sys import exit, version
 os.foo()
 math.pi
 x = version
-""")))
+"""))
 
     def test_fix_code_with_empty_string(self):
         self.assertEqual(
@@ -315,31 +311,31 @@ x = version
         self.assertEqual(
             [1],
             list(autoflake.useless_pass_line_numbers(
-                unicode('pass\n'))))
+                'pass\n')))
 
         self.assertEqual(
             [],
             list(autoflake.useless_pass_line_numbers(
-                unicode('if True:\n    pass\n'))))
+                'if True:\n    pass\n')))
 
     def test_useless_pass_line_numbers_with_escaped_newline(self):
         self.assertEqual(
             [],
             list(autoflake.useless_pass_line_numbers(
-                unicode('if True:\\\n    pass\n'))))
+                'if True:\\\n    pass\n')))
 
     def test_useless_pass_line_numbers_with_more_complex(self):
         self.assertEqual(
             [6],
             list(autoflake.useless_pass_line_numbers(
-                unicode("""\
+                """\
 if True:
     pass
 else:
     True
     x = 1
     pass
-"""))))
+""")))
 
     def test_filter_useless_pass(self):
         self.assertEqual(
@@ -351,17 +347,17 @@ else:
     x = 1
 """,
             ''.join(autoflake.filter_useless_pass(
-                unicode("""\
+                """\
 if True:
     pass
 else:
     True
     x = 1
     pass
-"""))))
+""")))
 
     def test_filter_useless_pass_with_syntax_error(self):
-        source = unicode("""\
+        source = """\
 if True:
 if True:
             if True:
@@ -374,7 +370,7 @@ else:
     pass
     pass
     x = 1
-""")
+"""
 
         self.assertEqual(
             source,
@@ -399,7 +395,7 @@ else:
     x = 1
 """,
             ''.join(autoflake.filter_useless_pass(
-                unicode("""\
+                """\
 if True:
     pass
 else:
@@ -417,7 +413,7 @@ else:
     True
     x = 1
     pass
-"""))))
+""")))
 
     def test_filter_useless_pass_with_try(self):
         self.assertEqual(
@@ -430,7 +426,7 @@ except ImportError:
     pass
 """,
             ''.join(autoflake.filter_useless_pass(
-                unicode("""\
+                """\
 import os
 os.foo()
 try:
@@ -438,7 +434,7 @@ try:
     pass
 except ImportError:
     pass
-"""))))
+""")))
 
     def test_filter_useless_pass_leading_pass(self):
         self.assertEqual(
@@ -450,7 +446,7 @@ else:
     x = 1
 """,
             ''.join(autoflake.filter_useless_pass(
-                unicode("""\
+                """\
 if True:
     pass
     pass
@@ -461,7 +457,7 @@ else:
     True
     x = 1
     pass
-"""))))
+""")))
 
     def test_check(self):
         self.assertTrue(autoflake.check('import os'))

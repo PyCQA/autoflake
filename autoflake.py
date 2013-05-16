@@ -262,7 +262,7 @@ def get_indentation(line):
         non_whitespace_index = len(line) - len(line.lstrip())
         return line[:non_whitespace_index]
     else:
-        return unicode()
+        return ''
 
 
 def get_line_ending(line):
@@ -281,8 +281,8 @@ def fix_code(source, additional_imports=None, remove_all=False):
 
     filtered_source = None
     while True:
-        filtered_source = unicode().join(
-            filter_useless_pass(unicode().join(
+        filtered_source = ''.join(
+            filter_useless_pass(''.join(
                 filter_code(source,
                             additional_imports=additional_imports,
                             remove_all=remove_all))))
@@ -316,7 +316,7 @@ def fix_file(filename, args, standard_out):
                 io.StringIO(original_source).readlines(),
                 io.StringIO(filtered_source).readlines(),
                 filename)
-            standard_out.write(unicode().join(diff))
+            standard_out.write(''.join(diff))
 
 
 def open_with_encoding(filename, encoding, mode='r'):
@@ -383,7 +383,7 @@ def main(argv, standard_out, standard_error):
     args = parser.parse_args(argv[1:])
 
     if args.remove_all and args.imports:
-        print(unicode('Using both --remove-all and --imports is redundant'),
+        print('Using both --remove-all and --imports is redundant',
               file=standard_error)
         return 1
 
