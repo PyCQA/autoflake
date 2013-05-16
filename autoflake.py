@@ -22,6 +22,7 @@
 """Removes unused imports as reported by pyflakes."""
 
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import difflib
 import io
