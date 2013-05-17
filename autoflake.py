@@ -28,6 +28,7 @@ import difflib
 import io
 import os
 import tokenize
+from distutils import sysconfig
 
 import pyflakes.api
 import pyflakes.messages
@@ -46,15 +47,23 @@ except NameError:
     unicode = str
 
 
-def standard_package_names():
-    """Yield list of standard module names."""
-    from distutils import sysconfig
+def standard_paths():
+    """Yield paths to standard modules."""
     path = sysconfig.get_python_lib(standard_lib=True)
 
-    for name in (
-            frozenset(os.listdir(path)) |
-            frozenset(os.listdir(os.path.join(path, 'lib-dynload')))):
+    for name in os.listdir(path):
+        yield name
 
+    try:
+        for name in os.listdir(os.path.join(path, 'lib-dynload')):
+            pass
+    except OSError:
+        pass
+
+
+def standard_package_names():
+    """Yield standard module names."""
+    for name in standard_paths():
         if name.startswith('_') or '-' in name:
             continue
 
