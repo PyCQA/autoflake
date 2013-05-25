@@ -16,4 +16,4 @@ mutant:
 	@mut.py --disable-operator RIL -t autoflake -u test_autoflake -mc
 
 readme:
-	@restview --long-description
+	@restview --long-description --strict
