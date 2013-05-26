@@ -89,7 +89,9 @@ accepts a comma-separated list of names::
     $ autoflake --imports=django,requests,urllib3 <filename>
 
 To remove all unused imports (whether or not they are from the standard
-library), use the ``--remove-all`` option.
+library), use the ``--remove-all-unused-imports`` option.
+
+To remove unused variables, use the ``--remove-unused-variables`` option.
 
 Below is the full listing of options::
 
