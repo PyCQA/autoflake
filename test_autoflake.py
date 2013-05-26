@@ -601,6 +601,8 @@ def func11():
         self.assertTrue(autoflake.is_literal_or_name('xyz'))
 
         self.assertFalse(autoflake.is_literal_or_name('xyz.prop'))
+        self.assertFalse(autoflake.is_literal_or_name(' '))
+        self.assertFalse(autoflake.is_literal_or_name(' 1'))
 
 
 class SystemTests(unittest.TestCase):

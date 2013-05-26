@@ -183,7 +183,7 @@ def multiline_statement(line, previous_line=''):
     try:
         list(tokenize.generate_tokens(sio.readline))
         return previous_line.rstrip().endswith('\\')
-    except (tokenize.TokenError, IndentationError):
+    except (tokenize.TokenError, SyntaxError):
         return True
 
 
@@ -292,7 +292,7 @@ def is_literal_or_name(value):
     try:
         ast.literal_eval(value)
         return True
-    except ValueError:
+    except (SyntaxError, ValueError):
         # Support removal of variables on the right side. But make sure
         # there are no dots, which could mean an access of a property.
         return re.match(r'^\w+\s*$', value)
@@ -337,7 +337,7 @@ def filter_useless_pass(source):
     """Yield code with useless "pass" lines removed."""
     try:
         marked_lines = frozenset(useless_pass_line_numbers(source))
-    except (tokenize.TokenError, IndentationError):
+    except (tokenize.TokenError, SyntaxError):
         marked_lines = frozenset()
 
     sio = io.StringIO(source)
