@@ -139,7 +139,11 @@ def process_args():
                         help='pass to the autoflake "--imports" option')
 
     parser.add_argument('--remove-all', action='store_true',
-                        help='pass to the autoflake "--remove-all" option')
+                        help='pass "--remove-all" option to autoflake')
+
+    parser.add_argument('--remove-unused-variables', action='store_true',
+                        help='pass "--remove-unused-variables" option to '
+                             'autoflake')
 
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='print verbose messages')
@@ -176,6 +180,9 @@ def check(args):
 
     if args.remove_all:
         options.append('--remove-all')
+
+    if args.remove_unused_variables:
+        options.append('--remove-unused-variables')
 
     filenames = dir_paths
     completed_filenames = set()
