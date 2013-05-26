@@ -91,6 +91,13 @@ def unused_import_line_numbers(messages):
             yield message.lineno
 
 
+def unused_variable_line_numbers(messages):
+    """Yield line numbers of unused variables."""
+    for message in messages:
+        if isinstance(message, pyflakes.messages.UnusedVariable):
+            yield message.lineno
+
+
 def check(source):
     """Return messages from pyflakes."""
     reporter = ListReporter()
@@ -193,7 +200,12 @@ def filter_code(source, additional_imports=None, remove_all=False):
 
     messages = check(source)
 
-    unused_line_numbers = frozenset(unused_import_line_numbers(messages))
+    marked_import_line_numbers = frozenset(
+        unused_import_line_numbers(messages))
+
+    marked_variable_line_numbers = frozenset(
+        unused_import_line_numbers(messages))
+
     sio = io.StringIO(source)
     previous_line = ''
     for line_number, line in enumerate(sio.readlines(), start=1):
@@ -201,10 +213,18 @@ def filter_code(source, additional_imports=None, remove_all=False):
             yield line
         elif multiline_import(line, previous_line):
             yield line
-        elif line_number in unused_line_numbers:
-            filtered_line = filter_unused(line,
-                                          remove_all=remove_all,
-                                          imports=imports)
+        elif line_number in marked_import_line_numbers:
+            filtered_line = filter_unused_import(
+                line,
+                remove_all=remove_all,
+                imports=imports)
+            if filtered_line is not None:
+                yield filtered_line
+        elif line_number in marked_variable_line_numbers:
+            filtered_line = filter_unused_variable(
+                line,
+                remove_all=remove_all,
+                imports=imports)
             if filtered_line is not None:
                 yield filtered_line
         else:
@@ -213,7 +233,7 @@ def filter_code(source, additional_imports=None, remove_all=False):
         previous_line = line
 
 
-def filter_unused(line, remove_all, imports):
+def filter_unused_import(line, remove_all, imports):
     """Return line if used, otherwise return None."""
     if ',' in line:
         return break_up_import(line)
