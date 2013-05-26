@@ -84,9 +84,9 @@ SAFE_IMPORTS = (frozenset(standard_package_names()) -
                 BINARY_IMPORTS)
 
 
-def unused_import_line_numbers(source):
+def unused_import_line_numbers(messages):
     """Yield line numbers of unused imports."""
-    for message in check(source):
+    for message in messages:
         if isinstance(message, pyflakes.messages.UnusedImport):
             yield message.lineno
 
@@ -191,7 +191,9 @@ def filter_code(source, additional_imports=None, remove_all=False):
         imports |= frozenset(additional_imports)
     del additional_imports
 
-    unused_line_numbers = frozenset(unused_import_line_numbers(source))
+    messages = check(source)
+
+    unused_line_numbers = frozenset(unused_import_line_numbers(messages))
     sio = io.StringIO(source)
     previous_line = ''
     for line_number, line in enumerate(sio.readlines(), start=1):

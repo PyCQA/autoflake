@@ -24,19 +24,19 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(
             [1],
             list(autoflake.unused_import_line_numbers(
-                'import os\n')))
+                autoflake.check('import os\n'))))
 
     def test_unused_import_line_numbers_with_from(self):
         self.assertEqual(
             [1],
             list(autoflake.unused_import_line_numbers(
-                'from os import path\n')))
+                autoflake.check('from os import path\n'))))
 
     def test_unused_import_line_numbers_with_dot(self):
         self.assertEqual(
             [1],
             list(autoflake.unused_import_line_numbers(
-                'import os.path\n')))
+                autoflake.check('import os.path\n'))))
 
     def test_extract_package_name(self):
         self.assertEqual('os', autoflake.extract_package_name('import os'))
