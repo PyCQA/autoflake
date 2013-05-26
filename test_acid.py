@@ -138,8 +138,9 @@ def process_args():
     parser.add_argument('--imports',
                         help='pass to the autoflake "--imports" option')
 
-    parser.add_argument('--remove-all', action='store_true',
-                        help='pass "--remove-all" option to autoflake')
+    parser.add_argument('--remove-all-unused-imports', action='store_true',
+                        help='pass "--remove-all-unused-imports" option to '
+                             'autoflake')
 
     parser.add_argument('--remove-unused-variables', action='store_true',
                         help='pass "--remove-unused-variables" option to '
@@ -178,8 +179,8 @@ def check(args):
     if args.imports:
         options.append('--imports=' + args.imports)
 
-    if args.remove_all:
-        options.append('--remove-all')
+    if args.remove_all_unused_imports:
+        options.append('--remove-all-unused-imports')
 
     if args.remove_unused_variables:
         options.append('--remove-unused-variables')
