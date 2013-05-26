@@ -37,7 +37,7 @@ import pyflakes.messages
 import pyflakes.reporter
 
 
-__version__ = '0.4'
+__version__ = '0.4.1'
 
 
 PYFLAKES_BIN = 'pyflakes'
