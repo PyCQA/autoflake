@@ -72,6 +72,13 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(' \t ', autoflake.get_indentation(' \t abc  \n\t'))
         self.assertEqual('', autoflake.get_indentation('    '))
 
+    def test_filter_unused_variables(self):
+        self.assertEqual('foo()',
+                         autoflake.filter_unused_variable('x = foo()'))
+
+        self.assertEqual('    foo()',
+                         autoflake.filter_unused_variable('    x = foo()'))
+
     def test_filter_code(self):
         self.assertEqual(
             """\

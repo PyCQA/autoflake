@@ -156,6 +156,7 @@ def extract_package_name(line):
 
 def multiline_import(line, previous_line=''):
     """Return True if import is spans multiples lines."""
+    # TODO: Make this generic and use tokenize.
     for symbol in '\\();:':
         if symbol in line:
             return True
@@ -249,6 +250,17 @@ def filter_unused_import(line, remove_all, imports):
 
         # Otherwise, discard unused import line.
         return None
+
+
+def filter_unused_variable(line):
+    """Return line if used, otherwise return None."""
+    # TODO: Check for literal values for whole-line removal.
+    if line.count('=') == 1:
+        split_line = line.split('=')
+        assert len(split_line) == 2
+        return (get_indentation(line) + split_line[1].lstrip())
+    else:
+        return line
 
 
 def useless_pass_line_numbers(source):
