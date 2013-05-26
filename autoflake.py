@@ -362,6 +362,10 @@ def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
     if not source:
         return source
 
+    # pyflakes does not handle "nonlocal" correctly.
+    if 'nonlocal' in source:
+        remove_unused_variables = False
+
     filtered_source = None
     while True:
         filtered_source = ''.join(

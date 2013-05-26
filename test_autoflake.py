@@ -341,6 +341,21 @@ def main():
 """,
                                remove_unused_variables=True))
 
+    def test_fix_code_with_unused_variables_should_skip_nonlocal(self):
+        """pyflakes does not handle nonlocal correctly."""
+        code = """\
+def foo():
+    x = 0
+    y = 0
+    def f():
+        nonlocal x
+        nonlocal x, y
+"""
+        self.assertEqual(
+            code,
+            autoflake.fix_code(code,
+                               remove_unused_variables=True))
+
     def test_detect_encoding_with_bad_encoding(self):
         with temporary_file('# -*- coding: blah -*-\n') as filename:
             self.assertEqual('latin-1',
