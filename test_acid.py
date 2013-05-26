@@ -203,8 +203,9 @@ def check(args):
 
                 if name in completed_filenames:
                     sys.stderr.write(
-                        colored('--->  Skipping previously tested ' + name + '\n',
-                                YELLOW))
+                        colored(
+                            '--->  Skipping previously tested ' + name +'\n',
+                            YELLOW))
                     continue
                 else:
                     completed_filenames.update(name)
