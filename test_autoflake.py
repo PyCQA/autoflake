@@ -518,6 +518,21 @@ def func11():
     return 1
 """)))
 
+    def test_filter_useless_pass_leading_pass_with_string(self):
+        self.assertEqual(
+            """\
+def func11():
+    'hello'
+    return 1
+""",
+            ''.join(autoflake.filter_useless_pass(
+                """\
+def func11():
+    pass
+    'hello'
+    return 1
+""")))
+
     def test_filter_useless_pass_leading_pass(self):
         self.assertEqual(
             """\

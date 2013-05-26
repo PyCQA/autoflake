@@ -304,7 +304,9 @@ def useless_pass_line_numbers(source):
         # Leading "pass".
         if (start_row - 1 == last_pass_row and
                 get_indentation(line) == last_pass_indentation and
-                token_type in (tokenize.NAME, tokenize.NUMBER) and
+                token_type in (tokenize.NAME,
+                               tokenize.NUMBER,
+                               tokenize.STRING) and
                 not is_pass):
             yield start_row - 1
 
