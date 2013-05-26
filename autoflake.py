@@ -166,6 +166,10 @@ def multiline_import(line, previous_line=''):
 
 def multiline_statement(line, previous_line=''):
     """Return True if this is part of a multiline statement."""
+    for symbol in '\\:':
+        if symbol in line:
+            return True
+
     sio = io.StringIO(line)
     try:
         list(tokenize.generate_tokens(sio.readline))
@@ -265,9 +269,11 @@ def filter_unused_import(line, remove_all, imports,
         return None
 
 
-def filter_unused_variable(line):
+def filter_unused_variable(line, previous_line=''):
     """Return line if used, otherwise return None."""
-    if line.count('=') == 1:
+    if multiline_statement(line, previous_line):
+        return line
+    elif line.count('=') == 1:
         split_line = line.split('=')
         assert len(split_line) == 2
         value = split_line[1].lstrip()

@@ -186,6 +186,13 @@ import os, math, subprocess
 import os, math, subprocess
 """, previous_line='if: \\\n'))
 
+    def test_multiline_statement(self):
+        self.assertTrue(autoflake.multiline_statement('import os, \\'))
+        self.assertFalse(autoflake.multiline_statement('x = foo()'))
+        self.assertFalse(autoflake.multiline_statement('x = 1;'))
+        self.assertTrue(autoflake.multiline_statement('1',
+                                                      previous_line='x = \\'))
+
     def test_break_up_import(self):
         self.assertEqual(
             'import abc\nimport subprocess\nimport math\n',
