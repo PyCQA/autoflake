@@ -209,9 +209,8 @@ def filter_code(source, additional_imports=None, remove_all=False):
 
 
 def filter_unused(line, remove_all, imports):
-    if line.strip().lower().endswith('# noqa'):
-        return line
-    elif ',' in line:
+    """Return line if used, otherwise return None."""
+    if ',' in line:
         return break_up_import(line)
     else:
         package = extract_package_name(line)
