@@ -2,6 +2,7 @@
 
 """Test that autoflake runs without crashing on various Python files."""
 
+from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
@@ -229,7 +230,7 @@ def check(args):
                         return False
             except (UnicodeDecodeError, UnicodeEncodeError) as exception:
                 # Ignore annoying codec problems on Python 2.
-                print(exception)
+                print(exception, file=sys.stderr)
                 continue
 
     except TimeoutException:
