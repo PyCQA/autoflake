@@ -79,6 +79,10 @@ class UnitTests(unittest.TestCase):
         self.assertEqual('    foo()',
                          autoflake.filter_unused_variable('    x = foo()'))
 
+    def test_filter_unused_variables_should_ignore_multiline(self):
+        self.assertEqual('x = foo()\\',
+                         autoflake.filter_unused_variable('x = foo()\\'))
+
     def test_filter_code(self):
         self.assertEqual(
             """\
