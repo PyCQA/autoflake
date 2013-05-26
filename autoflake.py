@@ -183,7 +183,7 @@ def multiline_statement(line, previous_line=''):
     try:
         list(tokenize.generate_tokens(sio.readline))
         return previous_line.rstrip().endswith('\\')
-    except (tokenize.TokenError, SyntaxError):
+    except (SyntaxError, tokenize.TokenError):
         return True
 
 
@@ -337,7 +337,7 @@ def filter_useless_pass(source):
     """Yield code with useless "pass" lines removed."""
     try:
         marked_lines = frozenset(useless_pass_line_numbers(source))
-    except (tokenize.TokenError, SyntaxError):
+    except (SyntaxError, tokenize.TokenError):
         marked_lines = frozenset()
 
     sio = io.StringIO(source)
@@ -436,7 +436,7 @@ def detect_encoding(filename):
                 input_file.read()
 
         return encoding
-    except (SyntaxError, LookupError, UnicodeDecodeError):
+    except (LookupError, SyntaxError, UnicodeDecodeError):
         return 'latin-1'
 
 
