@@ -237,17 +237,13 @@ def filter_code(source, additional_imports=None,
         if line.strip().lower().endswith('# noqa'):
             yield line
         elif line_number in marked_import_line_numbers:
-            filtered_line = filter_unused_import(
+            yield filter_unused_import(
                 line,
                 remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
                 previous_line=previous_line)
-            if filtered_line is not None:
-                yield filtered_line
         elif line_number in marked_variable_line_numbers:
-            filtered_line = filter_unused_variable(line)
-            if filtered_line is not None:
-                yield filtered_line
+            yield filter_unused_variable(line)
         else:
             yield line
 
@@ -265,14 +261,10 @@ def filter_unused_import(line, remove_all_unused_imports, imports,
         package = extract_package_name(line)
         if not remove_all_unused_imports and package not in imports:
             return line
-        elif line.lstrip() != line:
-            # Remove indented unused import.
+        else:
             return (get_indentation(line) +
                     'pass' +
                     get_line_ending(line))
-
-        # Otherwise, discard unused import line.
-        return None
 
 
 def filter_unused_variable(line, previous_line=''):

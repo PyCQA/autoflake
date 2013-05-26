@@ -91,6 +91,7 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(
             """\
 import os
+pass
 os.foo()
 """,
             ''.join(autoflake.filter_code("""\
@@ -102,6 +103,7 @@ os.foo()
     def test_filter_code_with_from(self):
         self.assertEqual(
             """\
+pass
 x = 1
 """,
             ''.join(autoflake.filter_code("""\
@@ -134,6 +136,8 @@ from zap import bar
     def test_filter_code_with_remove_all_unused_imports(self):
         self.assertEqual(
             """\
+pass
+pass
 x = 1
 """,
             ''.join(autoflake.filter_code("""\
@@ -145,6 +149,7 @@ x = 1
     def test_filter_code_with_additional_imports(self):
         self.assertEqual(
             """\
+pass
 import zap
 x = 1
 """,
@@ -157,6 +162,7 @@ x = 1
     def test_filter_code_with_from_and_inline(self):
         self.assertEqual(
             """\
+pass
 from fake_foo import z  # foo, foo, zap
 x = 1
 """,
@@ -169,6 +175,7 @@ x = 1
     def test_filter_code_should_respect_noqa(self):
         self.assertEqual(
             """\
+pass
 import re  # noqa
 from subprocess import Popen  # NOQA
 x = 1
@@ -232,6 +239,7 @@ import os, math, subprocess
         self.assertEqual(
             r"""\
 import os
+pass
 import os, \
     math, subprocess
 os.foo()
@@ -248,6 +256,7 @@ os.foo()
         self.assertEqual(
             r"""\
 import os
+pass
 import os; import math, subprocess
 os.foo()
 """,
@@ -263,6 +272,7 @@ os.foo()
             """\
 import os
 import my_own_module
+pass
 from my_package import another_module
 from my_package import subprocess
 from my_blah.my_blah_blah import blah
@@ -282,6 +292,9 @@ os.foo()
         self.assertEqual(
             """\
 import rlcompleter
+pass
+pass
+pass
 print(1)
 """,
             ''.join(autoflake.filter_code("""\
