@@ -197,11 +197,14 @@ def filter_code(source, additional_imports=None, remove_all=False):
     for line_number, line in enumerate(sio.readlines(), start=1):
         if line.strip().lower().endswith('# noqa'):
             yield line
-        elif line_number in marked_lines and not multiline_import(
-                line, previous_line):
-            _line = filter_unused(line, remove_all=remove_all, imports=imports)
-            if _line is not None:
-                yield _line
+        elif multiline_import(line, previous_line):
+            yield line
+        elif line_number in marked_lines:
+            filtered_line = filter_unused(line,
+                                          remove_all=remove_all,
+                                          imports=imports)
+            if filtered_line is not None:
+                yield filtered_line
         else:
             yield line
 
