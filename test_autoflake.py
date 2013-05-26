@@ -503,6 +503,29 @@ except ImportError:
     pass
 """)))
 
+    def test_filter_useless_pass_leading_pass(self):
+        self.assertEqual(
+            """\
+if True:
+    pass
+else:
+    True
+    x = 1
+""",
+            ''.join(autoflake.filter_useless_pass(
+                """\
+if True:
+    pass
+    pass
+    pass
+    pass
+else:
+    pass
+    True
+    x = 1
+    pass
+""")))
+
     def test_filter_useless_pass_leading_pass_with_number(self):
         self.assertEqual(
             """\
@@ -531,29 +554,6 @@ def func11():
     pass
     'hello'
     return 1
-""")))
-
-    def test_filter_useless_pass_leading_pass(self):
-        self.assertEqual(
-            """\
-if True:
-    pass
-else:
-    True
-    x = 1
-""",
-            ''.join(autoflake.filter_useless_pass(
-                """\
-if True:
-    pass
-    pass
-    pass
-    pass
-else:
-    pass
-    True
-    x = 1
-    pass
 """)))
 
     def test_check(self):
