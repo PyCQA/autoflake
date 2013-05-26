@@ -193,6 +193,7 @@ def break_up_import(line):
     assert '(' not in line
     assert ')' not in line
     assert ';' not in line
+    assert '#' not in line
 
     newline = get_line_ending(line)
     if not newline:
@@ -201,16 +202,10 @@ def break_up_import(line):
     (indentation, imports) = re.split(pattern=r'\bimport\b',
                                       string=line, maxsplit=1)
 
-    if '#' in imports:
-        (imports, comment) = imports.split('#', 1)
-        comment = '  # ' + comment.strip()
-    else:
-        comment = ''
-
     indentation += 'import '
     assert newline
 
-    return ''.join([indentation + i.strip() + comment + newline
+    return ''.join([indentation + i.strip() + newline
                     for i in imports.split(',')])
 
 
