@@ -156,12 +156,21 @@ def extract_package_name(line):
 
 def multiline_import(line, previous_line=''):
     """Return True if import is spans multiples lines."""
-    # TODO: Make this generic and use tokenize.
     for symbol in '\\();:':
         if symbol in line:
             return True
 
     return previous_line.rstrip().endswith('\\')
+
+
+def multiline_statement(line, previous_line=''):
+    """Return True if this is part of a multiline statement."""
+    sio = io.StringIO(line)
+    try:
+        list(tokenize.generate_tokens(sio.readline))
+        return previous_line.rstrip().endswith('\\')
+    except (tokenize.TokenError, IndentationError):
+        return True
 
 
 def break_up_import(line):
@@ -216,13 +225,12 @@ def filter_code(source, additional_imports=None, remove_all=False,
     for line_number, line in enumerate(sio.readlines(), start=1):
         if line.strip().lower().endswith('# noqa'):
             yield line
-        elif multiline_import(line, previous_line):
-            yield line
         elif line_number in marked_import_line_numbers:
             filtered_line = filter_unused_import(
                 line,
                 remove_all=remove_all,
-                imports=imports)
+                imports=imports,
+                previous_line=previous_line)
             if filtered_line is not None:
                 yield filtered_line
         elif line_number in marked_variable_line_numbers:
@@ -235,9 +243,12 @@ def filter_code(source, additional_imports=None, remove_all=False,
         previous_line = line
 
 
-def filter_unused_import(line, remove_all, imports):
+def filter_unused_import(line, remove_all, imports,
+                         previous_line=''):
     """Return line if used, otherwise return None."""
-    if ',' in line:
+    if multiline_import(line, previous_line):
+        return line
+    elif ',' in line:
         return break_up_import(line)
     else:
         package = extract_package_name(line)
@@ -340,10 +351,12 @@ def fix_code(source, additional_imports=None, remove_all=False,
     while True:
         filtered_source = ''.join(
             filter_useless_pass(''.join(
-                filter_code(source,
-                            additional_imports=additional_imports,
-                            remove_all=remove_all,
-                            remove_unused_variables=remove_unused_variables))))
+                filter_code(
+                    source,
+                    additional_imports=additional_imports,
+                    remove_all=remove_all,
+                    remove_unused_variables=remove_unused_variables))))
+
         if filtered_source == source:
             break
         source = filtered_source
