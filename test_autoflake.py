@@ -357,12 +357,12 @@ def main():
     def test_fix_code_with_unused_variables_should_skip_nonlocal(self):
         """pyflakes does not handle nonlocal correctly."""
         code = """\
-def foo():
-    x = 0
-    y = 0
-    def f():
+def bar():
+    x = 1
+
+    def foo():
         nonlocal x
-        nonlocal x, y
+        x = 2
 """
         self.assertEqual(
             code,
