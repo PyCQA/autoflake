@@ -161,7 +161,7 @@ def multiline_import(line, previous_line=''):
         if symbol in line:
             return True
 
-    # Check for docstests.
+    # Check for doctests.
     stripped_line = line.strip()
     if stripped_line and not stripped_line[0].isalnum():
         return True
