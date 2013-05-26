@@ -192,7 +192,8 @@ def break_up_import(line):
                     for i in imports.split(',')])
 
 
-def filter_code(source, additional_imports=None, remove_all=False):
+def filter_code(source, additional_imports=None, remove_all=False,
+                remove_unused_variables=False):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
@@ -204,8 +205,11 @@ def filter_code(source, additional_imports=None, remove_all=False):
     marked_import_line_numbers = frozenset(
         unused_import_line_numbers(messages))
 
-    marked_variable_line_numbers = frozenset(
-        unused_import_line_numbers(messages))
+    if remove_unused_variables:
+        marked_variable_line_numbers = frozenset(
+            unused_variable_line_numbers(messages))
+    else:
+        marked_variable_line_numbers = {}
 
     sio = io.StringIO(source)
     previous_line = ''
@@ -222,10 +226,7 @@ def filter_code(source, additional_imports=None, remove_all=False):
             if filtered_line is not None:
                 yield filtered_line
         elif line_number in marked_variable_line_numbers:
-            filtered_line = filter_unused_variable(
-                line,
-                remove_all=remove_all,
-                imports=imports)
+            filtered_line = filter_unused_variable(line)
             if filtered_line is not None:
                 yield filtered_line
         else:
@@ -329,7 +330,8 @@ def get_line_ending(line):
         return line[non_whitespace_index:]
 
 
-def fix_code(source, additional_imports=None, remove_all=False):
+def fix_code(source, additional_imports=None, remove_all=False,
+             remove_unused_variables=False):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -340,7 +342,8 @@ def fix_code(source, additional_imports=None, remove_all=False):
             filter_useless_pass(''.join(
                 filter_code(source,
                             additional_imports=additional_imports,
-                            remove_all=remove_all))))
+                            remove_all=remove_all,
+                            remove_unused_variables=remove_unused_variables))))
         if filtered_source == source:
             break
         source = filtered_source
@@ -359,7 +362,8 @@ def fix_file(filename, args, standard_out):
     filtered_source = fix_code(
         source,
         additional_imports=args.imports.split(',') if args.imports else None,
-        remove_all=args.remove_all)
+        remove_all=args.remove_all,
+        remove_unused_variables=args.remove_unused_variables)
 
     if original_source != filtered_source:
         if args.in_place:
@@ -431,6 +435,8 @@ def main(argv, standard_out, standard_error):
     parser.add_argument('--remove-all', action='store_true',
                         help='remove all unused imports (not just those from '
                              'the standard library')
+    parser.add_argument('--remove-unused-variables', action='store_true',
+                        help='remove unused variables')
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
     parser.add_argument('files', nargs='+', help='files to format')

@@ -309,6 +309,22 @@ x = version
             '',
             autoflake.fix_code(''))
 
+    def test_fix_code_with_unused_variables(self):
+        self.assertEqual(
+            """\
+def main():
+    10
+    y = 11
+    print(y)
+""",
+            autoflake.fix_code("""\
+def main():
+    x = 10
+    y = 11
+    print(y)
+""",
+                               remove_unused_variables=True))
+
     def test_detect_encoding_with_bad_encoding(self):
         with temporary_file('# -*- coding: blah -*-\n') as filename:
             self.assertEqual('latin-1',
