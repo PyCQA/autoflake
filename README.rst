@@ -93,21 +93,26 @@ library), use the ``--remove-all`` option.
 
 Below is the full listing of options::
 
-    usage: autoflake [-h] [-i] [-r] [--imports IMPORTS] [--remove-all] [--version]
+    usage: autoflake [-h] [-i] [-r] [--imports IMPORTS]
+                     [--remove-all-unused-imports] [--remove-unused-variables]
+                     [--version]
                      files [files ...]
 
     Removes unused imports as reported by pyflakes.
 
     positional arguments:
-      files              files to format
+      files                 files to format
 
     optional arguments:
-      -h, --help         show this help message and exit
-      -i, --in-place     make changes to files instead of printing diffs
-      -r, --recursive    drill down directories recursively
-      --imports IMPORTS  by default, only unused standard library imports are
-                         removed; specify a comma-separated list of additional
-                         modules/packages
-      --remove-all       remove all unused imports (not just those from the
-                         standard library
-      --version          show program's version number and exit
+      -h, --help            show this help message and exit
+      -i, --in-place        make changes to files instead of printing diffs
+      -r, --recursive       drill down directories recursively
+      --imports IMPORTS     by default, only unused standard library imports are
+                            removed; specify a comma-separated list of additional
+                            modules/packages
+      --remove-all-unused-imports
+                            remove all unused imports (not just those from the
+                            standard library
+      --remove-unused-variables
+                            remove unused variables
+      --version             show program's version number and exit

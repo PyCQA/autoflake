@@ -117,7 +117,7 @@ except: from zap import bar
         self.assertEqual(
             line,
             ''.join(autoflake.filter_code(line,
-                                          remove_all=True)))
+                                          remove_all_unused_imports=True)))
 
     def test_filter_code_should_avoid_escaped_newlines(self):
         line = """\
@@ -129,9 +129,9 @@ from zap import bar
         self.assertEqual(
             line,
             ''.join(autoflake.filter_code(line,
-                                          remove_all=True)))
+                                          remove_all_unused_imports=True)))
 
-    def test_filter_code_with_remove_all(self):
+    def test_filter_code_with_remove_all_unused_imports(self):
         self.assertEqual(
             """\
 x = 1
@@ -140,7 +140,7 @@ x = 1
 import foo
 import zap
 x = 1
-""", remove_all=True)))
+""", remove_all_unused_imports=True)))
 
     def test_filter_code_with_additional_imports(self):
         self.assertEqual(
@@ -689,7 +689,7 @@ print(x)
  print(x)
 """, '\n'.join(process.communicate()[0].decode('utf-8').split('\n')[3:]))
 
-    def test_end_to_end_with_remove_all(self):
+    def test_end_to_end_with_remove_all_unused_imports(self):
         with temporary_file("""\
 import fake_fake, fake_foo, fake_bar, fake_zoo
 import re, os

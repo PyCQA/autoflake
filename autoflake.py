@@ -206,7 +206,8 @@ def break_up_import(line):
                     for i in imports.split(',')])
 
 
-def filter_code(source, additional_imports=None, remove_all=False,
+def filter_code(source, additional_imports=None,
+                remove_all_unused_imports=False,
                 remove_unused_variables=False):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
@@ -233,7 +234,7 @@ def filter_code(source, additional_imports=None, remove_all=False,
         elif line_number in marked_import_line_numbers:
             filtered_line = filter_unused_import(
                 line,
-                remove_all=remove_all,
+                remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
                 previous_line=previous_line)
             if filtered_line is not None:
@@ -248,7 +249,7 @@ def filter_code(source, additional_imports=None, remove_all=False,
         previous_line = line
 
 
-def filter_unused_import(line, remove_all, imports,
+def filter_unused_import(line, remove_all_unused_imports, imports,
                          previous_line=''):
     """Return line if used, otherwise return None."""
     if multiline_import(line, previous_line):
@@ -257,7 +258,7 @@ def filter_unused_import(line, remove_all, imports,
         return break_up_import(line)
     else:
         package = extract_package_name(line)
-        if not remove_all and package not in imports:
+        if not remove_all_unused_imports and package not in imports:
             return line
         elif line.lstrip() != line:
             # Remove indented unused import.
@@ -355,7 +356,7 @@ def get_line_ending(line):
         return line[non_whitespace_index:]
 
 
-def fix_code(source, additional_imports=None, remove_all=False,
+def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
              remove_unused_variables=False):
     """Return code with all filtering run on it."""
     if not source:
@@ -368,7 +369,7 @@ def fix_code(source, additional_imports=None, remove_all=False,
                 filter_code(
                     source,
                     additional_imports=additional_imports,
-                    remove_all=remove_all,
+                    remove_all_unused_imports=remove_all_unused_imports,
                     remove_unused_variables=remove_unused_variables))))
 
         if filtered_source == source:
@@ -389,7 +390,7 @@ def fix_file(filename, args, standard_out):
     filtered_source = fix_code(
         source,
         additional_imports=args.imports.split(',') if args.imports else None,
-        remove_all=args.remove_all,
+        remove_all_unused_imports=args.remove_all_unused_imports,
         remove_unused_variables=args.remove_unused_variables)
 
     if original_source != filtered_source:
@@ -459,7 +460,7 @@ def main(argv, standard_out, standard_error):
                         help='by default, only unused standard library '
                              'imports are removed; specify a comma-separated '
                              'list of additional modules/packages')
-    parser.add_argument('--remove-all', action='store_true',
+    parser.add_argument('--remove-all-unused-imports', action='store_true',
                         help='remove all unused imports (not just those from '
                              'the standard library')
     parser.add_argument('--remove-unused-variables', action='store_true',
@@ -470,7 +471,7 @@ def main(argv, standard_out, standard_error):
 
     args = parser.parse_args(argv[1:])
 
-    if args.remove_all and args.imports:
+    if args.remove_all_unused_imports and args.imports:
         print('Using both --remove-all and --imports is redundant',
               file=standard_error)
         return 1
