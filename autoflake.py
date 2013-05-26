@@ -191,7 +191,7 @@ def filter_code(source, additional_imports=None, remove_all=False):
         imports |= frozenset(additional_imports)
     del additional_imports
 
-    marked_lines = frozenset(unused_import_line_numbers(source))
+    unused_line_numbers = frozenset(unused_import_line_numbers(source))
     sio = io.StringIO(source)
     previous_line = ''
     for line_number, line in enumerate(sio.readlines(), start=1):
@@ -199,7 +199,7 @@ def filter_code(source, additional_imports=None, remove_all=False):
             yield line
         elif multiline_import(line, previous_line):
             yield line
-        elif line_number in marked_lines:
+        elif line_number in unused_line_numbers:
             filtered_line = filter_unused(line,
                                           remove_all=remove_all,
                                           imports=imports)
