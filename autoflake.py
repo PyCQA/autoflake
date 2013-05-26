@@ -28,6 +28,7 @@ import ast
 import difflib
 import io
 import os
+import re
 import tokenize
 from distutils import sysconfig
 
@@ -197,7 +198,6 @@ def break_up_import(line):
     if not newline:
         return line
 
-    import re
     (indentation, imports) = re.split(pattern=r'\bimport\b',
                                       string=line, maxsplit=1)
 
@@ -279,15 +279,23 @@ def filter_unused_variable(line, previous_line=''):
         assert len(split_line) == 2
         value = split_line[1].lstrip()
 
-        try:
-            ast.literal_eval(value)
+        if is_literal_or_name(value):
             value = 'pass' + get_line_ending(line)
-        except ValueError:
-            pass
 
         return get_indentation(line) + value
     else:
         return line
+
+
+def is_literal_or_name(value):
+    """Return True if value is a literal or a name."""
+    try:
+        ast.literal_eval(value)
+        return True
+    except ValueError:
+        # Support removal of variables on the right side. But make sure
+        # there are no dots, which could mean an access of a property.
+        return re.match(r'^\w+\s*$', value)
 
 
 def useless_pass_line_numbers(source):

@@ -79,6 +79,13 @@ class UnitTests(unittest.TestCase):
         self.assertEqual('    foo()',
                          autoflake.filter_unused_variable('    x = foo()'))
 
+    def test_filter_unused_variables_with_literal_or_name(self):
+        self.assertEqual('pass',
+                         autoflake.filter_unused_variable('x = 1'))
+
+        self.assertEqual('pass',
+                         autoflake.filter_unused_variable('x = y'))
+
     def test_filter_unused_variables_should_ignore_multiline(self):
         self.assertEqual('x = foo()\\',
                          autoflake.filter_unused_variable('x = foo()\\'))
@@ -587,6 +594,13 @@ def func11():
             '\n'.join(autoflake.get_diff_text(['foo'],
                                               ['foo\n'],
                                               '').split('\n')[3:]))
+
+    def test_is_literal_or_name(self):
+        self.assertTrue(autoflake.is_literal_or_name('123'))
+        self.assertTrue(autoflake.is_literal_or_name('{1, 2, 3}'))
+        self.assertTrue(autoflake.is_literal_or_name('xyz'))
+
+        self.assertFalse(autoflake.is_literal_or_name('xyz.prop'))
 
 
 class SystemTests(unittest.TestCase):
