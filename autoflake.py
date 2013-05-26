@@ -195,26 +195,36 @@ def filter_code(source, additional_imports=None, remove_all=False):
     sio = io.StringIO(source)
     previous_line = ''
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if line_number in marked_lines and not multiline_import(line,
-                                                                previous_line):
-            if line.strip().lower().endswith('# noqa'):
-                yield line
-            elif ',' in line:
-                yield break_up_import(line)
-            else:
-                package = extract_package_name(line)
-                if not remove_all and package not in imports:
-                    yield line
-                elif line.lstrip() != line:
-                    # Remove indented unused import.
-                    yield (get_indentation(line) +
-                           'pass' +
-                           get_line_ending(line))
-                # Otherwise, discard unused import line.
+        if line.strip().lower().endswith('# noqa'):
+            yield line
+        elif line_number in marked_lines and not multiline_import(
+                line, previous_line):
+            _line = filter_unused(line, remove_all=remove_all, imports=imports)
+            if _line is not None:
+                yield _line
         else:
             yield line
 
         previous_line = line
+
+
+def filter_unused(line, remove_all, imports):
+    if line.strip().lower().endswith('# noqa'):
+        return line
+    elif ',' in line:
+        return break_up_import(line)
+    else:
+        package = extract_package_name(line)
+        if not remove_all and package not in imports:
+            return line
+        elif line.lstrip() != line:
+            # Remove indented unused import.
+            return (get_indentation(line) +
+                    'pass' +
+                    get_line_ending(line))
+
+        # Otherwise, discard unused import line.
+        return None
 
 
 def useless_pass_line_numbers(source):
