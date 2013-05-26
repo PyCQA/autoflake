@@ -19,7 +19,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-"""Removes unused imports as reported by pyflakes."""
+"""Removes unused imports and unused variables as reported by pyflakes."""
 
 from __future__ import print_function
 from __future__ import unicode_literals

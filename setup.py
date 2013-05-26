@@ -18,7 +18,7 @@ with open('README.rst') as readme:
     setuptools.setup(
         name='autoflake',
         version=version(),
-        description='Removes unused imports.',
+        description='Removes unused imports and unused variables.',
         long_description=readme.read(),
         license='Expat License',
         author='Steven Myint',

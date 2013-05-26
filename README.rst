@@ -14,12 +14,13 @@ autoflake
 Introduction
 ============
 
-*autoflake* removes unused imports from Python code. It makes use of pyflakes_
-to do this.
+*autoflake* removes unused imports and unused variables from Python code. It
+makes use of pyflakes_ to do this.
 
 By default, autoflake only removes unused imports for modules that are part of
 the standard library. (Other modules may have side effects that make them
-unsafe to remove automatically.)
+unsafe to remove automatically.) Removal of unused variables is also disabled
+by default.
 
 autoflake also removes useless ``pass`` statements.
 
