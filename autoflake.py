@@ -237,7 +237,7 @@ def filter_code(source, additional_imports=None,
     sio = io.StringIO(source)
     previous_line = ''
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if line.strip().lower().endswith('# noqa'):
+        if '#' in line:
             yield line
         elif line_number in marked_import_line_numbers:
             yield filter_unused_import(

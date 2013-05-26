@@ -166,15 +166,17 @@ import zap
 x = 1
 """, additional_imports=['foo', 'bar'])))
 
-    def test_filter_code_with_from_and_inline(self):
+    def test_filter_code_should_ignore_imports_with_inline_comment(self):
         self.assertEqual(
             """\
+from os import path  # foo
 pass
 from fake_foo import z  # foo, foo, zap
 x = 1
 """,
             ''.join(autoflake.filter_code("""\
 from os import path  # foo
+from os import path
 from fake_foo import z  # foo, foo, zap
 x = 1
 """)))
@@ -188,7 +190,7 @@ from subprocess import Popen  # NOQA
 x = 1
 """,
             ''.join(autoflake.filter_code("""\
-from os import path  # foo
+from os import path
 import re  # noqa
 from subprocess import Popen  # NOQA
 x = 1
