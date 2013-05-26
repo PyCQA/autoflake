@@ -24,6 +24,7 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import ast
 import difflib
 import io
 import os
@@ -266,11 +267,18 @@ def filter_unused_import(line, remove_all, imports,
 
 def filter_unused_variable(line):
     """Return line if used, otherwise return None."""
-    # TODO: Check for literal values for whole-line removal.
     if line.count('=') == 1:
         split_line = line.split('=')
         assert len(split_line) == 2
-        return (get_indentation(line) + split_line[1].lstrip())
+        value = split_line[1].lstrip()
+
+        try:
+            ast.literal_eval(value)
+            value = 'pass' + get_line_ending(line)
+        except ValueError:
+            pass
+
+        return get_indentation(line) + value
     else:
         return line
 
