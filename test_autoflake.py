@@ -503,6 +503,21 @@ except ImportError:
     pass
 """)))
 
+    def test_filter_useless_pass_leading_pass_with_number(self):
+        self.assertEqual(
+            """\
+def func11():
+    0, 11 / 2
+    return 1
+""",
+            ''.join(autoflake.filter_useless_pass(
+                """\
+def func11():
+    pass
+    0, 11 / 2
+    return 1
+""")))
+
     def test_filter_useless_pass_leading_pass(self):
         self.assertEqual(
             """\
