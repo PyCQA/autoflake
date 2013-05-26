@@ -42,6 +42,9 @@ __version__ = '0.4'
 PYFLAKES_BIN = 'pyflakes'
 
 
+ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
+
+
 try:
     unicode
 except NameError:
@@ -304,9 +307,7 @@ def useless_pass_line_numbers(source):
         # Leading "pass".
         if (start_row - 1 == last_pass_row and
                 get_indentation(line) == last_pass_indentation and
-                token_type in (tokenize.NAME,
-                               tokenize.NUMBER,
-                               tokenize.STRING) and
+                token_type in ATOMS and
                 not is_pass):
             yield start_row - 1
 
@@ -322,6 +323,13 @@ def useless_pass_line_numbers(source):
 
         previous_token_type = token_type
         previous_line = line
+
+
+def is_atom(token_type):
+    """Return True if token_type is an atom."""
+    return token_type in [tokenize.NAME,
+                         tokenize.NUMBER,
+                         tokenize.STRING]
 
 
 def filter_useless_pass(source):
