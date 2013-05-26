@@ -325,13 +325,6 @@ def useless_pass_line_numbers(source):
         previous_line = line
 
 
-def is_atom(token_type):
-    """Return True if token_type is an atom."""
-    return token_type in [tokenize.NAME,
-                         tokenize.NUMBER,
-                         tokenize.STRING]
-
-
 def filter_useless_pass(source):
     """Yield code with useless "pass" lines removed."""
     try:
