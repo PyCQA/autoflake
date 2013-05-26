@@ -597,7 +597,7 @@ def func11():
 
     def test_is_literal_or_name(self):
         self.assertTrue(autoflake.is_literal_or_name('123'))
-        self.assertTrue(autoflake.is_literal_or_name('{1, 2, 3}'))
+        self.assertTrue(autoflake.is_literal_or_name('[1, 2, 3]'))
         self.assertTrue(autoflake.is_literal_or_name('xyz'))
 
         self.assertFalse(autoflake.is_literal_or_name('xyz.prop'))
