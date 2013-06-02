@@ -161,21 +161,12 @@ def extract_package_name(line):
 
 def multiline_import(line, previous_line=''):
     """Return True if import is spans multiples lines."""
-    for symbol in '\\();:':
-        if symbol in line:
-            return True
-
-    # Check for doctests.
-    stripped_line = line.strip()
-    if stripped_line and not stripped_line[0].isalnum():
-        return True
-
-    return previous_line.rstrip().endswith('\\')
+    return multiline_statement(line, previous_line)
 
 
 def multiline_statement(line, previous_line=''):
     """Return True if this is part of a multiline statement."""
-    for symbol in '\\:':
+    for symbol in '\\:;':
         if symbol in line:
             return True
 
