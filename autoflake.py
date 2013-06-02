@@ -161,6 +161,10 @@ def extract_package_name(line):
 
 def multiline_import(line, previous_line=''):
     """Return True if import is spans multiples lines."""
+    for symbol in '()':
+        if symbol in line:
+            return True
+
     return multiline_statement(line, previous_line)
 
 

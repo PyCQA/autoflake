@@ -210,6 +210,9 @@ import os, math, subprocess
 import os, math, subprocess
 """, previous_line='if: \\\n'))
 
+        self.assertTrue(
+            autoflake.multiline_import('from os import (path, sep)'))
+
     def test_multiline_statement(self):
         self.assertFalse(autoflake.multiline_statement('x = foo()'))
 
