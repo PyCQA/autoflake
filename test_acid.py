@@ -112,7 +112,7 @@ def check_syntax(filename, raise_error=False):
             filename,
             encoding=autoflake.detect_encoding(filename)) as input_file:
         try:
-            compile(input_file.read(), '<string>', 'exec')
+            compile(input_file.read(), '<string>', 'exec', dont_inherit=True)
             return True
         except (SyntaxError, TypeError, UnicodeDecodeError):
             if raise_error:
