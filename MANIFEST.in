@@ -1,1 +1,2 @@
 include README.rst
+include test_autoflake.py
