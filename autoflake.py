@@ -165,6 +165,10 @@ def multiline_import(line, previous_line=''):
         if symbol in line:
             return True
 
+    # Ignore doctests.
+    if line.lstrip().startswith('>'):
+        return True
+
     return multiline_statement(line, previous_line)
 
 
