@@ -4,6 +4,7 @@ MANIFEST
 README.html
 __pycache__/
 .tox/
+.travis-solo/
 build/
 dist/
 htmlcov/
