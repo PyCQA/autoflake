@@ -86,6 +86,19 @@ class UnitTests(unittest.TestCase):
         self.assertEqual('pass',
                          autoflake.filter_unused_variable('x = y'))
 
+        self.assertEqual('pass',
+                         autoflake.filter_unused_variable('x = {}'))
+
+    def test_filter_unused_variables_with_basic_data_structures(self):
+        self.assertEqual('pass',
+                         autoflake.filter_unused_variable('x = dict()'))
+
+        self.assertEqual('pass',
+                         autoflake.filter_unused_variable('x = list()'))
+
+        self.assertEqual('pass',
+                         autoflake.filter_unused_variable('x = set()'))
+
     def test_filter_unused_variables_should_ignore_multiline(self):
         self.assertEqual('x = foo()\\',
                          autoflake.filter_unused_variable('x = foo()\\'))

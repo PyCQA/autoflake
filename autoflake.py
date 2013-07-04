@@ -284,9 +284,14 @@ def is_literal_or_name(value):
         ast.literal_eval(value)
         return True
     except (SyntaxError, ValueError):
-        # Support removal of variables on the right side. But make sure
-        # there are no dots, which could mean an access of a property.
-        return re.match(r'^\w+\s*$', value)
+        pass
+
+    if value.strip() in ['dict()', 'list()', 'set()']:
+        return True
+
+    # Support removal of variables on the right side. But make sure
+    # there are no dots, which could mean an access of a property.
+    return re.match(r'^\w+\s*$', value)
 
 
 def useless_pass_line_numbers(source):
