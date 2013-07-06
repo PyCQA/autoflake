@@ -263,7 +263,7 @@ def filter_unused_import(line, remove_all_unused_imports, imports,
 
 def filter_unused_variable(line, previous_line=''):
     """Return line if used, otherwise return None."""
-    if line.lstrip().startswith('except') and line.rstrip().endswith(':'):
+    if re.match('^\s*except [^:#]+ as \w+:$', line):
         return re.sub(r' as \w+:$', ':', line, count=1)
     elif multiline_statement(line, previous_line):
         return line

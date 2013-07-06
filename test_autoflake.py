@@ -112,6 +112,11 @@ class UnitTests(unittest.TestCase):
             'except Exception:',
             autoflake.filter_unused_variable('except Exception as exception:'))
 
+        self.assertEqual(
+            'except (ImportError, ValueError):',
+            autoflake.filter_unused_variable(
+                'except (ImportError, ValueError) as foo:'))
+
     def test_filter_code(self):
         self.assertEqual(
             """\
