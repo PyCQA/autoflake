@@ -128,7 +128,7 @@ To run the unit tests::
 
 The acid test, runs against any collection of given Python files. It tests
 autoflake against the files and checks how well it does by running pyflakes
-on the file before and after. (This is done in memory. The actual files are
-left untouched.)::
+on the file before and after. The test fails if the pyflakes results change for
+the worse. (This is done in memory. The actual files are left untouched.)::
 
     $ ./test_acid.py --verbose
