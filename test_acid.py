@@ -150,7 +150,7 @@ def process_args():
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='print verbose messages')
 
-    parser.add_argument('files', nargs='*', help='files to format')
+    parser.add_argument('files', nargs='*', help='files to test against')
 
     return parser.parse_args()
 

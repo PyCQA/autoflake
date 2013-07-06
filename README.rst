@@ -112,3 +112,18 @@ Below is the full listing of options::
       --remove-unused-variables
                             remove unused variables
       --version             show program's version number and exit
+
+
+Tests
+=====
+
+To run the unit tests::
+
+    $ ./test_untokenize.py
+
+The acid test, runs against any collection of given Python files. It tests
+autoflake against the files and checks how well it does by running pyflakes
+on the file before and after. (This is done in memory. The actual files are
+left untouched.)::
+
+    $ ./test_acid.py --verbose
