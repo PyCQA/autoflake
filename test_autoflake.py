@@ -72,14 +72,14 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(' \t ', autoflake.get_indentation(' \t abc  \n\t'))
         self.assertEqual('', autoflake.get_indentation('    '))
 
-    def test_filter_unused_variables(self):
+    def test_filter_unused_variable(self):
         self.assertEqual('foo()',
                          autoflake.filter_unused_variable('x = foo()'))
 
         self.assertEqual('    foo()',
                          autoflake.filter_unused_variable('    x = foo()'))
 
-    def test_filter_unused_variables_with_literal_or_name(self):
+    def test_filter_unused_variable_with_literal_or_name(self):
         self.assertEqual('pass',
                          autoflake.filter_unused_variable('x = 1'))
 
@@ -89,7 +89,7 @@ class UnitTests(unittest.TestCase):
         self.assertEqual('pass',
                          autoflake.filter_unused_variable('x = {}'))
 
-    def test_filter_unused_variables_with_basic_data_structures(self):
+    def test_filter_unused_variable_with_basic_data_structures(self):
         self.assertEqual('pass',
                          autoflake.filter_unused_variable('x = dict()'))
 
@@ -99,13 +99,18 @@ class UnitTests(unittest.TestCase):
         self.assertEqual('pass',
                          autoflake.filter_unused_variable('x = set()'))
 
-    def test_filter_unused_variables_should_ignore_multiline(self):
+    def test_filter_unused_variable_should_ignore_multiline(self):
         self.assertEqual('x = foo()\\',
                          autoflake.filter_unused_variable('x = foo()\\'))
 
-    def test_filter_unused_variables_should_multiple_assignments(self):
+    def test_filter_unused_variable_should_multiple_assignments(self):
         self.assertEqual('x = y = foo()',
                          autoflake.filter_unused_variable('x = y = foo()'))
+
+    def test_filter_unused_variable_with_exception(self):
+        self.assertEqual(
+            'except Exception:',
+            autoflake.filter_unused_variable('except Exception as exception:'))
 
     def test_filter_code(self):
         self.assertEqual(
