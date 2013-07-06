@@ -46,8 +46,10 @@ Running autoflake on the below example::
 
 
     def foo():
+        from abc import ABCMeta, WeakSet
         try:
-            from abc import ABCMeta, WeakSet
+            import multiprocessing
+            print(multiprocessing.cpu_count())
         except ImportError as exception:
             print(sys.version)
         return math.pi
@@ -62,7 +64,8 @@ results in
 
     def foo():
         try:
-            pass
+            import multiprocessing
+            print(multiprocessing.cpu_count())
         except ImportError:
             print(sys.version)
         return math.pi
