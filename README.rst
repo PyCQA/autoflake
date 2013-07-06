@@ -32,7 +32,7 @@ Example
 
 Running autoflake on the below example::
 
-    $ autoflake --in-place example.py
+    $ autoflake --in-place --remove-unused-variables example.py
 
 .. code-block:: python
 
@@ -44,10 +44,11 @@ Running autoflake on the below example::
     import grp, pwd, platform
     import subprocess, sys
 
+
     def foo():
-        if True:
+        try:
             from abc import ABCMeta, WeakSet
-        else:
+        except ImportError as exception:
             print(sys.version)
         return math.pi
 
@@ -58,10 +59,11 @@ results in
     import math
     import sys
 
+
     def foo():
-        if True:
+        try:
             pass
-        else:
+        except ImportError:
             print(sys.version)
         return math.pi
 
@@ -119,7 +121,7 @@ Tests
 
 To run the unit tests::
 
-    $ ./test_untokenize.py
+    $ ./test_autoflake.py
 
 The acid test, runs against any collection of given Python files. It tests
 autoflake against the files and checks how well it does by running pyflakes
