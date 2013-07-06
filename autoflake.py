@@ -115,7 +115,7 @@ class StubFile(object):
     """Stub out file for pyflakes."""
 
     def write(self, *_):
-        """Stub out write()."""
+        """Stub out."""
 
 
 class ListReporter(pyflakes.reporter.Reporter):
@@ -133,7 +133,7 @@ class ListReporter(pyflakes.reporter.Reporter):
         self.messages = []
 
     def flake(self, message):
-        """Override Reporter.flake()."""
+        """Accumulate messages."""
         self.messages.append(message)
 
 
