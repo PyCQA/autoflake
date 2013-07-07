@@ -7,6 +7,8 @@ from __future__ import unicode_literals
 
 import contextlib
 import io
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -776,8 +778,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            import subprocess
-            process = subprocess.Popen(['./autoflake',
+            process = subprocess.Popen([sys.executable,
+                                        './autoflake',
                                         '--imports=fake_foo,fake_bar',
                                         filename],
                                        stdout=subprocess.PIPE)
@@ -798,8 +800,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            import subprocess
-            process = subprocess.Popen(['./autoflake',
+            process = subprocess.Popen([sys.executable,
+                                        './autoflake',
                                         '--remove-all',
                                         filename],
                                        stdout=subprocess.PIPE)
@@ -818,8 +820,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            import subprocess
-            process = subprocess.Popen(['./autoflake',
+            process = subprocess.Popen([sys.executable,
+                                        './autoflake',
                                         '--imports=fake_foo,fake_bar',
                                         '--remove-all',
                                         filename],
