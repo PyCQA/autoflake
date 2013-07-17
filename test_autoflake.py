@@ -4,7 +4,6 @@
 """Test suite for autoflake."""
 
 from __future__ import unicode_literals
-from __future__ import print_function
 
 import contextlib
 import io
@@ -779,7 +778,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            process = subprocess.Popen(['./autoflake',
+            process = subprocess.Popen([sys.executable,
+                                        './autoflake',
                                         '--imports=fake_foo,fake_bar',
                                         filename],
                                        stdout=subprocess.PIPE)
@@ -800,7 +800,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            process = subprocess.Popen(['./autoflake',
+            process = subprocess.Popen([sys.executable,
+                                        './autoflake',
                                         '--remove-all',
                                         filename],
                                        stdout=subprocess.PIPE)
@@ -819,7 +820,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            process = subprocess.Popen(['./autoflake',
+            process = subprocess.Popen([sys.executable,
+                                        './autoflake',
                                         '--imports=fake_foo,fake_bar',
                                         '--remove-all',
                                         filename],
