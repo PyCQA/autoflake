@@ -24,6 +24,12 @@ else:
     END = ''
 
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
+
 def colored(text, color):
     """Return color coded text."""
     return color + text + END
@@ -212,7 +218,7 @@ def check(args):
                     completed_filenames.update(name)
 
                 if os.path.isdir(name):
-                    for root, directories, children in os.walk(name):
+                    for root, directories, children in os.walk(unicode(name)):
                         filenames += [os.path.join(root, f) for f in children
                                       if f.endswith('.py') and
                                       not f.startswith('.')]
