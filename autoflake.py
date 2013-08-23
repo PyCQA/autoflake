@@ -490,7 +490,7 @@ def main(argv, standard_out, standard_error):
     while filenames:
         name = filenames.pop(0)
         if args.recursive and os.path.isdir(name):
-            for root, directories, children in os.walk(name):
+            for root, directories, children in os.walk(unicode(name)):
                 filenames += [os.path.join(root, f) for f in children
                               if f.endswith('.py') and
                               not f.startswith('.')]
