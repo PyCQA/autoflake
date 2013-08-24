@@ -3,7 +3,7 @@ check:
 	pylint \
 		--reports=no \
 		--msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' \
-		--disable=C0103,F0401,R0903,W0622 \
+		--disable=C0103,R0903 \
 		--rcfile=/dev/null \
 		autoflake.py setup.py
 	pep257 autoflake.py setup.py
