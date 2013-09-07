@@ -7,8 +7,8 @@ from __future__ import unicode_literals
 
 import os
 import shlex
-import sys
 import subprocess
+import sys
 
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
