@@ -249,20 +249,20 @@ import os, math, subprocess
 
     def test_break_up_import(self):
         self.assertEqual(
-            'import abc\nimport subprocess\nimport math\n',
+            'import abc\nimport math\nimport subprocess\n',
             autoflake.break_up_import('import abc, subprocess, math\n'))
 
     def test_break_up_import_with_indentation(self):
         self.assertEqual(
-            '    import abc\n    import subprocess\n    import math\n',
+            '    import abc\n    import math\n    import subprocess\n',
             autoflake.break_up_import('    import abc, subprocess, math\n'))
 
     def test_break_up_import_with_from(self):
         self.assertEqual(
             """\
     from foo import abc
-    from foo import subprocess
     from foo import math
+    from foo import subprocess
 """,
             autoflake.break_up_import(
                 '    from foo import abc, subprocess, math\n'))

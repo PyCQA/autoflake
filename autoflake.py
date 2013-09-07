@@ -202,7 +202,7 @@ def break_up_import(line):
     assert newline
 
     return ''.join([indentation + i.strip() + newline
-                    for i in imports.split(',')])
+                    for i in sorted(imports.split(','))])
 
 
 def filter_code(source, additional_imports=None,
