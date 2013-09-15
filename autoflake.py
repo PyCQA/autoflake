@@ -100,9 +100,11 @@ def unused_variable_line_numbers(messages):
             yield message.lineno
 
 
-def check(source):
+def check(source, encoding=None):
     """Return messages from pyflakes."""
     reporter = ListReporter()
+    if encoding:
+        source = source.encode(encoding)
     try:
         pyflakes.api.check(source, filename='<string>', reporter=reporter)
     except UnicodeDecodeError:  # pragma: no cover
@@ -207,14 +209,15 @@ def break_up_import(line):
 
 def filter_code(source, additional_imports=None,
                 remove_all_unused_imports=False,
-                remove_unused_variables=False):
+                remove_unused_variables=False,
+                encoding=None):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
         imports |= frozenset(additional_imports)
     del additional_imports
 
-    messages = check(source)
+    messages = check(source, encoding)
 
     marked_import_line_numbers = frozenset(
         unused_import_line_numbers(messages))
@@ -363,7 +366,7 @@ def get_line_ending(line):
 
 
 def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
-             remove_unused_variables=False):
+             remove_unused_variables=False, encoding=None):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -380,7 +383,9 @@ def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
                     source,
                     additional_imports=additional_imports,
                     remove_all_unused_imports=remove_all_unused_imports,
-                    remove_unused_variables=remove_unused_variables))))
+                    remove_unused_variables=remove_unused_variables,
+                    encoding=encoding
+                    ))))
 
         if filtered_source == source:
             break
@@ -401,7 +406,9 @@ def fix_file(filename, args, standard_out):
         source,
         additional_imports=args.imports.split(',') if args.imports else None,
         remove_all_unused_imports=args.remove_all_unused_imports,
-        remove_unused_variables=args.remove_unused_variables)
+        remove_unused_variables=args.remove_unused_variables,
+        encoding=encoding
+        )
 
     if original_source != filtered_source:
         if args.in_place:
