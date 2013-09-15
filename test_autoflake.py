@@ -663,6 +663,26 @@ x = 1
                        standard_out=output_file,
                        standard_error=output_file)
         self.assertIn('no such file', output_file.getvalue().lower())
+    def test_diff_with_encoding_declaration(self):
+        with temporary_file("""\
+# coding: utf-8
+import re
+import os
+import my_own_module
+x = 1
+""") as filename:
+            output_file = io.StringIO()
+            autoflake.main(argv=['my_fake_program', filename],
+                           standard_out=output_file,
+                           standard_error=None)
+            self.assertEqual("""\
+ # coding: utf-8
+-import re
+-import os
+ import my_own_module
+ x = 1
+""", '\n'.join(output_file.getvalue().split('\n')[3:]))
+
 
     def test_in_place(self):
         with temporary_file("""\
