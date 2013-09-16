@@ -31,6 +31,7 @@ import os
 import re
 import tokenize
 from distutils import sysconfig
+import sys
 
 import pyflakes.api
 import pyflakes.messages
@@ -102,9 +103,10 @@ def unused_variable_line_numbers(messages):
 
 def check(source, encoding=None):
     """Return messages from pyflakes."""
-    reporter = ListReporter()
-    if encoding:
+    if encoding and sys.version_info[0] == 2:
         source = source.encode(encoding)
+
+    reporter = ListReporter()
     try:
         pyflakes.api.check(source, filename='<string>', reporter=reporter)
     except UnicodeDecodeError:  # pragma: no cover
