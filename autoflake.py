@@ -386,8 +386,7 @@ def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
                     additional_imports=additional_imports,
                     remove_all_unused_imports=remove_all_unused_imports,
                     remove_unused_variables=remove_unused_variables,
-                    encoding=encoding
-                    ))))
+                    encoding=encoding))))
 
         if filtered_source == source:
             break
