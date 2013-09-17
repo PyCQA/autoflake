@@ -101,9 +101,14 @@ def unused_variable_line_numbers(messages):
             yield message.lineno
 
 
-def check(source, encoding=None):
+def check(source):
     """Return messages from pyflakes."""
-    if encoding and sys.version_info[0] == 2:
+    if sys.version_info[0] == 2 and isinstance(source, unicode):
+        # Convert back to original byte string encoding, otherwise pyflakes
+        # call to compile() will complain. See PEP 263.
+        from StringIO import StringIO
+        string_io = StringIO(source.encode('utf-8'))
+        encoding = _detect_encoding(string_io.readline)
         source = source.encode(encoding)
 
     reporter = ListReporter()
@@ -211,15 +216,14 @@ def break_up_import(line):
 
 def filter_code(source, additional_imports=None,
                 remove_all_unused_imports=False,
-                remove_unused_variables=False,
-                encoding=None):
+                remove_unused_variables=False):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
         imports |= frozenset(additional_imports)
     del additional_imports
 
-    messages = check(source, encoding)
+    messages = check(source)
 
     marked_import_line_numbers = frozenset(
         unused_import_line_numbers(messages))
@@ -368,7 +372,7 @@ def get_line_ending(line):
 
 
 def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
-             remove_unused_variables=False, encoding=None):
+             remove_unused_variables=False):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -385,8 +389,7 @@ def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
                     source,
                     additional_imports=additional_imports,
                     remove_all_unused_imports=remove_all_unused_imports,
-                    remove_unused_variables=remove_unused_variables,
-                    encoding=encoding))))
+                    remove_unused_variables=remove_unused_variables))))
 
         if filtered_source == source:
             break
@@ -407,9 +410,7 @@ def fix_file(filename, args, standard_out):
         source,
         additional_imports=args.imports.split(',') if args.imports else None,
         remove_all_unused_imports=args.remove_all_unused_imports,
-        remove_unused_variables=args.remove_unused_variables,
-        encoding=encoding
-        )
+        remove_unused_variables=args.remove_unused_variables)
 
     if original_source != filtered_source:
         if args.in_place:
@@ -434,13 +435,22 @@ def detect_encoding(filename):
     """Return file encoding."""
     try:
         with open(filename, 'rb') as input_file:
-            from lib2to3.pgen2 import tokenize as lib2to3_tokenize
-            encoding = lib2to3_tokenize.detect_encoding(input_file.readline)[0]
+            encoding = _detect_encoding(input_file.readline)
 
             # Check for correctness of encoding.
             with open_with_encoding(filename, encoding) as input_file:
                 input_file.read()
 
+        return encoding
+    except (LookupError, SyntaxError, UnicodeDecodeError):
+        return 'latin-1'
+
+
+def _detect_encoding(readline):
+    """Return file encoding."""
+    try:
+        from lib2to3.pgen2 import tokenize as lib2to3_tokenize
+        encoding = lib2to3_tokenize.detect_encoding(readline)[0]
         return encoding
     except (LookupError, SyntaxError, UnicodeDecodeError):
         return 'latin-1'

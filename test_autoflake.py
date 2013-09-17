@@ -600,7 +600,7 @@ def func11():
         self.assertFalse(autoflake.check('foo('))
 
     def test_check_with_unicode(self):
-        self.assertFalse(autoflake.check('print("∑"'))
+        self.assertFalse(autoflake.check('print("∑")'))
 
     def test_get_diff_text(self):
         # We ignore the first two lines since it differs on Python 2.6.
@@ -666,7 +666,7 @@ x = 1
 
     def test_diff_with_encoding_declaration(self):
         with temporary_file("""\
-# coding: utf-8
+# coding: iso-8859-1
 import re
 import os
 import my_own_module
@@ -677,7 +677,7 @@ x = 1
                            standard_out=output_file,
                            standard_error=None)
             self.assertEqual("""\
- # coding: utf-8
+ # coding: iso-8859-1
 -import re
 -import os
  import my_own_module
