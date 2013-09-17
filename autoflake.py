@@ -105,11 +105,12 @@ def check(source):
     """Return messages from pyflakes."""
     if sys.version_info[0] == 2 and isinstance(source, unicode):
         # Convert back to original byte string encoding, otherwise pyflakes
-        # call to compile() will complain. See PEP 263.
-        from StringIO import StringIO
-        string_io = StringIO(source.encode('utf-8'))
-        encoding = _detect_encoding(string_io.readline)
-        source = source.encode(encoding)
+        # call to compile() will complain. See PEP 263. This only affects
+        # Python 2.
+        try:
+            source = source.encode('utf-8')
+        except UnicodeError:  # pragma: no cover
+            return []
 
     reporter = ListReporter()
     try:
