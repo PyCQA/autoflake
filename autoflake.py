@@ -43,6 +43,8 @@ __version__ = '0.6.1'
 
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
 
+EXCEPT_REGEX = re.compile(r'^\s*except [\s,()\w]+ as \w+:$')
+
 
 try:
     unicode
@@ -273,7 +275,7 @@ def filter_unused_import(line, remove_all_unused_imports, imports,
 
 def filter_unused_variable(line, previous_line=''):
     """Return line if used, otherwise return None."""
-    if re.match(r'^\s*except [\s,()\w]+ as \w+:$', line):
+    if re.match(EXCEPT_REGEX, line):
         return re.sub(r' as \w+:$', ':', line, count=1)
     elif multiline_statement(line, previous_line):
         return line
