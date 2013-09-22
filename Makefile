@@ -2,8 +2,7 @@ check:
 	pep8 autoflake autoflake.py setup.py
 	pylint \
 		--reports=no \
-		--msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' \
-		--disable=C0103,R0903 \
+		--disable=invalid-name,too-few-public-methods \
 		--rcfile=/dev/null \
 		autoflake.py setup.py
 	pep257 autoflake.py setup.py
