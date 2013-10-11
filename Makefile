@@ -6,7 +6,7 @@ check:
 		--rcfile=/dev/null \
 		autoflake.py setup.py
 	pep257 autoflake.py setup.py
-	check-manifest --ignore=.travis.yml,Makefile,test_acid.py,tox.ini
+	check-manifest
 	python setup.py --long-description | rst2html.py --strict > /dev/null
 	scspell autoflake autoflake.py setup.py test_autoflake.py README.rst
 
