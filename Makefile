@@ -1,5 +1,5 @@
 check:
-	pep8 autoflake autoflake.py setup.py
+	pep8 autoflake.py setup.py
 	pylint \
 		--reports=no \
 		--disable=invalid-name,too-few-public-methods \
@@ -8,7 +8,7 @@ check:
 	pep257 autoflake.py setup.py
 	check-manifest
 	python setup.py --long-description | rst2html.py --strict > /dev/null
-	scspell autoflake autoflake.py setup.py test_autoflake.py README.rst
+	scspell autoflake.py setup.py test_autoflake.py README.rst
 
 coverage:
 	@coverage erase

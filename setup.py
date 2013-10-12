@@ -33,6 +33,7 @@ with open('README.rst') as readme:
                      'Topic :: Software Development :: Quality Assurance'],
         keywords='clean,fix,automatic,unused,import',
         py_modules=['autoflake'],
-        scripts=['autoflake'],
+        entry_points={
+            'console_scripts': ['autoflake = autoflake:main']},
         install_requires=['pyflakes>=0.7.2'],
         test_suite='test_autoflake')

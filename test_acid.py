@@ -12,7 +12,7 @@ import sys
 
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
-AUTOFLAKE_BIN = os.path.join(ROOT_PATH, 'autoflake')
+AUTOFLAKE_BIN = os.path.join(ROOT_PATH, 'autoflake.py')
 
 import autoflake
 

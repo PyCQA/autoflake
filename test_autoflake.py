@@ -7,12 +7,32 @@ from __future__ import unicode_literals
 
 import contextlib
 import io
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 
 import autoflake
+
+
+ROOT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+
+
+if (
+    'AUTOFLAKE_COVERAGE' in os.environ and
+    int(os.environ['AUTOFLAKE_COVERAGE'])
+):
+    AUTOFLAKE_COMMAND = ['coverage', 'run', '--branch', '--parallel',
+                         '--omit=*/distutils/*,*/site-packages/*',
+                         os.path.join(ROOT_DIRECTORY, 'autoflake.py')]
+else:
+    # We need to specify the executable to make sure the correct Python
+    # interpreter gets used.
+    AUTOFLAKE_COMMAND = [sys.executable,
+                         os.path.join(
+                             ROOT_DIRECTORY,
+                             'autoflake.py')]  # pragma: no cover
 
 
 class UnitTests(unittest.TestCase):
@@ -647,9 +667,9 @@ import my_own_module
 x = 1
 """) as filename:
             output_file = io.StringIO()
-            autoflake.main(argv=['my_fake_program', filename],
-                           standard_out=output_file,
-                           standard_error=None)
+            autoflake._main(argv=['my_fake_program', filename],
+                            standard_out=output_file,
+                            standard_error=None)
             self.assertEqual("""\
 -import re
 -import os
@@ -659,9 +679,9 @@ x = 1
 
     def test_diff_with_nonexistent_file(self):
         output_file = io.StringIO()
-        autoflake.main(argv=['my_fake_program', 'nonexistent_file'],
-                       standard_out=output_file,
-                       standard_error=output_file)
+        autoflake._main(argv=['my_fake_program', 'nonexistent_file'],
+                        standard_out=output_file,
+                        standard_error=output_file)
         self.assertIn('no such file', output_file.getvalue().lower())
 
     def test_diff_with_encoding_declaration(self):
@@ -673,9 +693,9 @@ import my_own_module
 x = 1
 """) as filename:
             output_file = io.StringIO()
-            autoflake.main(argv=['my_fake_program', filename],
-                           standard_out=output_file,
-                           standard_error=None)
+            autoflake._main(argv=['my_fake_program', filename],
+                            standard_out=output_file,
+                            standard_error=None)
             self.assertEqual("""\
  # coding: iso-8859-1
 -import re
@@ -697,9 +717,9 @@ except ImportError:
     import os
 """) as filename:
             output_file = io.StringIO()
-            autoflake.main(argv=['my_fake_program', '--in-place', filename],
-                           standard_out=output_file,
-                           standard_error=None)
+            autoflake._main(argv=['my_fake_program', '--in-place', filename],
+                            standard_out=output_file,
+                            standard_error=None)
             with open(filename) as f:
                 self.assertEqual("""\
 import foo
@@ -717,9 +737,9 @@ except ImportError:
 
         with temporary_file(line) as filename:
             output_file = io.StringIO()
-            autoflake.main(argv=['my_fake_program', '--in-place', filename],
-                           standard_out=output_file,
-                           standard_error=None)
+            autoflake._main(argv=['my_fake_program', '--in-place', filename],
+                            standard_out=output_file,
+                            standard_error=None)
             with open(filename) as f:
                 self.assertEqual(line, f.read())
 
@@ -739,9 +759,9 @@ except ImportError:
     import sys
 """) as filename:
             output_file = io.StringIO()
-            autoflake.main(argv=['my_fake_program', '--in-place', filename],
-                           standard_out=output_file,
-                           standard_error=None)
+            autoflake._main(argv=['my_fake_program', '--in-place', filename],
+                            standard_out=output_file,
+                            standard_error=None)
             with open(filename) as f:
                 self.assertEqual("""\
 import foo
@@ -757,9 +777,9 @@ except ImportError:
     def test_with_missing_file(self):
         output_file = io.StringIO()
         ignore = StubFile()
-        autoflake.main(argv=['my_fake_program', '--in-place', '.fake'],
-                       standard_out=output_file,
-                       standard_error=ignore)
+        autoflake._main(argv=['my_fake_program', '--in-place', '.fake'],
+                        standard_out=output_file,
+                        standard_error=ignore)
         self.assertFalse(output_file.getvalue())
 
     def test_ignore_hidden_directories(self):
@@ -773,21 +793,21 @@ import os
 """, directory=inner_directory):
 
                     output_file = io.StringIO()
-                    autoflake.main(argv=['my_fake_program',
-                                         '--recursive',
-                                         directory],
-                                   standard_out=output_file,
-                                   standard_error=None)
+                    autoflake._main(argv=['my_fake_program',
+                                          '--recursive',
+                                          directory],
+                                    standard_out=output_file,
+                                    standard_error=None)
                     self.assertEqual(
                         '',
                         output_file.getvalue().strip())
 
     def test_redundant_options(self):
         output_file = io.StringIO()
-        autoflake.main(argv=['my_fake_program',
-                             '--remove-all', '--imports=blah', __file__],
-                       standard_out=output_file,
-                       standard_error=output_file)
+        autoflake._main(argv=['my_fake_program',
+                              '--remove-all', '--imports=blah', __file__],
+                        standard_out=output_file,
+                        standard_error=output_file)
 
         self.assertIn('redundant', output_file.getvalue())
 
@@ -798,9 +818,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            process = subprocess.Popen([sys.executable,
-                                        './autoflake',
-                                        '--imports=fake_foo,fake_bar',
+            process = subprocess.Popen(AUTOFLAKE_COMMAND +
+                                       ['--imports=fake_foo,fake_bar',
                                         filename],
                                        stdout=subprocess.PIPE)
             self.assertEqual("""\
@@ -820,9 +839,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            process = subprocess.Popen([sys.executable,
-                                        './autoflake',
-                                        '--remove-all',
+            process = subprocess.Popen(AUTOFLAKE_COMMAND +
+                                       ['--remove-all',
                                         filename],
                                        stdout=subprocess.PIPE)
             self.assertEqual("""\
@@ -840,9 +858,8 @@ import re, os
 x = os.sep
 print(x)
 """) as filename:
-            process = subprocess.Popen([sys.executable,
-                                        './autoflake',
-                                        '--imports=fake_foo,fake_bar',
+            process = subprocess.Popen(AUTOFLAKE_COMMAND +
+                                       ['--imports=fake_foo,fake_bar',
                                         '--remove-all',
                                         filename],
                                        stderr=subprocess.PIPE)
