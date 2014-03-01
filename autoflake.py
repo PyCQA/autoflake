@@ -31,10 +31,10 @@ import difflib
 import io
 import os
 import re
-import tokenize
-from distutils import sysconfig
 import signal
 import sys
+import tokenize
+from distutils import sysconfig
 
 import pyflakes.api
 import pyflakes.messages
