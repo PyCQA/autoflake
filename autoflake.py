@@ -113,7 +113,7 @@ def check(source):
         # call to compile() will complain. See PEP 263. This only affects
         # Python 2.
         try:
-            source = source.encode('utf-8')
+            source = source.encode()
         except UnicodeError:  # pragma: no cover
             return []
 

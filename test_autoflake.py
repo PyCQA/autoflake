@@ -830,7 +830,7 @@ print(x)
 +import os
  x = os.sep
  print(x)
-""", '\n'.join(process.communicate()[0].decode('utf-8').split('\n')[3:]))
+""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]))
 
     def test_end_to_end_with_remove_all_unused_imports(self):
         with temporary_file("""\
@@ -849,7 +849,7 @@ print(x)
 +import os
  x = os.sep
  print(x)
-""", '\n'.join(process.communicate()[0].decode('utf-8').split('\n')[3:]))
+""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]))
 
     def test_end_to_end_with_error(self):
         with temporary_file("""\
@@ -865,7 +865,7 @@ print(x)
                                        stderr=subprocess.PIPE)
             self.assertIn(
                 'redundant',
-                process.communicate()[1].decode('utf-8'))
+                process.communicate()[1].decode())
 
 
 @contextlib.contextmanager
@@ -874,7 +874,7 @@ def temporary_file(contents, directory='.', prefix=''):
     f = tempfile.NamedTemporaryFile(suffix='.py', prefix=prefix,
                                     delete=False, dir=directory)
     try:
-        f.write(contents.encode('utf8'))
+        f.write(contents.encode())
         f.close()
         yield f.name
     finally:
