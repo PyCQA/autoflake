@@ -282,7 +282,7 @@ def filter_unused_variable(line, previous_line=''):
         return re.sub(r' as \w+:$', ':', line, count=1)
     elif multiline_statement(line, previous_line):
         return line
-    elif line.count('=') == 1:
+    elif line.count('=') == 1 and ',' not in line:
         split_line = line.split('=')
         assert len(split_line) == 2
         value = split_line[1].lstrip()
