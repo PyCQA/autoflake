@@ -2,7 +2,7 @@
 autoflake
 =========
 
-.. image:: https://travis-ci.org/myint/autoflake.png?branch=master
+.. image:: https://travis-ci.org/myint/autoflake.svg?branch=master
     :target: https://travis-ci.org/myint/autoflake
     :alt: Build status
 
