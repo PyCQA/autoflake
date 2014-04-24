@@ -432,7 +432,6 @@ def bar():
                              autoflake.detect_encoding(filename))
 
     def test_fix_code_with_unused_variables_should_skip_multiple(self):
-        """pyflakes does not handle nonlocal correctly."""
         code = """\
 def main():
     (x, y, z) = (1, 2, 3)
