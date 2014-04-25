@@ -431,6 +431,19 @@ def bar():
             self.assertEqual('latin-1',
                              autoflake.detect_encoding(filename))
 
+    def test_fix_code_with_comma_on_right(self):
+        """pyflakes does not handle nonlocal correctly."""
+        self.assertEqual(
+            """\
+def main():
+    pass
+""",
+            autoflake.fix_code("""\
+def main():
+    x = (1, 2, 3)
+""",
+                               remove_unused_variables=True))
+
     def test_fix_code_with_unused_variables_should_skip_multiple(self):
         code = """\
 def main():
