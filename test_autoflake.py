@@ -646,6 +646,8 @@ def func11():
     def test_check_with_unicode(self):
         self.assertFalse(autoflake.check('print("∑")'))
 
+        self.assertTrue(autoflake.check('import os  # ∑'))
+
     def test_get_diff_text(self):
         # We ignore the first two lines since it differs on Python 2.6.
         self.assertEqual(
