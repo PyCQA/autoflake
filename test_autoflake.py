@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 import contextlib
 import io
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -664,7 +665,7 @@ def func11():
         self.assertEqual(
             """\
 -foo
-\ No newline at end of file
+\\ No newline at end of file
 +foo
 """,
             '\n'.join(autoflake.get_diff_text(['foo'],
@@ -904,7 +905,6 @@ def temporary_file(contents, directory='.', prefix=''):
         f.close()
         yield f.name
     finally:
-        import os
         os.remove(f.name)
 
 
@@ -915,7 +915,6 @@ def temporary_directory(directory='.', prefix=''):
     try:
         yield temp_directory
     finally:
-        import shutil
         shutil.rmtree(temp_directory)
 
 
