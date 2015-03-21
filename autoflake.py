@@ -64,7 +64,7 @@ def standard_paths():
 
     try:
         for name in os.listdir(os.path.join(path, 'lib-dynload')):
-            pass
+            yield name
     except OSError:  # pragma: no cover
         pass
 
