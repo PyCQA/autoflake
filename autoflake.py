@@ -246,11 +246,13 @@ def filter_code(source, additional_imports=None,
         if '#' in line:
             yield line
         elif line_number in marked_import_line_numbers:
-            yield filter_unused_import(
+            new_line = filter_unused_import(
                 line,
                 remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
                 previous_line=previous_line)
+            if new_line is not None:
+                yield new_line
         elif line_number in marked_variable_line_numbers:
             yield filter_unused_variable(line)
         else:
@@ -271,9 +273,7 @@ def filter_unused_import(line, remove_all_unused_imports, imports,
         if not remove_all_unused_imports and package not in imports:
             return line
         else:
-            return (get_indentation(line) +
-                    'pass' +
-                    get_line_ending(line))
+            return None
 
 
 def filter_unused_variable(line, previous_line=''):
@@ -379,8 +379,14 @@ def get_line_ending(line):
         return line[non_whitespace_index:]
 
 
+def allow_all(source):
+    sio = io.StringIO(source)
+    for line in sio.readlines():
+        yield line
+
+
 def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
-             remove_unused_variables=False):
+             remove_unused_variables=False, remove_useless_pass=True):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -389,10 +395,15 @@ def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
     if 'nonlocal' in source:
         remove_unused_variables = False
 
+    if remove_useless_pass:
+        pass_filter = filter_useless_pass
+    else:
+        pass_filter = allow_all
+
     filtered_source = None
     while True:
         filtered_source = ''.join(
-            filter_useless_pass(''.join(
+            pass_filter(''.join(
                 filter_code(
                     source,
                     additional_imports=additional_imports,
@@ -418,7 +429,9 @@ def fix_file(filename, args, standard_out):
         source,
         additional_imports=args.imports.split(',') if args.imports else None,
         remove_all_unused_imports=args.remove_all_unused_imports,
-        remove_unused_variables=args.remove_unused_variables)
+        remove_unused_variables=args.remove_unused_variables,
+        remove_useless_pass=not args.keep_useless_pass,
+    )
 
     if original_source != filtered_source:
         if args.in_place:
@@ -503,6 +516,8 @@ def _main(argv, standard_out, standard_error):
     parser.add_argument('--remove-all-unused-imports', action='store_true',
                         help='remove all unused imports (not just those from '
                              'the standard library')
+    parser.add_argument('--keep-useless-pass', action='store_true',
+                        help='keep the useless pass statements; default is to remove them')
     parser.add_argument('--remove-unused-variables', action='store_true',
                         help='remove unused variables')
     parser.add_argument('--version', action='version',
