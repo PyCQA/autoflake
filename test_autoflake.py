@@ -153,7 +153,7 @@ import re
 os.foo()
 """)))
 
-    def test_filter_code_with_conditional(self):
+    def test_filter_code_with_indented_import(self):
         self.assertEqual(
             """\
 import os
