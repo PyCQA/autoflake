@@ -2,7 +2,7 @@ check:
 	pep8 autoflake.py setup.py
 	pylint \
 		--reports=no \
-		--disable=invalid-name,too-few-public-methods \
+		--disable=invalid-name,no-member,too-few-public-methods \
 		--rcfile=/dev/null \
 		autoflake.py setup.py
 	pep257 autoflake.py setup.py
