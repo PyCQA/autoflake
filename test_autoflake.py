@@ -153,6 +153,21 @@ import re
 os.foo()
 """)))
 
+    def test_filter_code_with_conditional(self):
+        self.assertEqual(
+            """\
+import os
+if True:
+    pass
+os.foo()
+""",
+            ''.join(autoflake.filter_code("""\
+import os
+if True:
+    import re
+os.foo()
+""")))
+
     def test_filter_code_with_from(self):
         self.assertEqual(
             """\
