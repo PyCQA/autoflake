@@ -271,8 +271,8 @@ def filter_unused_import(line, remove_all_unused_imports, imports,
         if not remove_all_unused_imports and package not in imports:
             return line
         else:
-            # We need to replace import with "pass" in case in the import is
-            # the only line inside a block. For example,
+            # We need to replace import with "pass" in case the import is the
+            # only line inside a block. For example,
             # "if True:\n    import os". In such cases, if the import is
             # removed, the block will be left hanging with no body.
             return (get_indentation(line) +
