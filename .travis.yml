@@ -8,7 +8,13 @@ python:
     - "3.5"
     - "nightly"
 
+env:
+    - PYFLAKES_VERSION=pypi
+    - PYFLAKES_VERSION=github
+
 install:
+    - if [ "$PYFLAKES_VERSION" == "github" ];
+      then pip install git+https://github.com/pyflakes/pyflakes; fi
     - python setup.py --quiet install
 
 script:
