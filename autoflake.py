@@ -294,7 +294,8 @@ def filter_unused_variable(line, previous_line=''):
             return line
 
         if is_literal_or_name(value):
-            # Replace with "pass" to avoid possible hanging block with no body.
+            # Rather than removing the line, replace with it "pass" to avoid
+            # a possible hanging block with no body.
             value = 'pass' + get_line_ending(line)
 
         return get_indentation(line) + value
