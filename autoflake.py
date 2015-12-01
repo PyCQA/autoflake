@@ -126,7 +126,6 @@ def check(source):
 
 
 class StubFile(object):
-
     """Stub out file for pyflakes."""
 
     def write(self, *_):
@@ -134,7 +133,6 @@ class StubFile(object):
 
 
 class ListReporter(pyflakes.reporter.Reporter):
-
     """Accumulate messages in messages list."""
 
     def __init__(self):
@@ -238,7 +236,7 @@ def filter_code(source, additional_imports=None,
         marked_variable_line_numbers = frozenset(
             unused_variable_line_numbers(messages))
     else:
-        marked_variable_line_numbers = {}
+        marked_variable_line_numbers = frozenset()
 
     sio = io.StringIO(source)
     previous_line = ''
