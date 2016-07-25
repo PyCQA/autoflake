@@ -12,7 +12,8 @@ import sys
 
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
-AUTOFLAKE_BIN = os.path.join(ROOT_PATH, 'autoflake.py')
+AUTOFLAKE_BIN = "'{}' '{}'".format(sys.executable,
+                                   os.path.join(ROOT_PATH, 'autoflake.py'))
 
 import autoflake
 
