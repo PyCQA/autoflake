@@ -1,11 +1,11 @@
 check:
-	pep8 autoflake.py setup.py
+	pycodestyle autoflake.py setup.py
 	pylint \
 		--reports=no \
-		--disable=invalid-name,no-member,too-few-public-methods \
+		--disable=invalid-name,no-member,too-few-public-methods,no-else-return \
 		--rcfile=/dev/null \
 		autoflake.py setup.py
-	pep257 autoflake.py setup.py
+	pydocstyle autoflake.py setup.py
 	check-manifest
 	python setup.py --long-description | rstcheck -
 	scspell autoflake.py setup.py test_autoflake.py README.rst
