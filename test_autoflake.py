@@ -192,6 +192,28 @@ x = 1
 """,
                                           remove_all_unused_imports=True)))
 
+    def test_filter_code_with_used_from(self):
+        self.assertEqual(
+                """\
+import frommer
+print(frommer)
+""",
+                ''.join(autoflake.filter_code("""\
+import frommer
+print(frommer)
+""",
+                                              remove_all_unused_imports=True)))
+
+    def test_filter_code_with_ambiguous_from(self):
+        self.assertEqual(
+            """\
+pass
+""",
+            ''.join(autoflake.filter_code("""\
+from frommy import abc, frommy, xyz
+""",
+                                          remove_all_unused_imports=True)))
+
     def test_filter_code_should_avoid_inline_except(self):
         line = """\
 try: from zap import foo
@@ -306,20 +328,34 @@ import os, math, subprocess
             '    import abc\n    import math\n    import subprocess\n',
             autoflake.break_up_import('    import abc, subprocess, math\n'))
 
-    def test_break_up_import_with_from(self):
-        self.assertEqual(
-            """\
-    from foo import abc
-    from foo import math
-    from foo import subprocess
-""",
-            autoflake.break_up_import(
-                '    from foo import abc, subprocess, math\n'))
-
     def test_break_up_import_should_do_nothing_on_no_line_ending(self):
         self.assertEqual(
             'import abc, subprocess, math',
             autoflake.break_up_import('import abc, subprocess, math'))
+
+    def test_filter_from_import_no_remove(self):
+        self.assertEqual(
+                """\
+    from foo import abc, math, subprocess\n""",
+                autoflake.filter_from_import(
+                    '    from foo import abc, subprocess, math\n',
+                    unused_module=[]))
+
+    def test_filter_from_import_remove_module(self):
+        self.assertEqual(
+                """\
+    from foo import math, subprocess\n""",
+                autoflake.filter_from_import(
+                    '    from foo import abc, subprocess, math\n',
+                    unused_module=['foo.abc']))
+
+    def test_filter_from_import_remove_all(self):
+        self.assertEqual(
+                    '    pass\n',
+                autoflake.filter_from_import(
+                    '    from foo import abc, subprocess, math\n',
+                    unused_module=['foo.abc', 'foo.subprocess',
+                                   'foo.math']))
 
     def test_filter_code_should_ignore_multiline_imports(self):
         self.assertEqual(
@@ -456,6 +492,50 @@ namedtuple
 """,
             autoflake.fix_code("""\
 from collections import defaultdict as abc, namedtuple as xyz
+"""))
+
+    def test_fix_code_with_from_and_depth_module(self):
+        self.assertEqual(
+            """\
+from distutils.version import StrictVersion
+StrictVersion('1.0.0')
+""",
+            autoflake.fix_code("""\
+from distutils.version import LooseVersion, StrictVersion
+StrictVersion('1.0.0')
+"""))
+
+        self.assertEqual(
+            """\
+from distutils.version import StrictVersion as version
+version('1.0.0')
+""",
+            autoflake.fix_code("""\
+from distutils.version import LooseVersion, StrictVersion as version
+version('1.0.0')
+"""))
+
+    def test_fix_code_with_indented_from(self):
+        self.assertEqual(
+            """\
+def z():
+    from ctypes import POINTER, byref
+    POINTER, byref
+    """,
+                autoflake.fix_code("""\
+def z():
+    from ctypes import c_short, c_uint, c_int, c_long, pointer, POINTER, byref
+    POINTER, byref
+    """))
+
+        self.assertEqual(
+            """\
+def z():
+    pass
+""",
+            autoflake.fix_code("""\
+def z():
+    from ctypes import c_short, c_uint, c_int, c_long, pointer, POINTER, byref
 """))
 
     def test_fix_code_with_empty_string(self):

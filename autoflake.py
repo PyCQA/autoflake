@@ -28,6 +28,7 @@ from __future__ import unicode_literals
 
 import ast
 import difflib
+from collections import defaultdict
 import io
 import os
 import re
@@ -105,6 +106,15 @@ def unused_import_line_numbers(messages):
         if isinstance(message, pyflakes.messages.UnusedImport):
             yield message.lineno
 
+def unused_import_module_name(messages):
+    """Yield line number and module name of unused imports."""
+    pattern = r'\'(.+?)\''
+    for message in messages:
+        if isinstance(message, pyflakes.messages.UnusedImport):
+            module_name = re.search(pattern, str(message))
+            module_name = module_name.group()[1:-1]
+            if (module_name):
+                yield (message.lineno, module_name)
 
 def unused_variable_line_numbers(messages):
     """Yield line numbers of unused variables."""
@@ -203,6 +213,39 @@ def multiline_statement(line, previous_line=''):
         return True
 
 
+def filter_from_import(line, unused_module, debug=False):
+    """
+    Parse and filter ``from something import a, b, c``
+    
+    Return line without unused import modules, or `pass` if 
+    all of the module in import is unused.
+    """
+    (indentation, imports) = re.split(pattern=r'\bimport\b',
+                                      string=line, maxsplit=1)
+    base_module = re.search(pattern='from\s+([^ ]+)',
+                           string=indentation).group(1)
+
+    # Create an imported module list with base module name
+    # ex ``from a import b, c as d`` -> ``['a.b', 'a.c as d']``
+    imports = re.split(pattern=r',', string=imports.strip())
+    imports = [base_module + '.' + x.strip() for x in imports]
+
+    # We compare full module name (``a.module`` not `module`) to
+    # guarantee the exact same module as detected from pyflakes.
+    filtered_imports = [x.replace(base_module + '.', '')
+                        for x in imports if x not in unused_module]
+
+    # All of the import in this statement is unused
+    if not filtered_imports:
+        return get_indentation(line) + 'pass' + \
+            get_line_ending(line)
+
+    indentation += 'import '
+
+    return indentation + ', '.join(sorted(filtered_imports)) \
+           + get_line_ending(line)
+
+
 def break_up_import(line):
     """Return line with imports on separate lines."""
     assert '\\' not in line
@@ -210,6 +253,7 @@ def break_up_import(line):
     assert ')' not in line
     assert ';' not in line
     assert '#' not in line
+    assert not re.match(line, r'^\s*from\s')
 
     newline = get_line_ending(line)
     if not newline:
@@ -238,6 +282,9 @@ def filter_code(source, additional_imports=None,
 
     marked_import_line_numbers = frozenset(
         unused_import_line_numbers(messages))
+    marked_unused_module = defaultdict(lambda: [])
+    for line_number, module_name in unused_import_module_name(messages):
+        marked_unused_module[line_number].append(module_name)
 
     if remove_unused_variables:
         marked_variable_line_numbers = frozenset(
@@ -253,6 +300,7 @@ def filter_code(source, additional_imports=None,
         elif line_number in marked_import_line_numbers:
             yield filter_unused_import(
                 line,
+                unused_module=marked_unused_module[line_number],
                 remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
                 previous_line=previous_line)
@@ -264,13 +312,16 @@ def filter_code(source, additional_imports=None,
         previous_line = line
 
 
-def filter_unused_import(line, remove_all_unused_imports, imports,
-                         previous_line=''):
+def filter_unused_import(line, unused_module, remove_all_unused_imports,
+                         imports, previous_line=''):
     """Return line if used, otherwise return None."""
     if multiline_import(line, previous_line):
         return line
     elif ',' in line:
-        return break_up_import(line)
+        if re.match(r'^\s*from\s', line):
+            return filter_from_import(line, unused_module)
+        else:
+            return break_up_import(line)
     else:
         package = extract_package_name(line)
         if not remove_all_unused_imports and package not in imports:
