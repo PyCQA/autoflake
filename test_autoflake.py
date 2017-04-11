@@ -179,6 +179,18 @@ from os import path
 x = 1
 """)))
 
+    def test_filter_code_with_not_from(self):
+        self.assertEqual(
+            """\
+pass
+x = 1
+""",
+            ''.join(autoflake.filter_code("""\
+import frommer
+x = 1
+""",
+                                          remove_all_unused_imports=True)))
+
     def test_filter_code_should_avoid_inline_except(self):
         line = """\
 try: from zap import foo
