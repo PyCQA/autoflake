@@ -419,6 +419,44 @@ math.pi
 x = version
 """))
 
+    def test_fix_code_with_from_and_as(self):
+        self.assertEqual(
+            """\
+from collections import namedtuple as xyz
+xyz
+""",
+            autoflake.fix_code("""\
+from collections import defaultdict, namedtuple as xyz
+xyz
+"""))
+
+        self.assertEqual(
+            """\
+from collections import namedtuple as xyz
+xyz
+""",
+            autoflake.fix_code("""\
+from collections import defaultdict as abc, namedtuple as xyz
+xyz
+"""))
+
+        self.assertEqual(
+            """\
+from collections import namedtuple
+namedtuple
+""",
+            autoflake.fix_code("""\
+from collections import defaultdict as abc, namedtuple
+namedtuple
+"""))
+
+        self.assertEqual(
+            """\
+""",
+            autoflake.fix_code("""\
+from collections import defaultdict as abc, namedtuple as xyz
+"""))
+
     def test_fix_code_with_empty_string(self):
         self.assertEqual(
             '',
