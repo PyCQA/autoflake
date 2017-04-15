@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 import contextlib
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -461,6 +462,25 @@ from collections import defaultdict as abc, namedtuple as xyz
         self.assertEqual(
             '',
             autoflake.fix_code(''))
+
+    def test_fix_code_with_from_and_as_and_escaped_newline(self):
+        """Make sure stuff after escaped newline is not lost."""
+        result = autoflake.fix_code("""\
+from collections import defaultdict, namedtuple \\
+    as xyz
+xyz
+""")
+        # We currently leave lines with escaped newlines as is. But in the
+        # future this we may parse them and remove unused import accordingly.
+        # For now, we'll work around it here.
+        result = re.sub(r' *\\\n *as ', ' as ', result)
+
+        self.assertEqual(
+            """\
+from collections import namedtuple as xyz
+xyz
+""",
+            autoflake.fix_code(result))
 
     def test_fix_code_with_unused_variables(self):
         self.assertEqual(
