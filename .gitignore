@@ -10,3 +10,5 @@ build/
 dist/
 htmlcov/
 autoflake.egg-info/
+/.coverage
+/pypi_tmp/
