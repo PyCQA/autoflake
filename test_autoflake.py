@@ -194,15 +194,15 @@ x = 1
 
     def test_filter_code_with_used_from(self):
         self.assertEqual(
-                """\
+            """\
 import frommer
 print(frommer)
 """,
-                ''.join(autoflake.filter_code("""\
+            ''.join(autoflake.filter_code("""\
 import frommer
 print(frommer)
 """,
-                                              remove_all_unused_imports=True)))
+                                          remove_all_unused_imports=True)))
 
     def test_filter_code_with_ambiguous_from(self):
         self.assertEqual(
@@ -210,7 +210,7 @@ print(frommer)
 pass
 """,
             ''.join(autoflake.filter_code("""\
-from frommy import abc, frommy, xyz
+from frommer import abc, frommer, xyz
 """,
                                           remove_all_unused_imports=True)))
 
@@ -335,27 +335,27 @@ import os, math, subprocess
 
     def test_filter_from_import_no_remove(self):
         self.assertEqual(
-                """\
+            """\
     from foo import abc, math, subprocess\n""",
-                autoflake.filter_from_import(
-                    '    from foo import abc, subprocess, math\n',
-                    unused_module=[]))
+            autoflake.filter_from_import(
+                '    from foo import abc, subprocess, math\n',
+                unused_module=[]))
 
     def test_filter_from_import_remove_module(self):
         self.assertEqual(
-                """\
+            """\
     from foo import math, subprocess\n""",
-                autoflake.filter_from_import(
-                    '    from foo import abc, subprocess, math\n',
-                    unused_module=['foo.abc']))
+            autoflake.filter_from_import(
+                '    from foo import abc, subprocess, math\n',
+                unused_module=['foo.abc']))
 
     def test_filter_from_import_remove_all(self):
         self.assertEqual(
-                    '    pass\n',
-                autoflake.filter_from_import(
-                    '    from foo import abc, subprocess, math\n',
-                    unused_module=['foo.abc', 'foo.subprocess',
-                                   'foo.math']))
+            '    pass\n',
+            autoflake.filter_from_import(
+                '    from foo import abc, subprocess, math\n',
+                unused_module=['foo.abc', 'foo.subprocess',
+                               'foo.math']))
 
     def test_filter_code_should_ignore_multiline_imports(self):
         self.assertEqual(
@@ -522,7 +522,7 @@ def z():
     from ctypes import POINTER, byref
     POINTER, byref
     """,
-                autoflake.fix_code("""\
+            autoflake.fix_code("""\
 def z():
     from ctypes import c_short, c_uint, c_int, c_long, pointer, POINTER, byref
     POINTER, byref

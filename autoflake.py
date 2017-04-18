@@ -106,6 +106,7 @@ def unused_import_line_numbers(messages):
         if isinstance(message, pyflakes.messages.UnusedImport):
             yield message.lineno
 
+
 def unused_import_module_name(messages):
     """Yield line number and module name of unused imports."""
     pattern = r'\'(.+?)\''
@@ -113,8 +114,9 @@ def unused_import_module_name(messages):
         if isinstance(message, pyflakes.messages.UnusedImport):
             module_name = re.search(pattern, str(message))
             module_name = module_name.group()[1:-1]
-            if (module_name):
+            if module_name:
                 yield (message.lineno, module_name)
+
 
 def unused_variable_line_numbers(messages):
     """Yield line numbers of unused variables."""
@@ -213,17 +215,17 @@ def multiline_statement(line, previous_line=''):
         return True
 
 
-def filter_from_import(line, unused_module, debug=False):
-    """
-    Parse and filter ``from something import a, b, c``
-    
-    Return line without unused import modules, or `pass` if 
-    all of the module in import is unused.
+def filter_from_import(line, unused_module):
+    """Parse and filter ``from something import a, b, c``.
+
+    Return line without unused import modules, or `pass` if all of the
+    module in import is unused.
+
     """
     (indentation, imports) = re.split(pattern=r'\bimport\b',
                                       string=line, maxsplit=1)
-    base_module = re.search(pattern='from\s+([^ ]+)',
-                           string=indentation).group(1)
+    base_module = re.search(pattern=r'from\s+([^ ]+)',
+                            string=indentation).group(1)
 
     # Create an imported module list with base module name
     # ex ``from a import b, c as d`` -> ``['a.b', 'a.c as d']``
@@ -243,7 +245,7 @@ def filter_from_import(line, unused_module, debug=False):
     indentation += 'import '
 
     return indentation + ', '.join(sorted(filtered_imports)) \
-           + get_line_ending(line)
+        + get_line_ending(line)
 
 
 def break_up_import(line):

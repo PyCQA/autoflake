@@ -3,6 +3,7 @@ check:
 	pylint \
 		--reports=no \
 		--disable=invalid-name,no-member,too-few-public-methods,no-else-return \
+		--disable=redefined-builtin \
 		--rcfile=/dev/null \
 		autoflake.py setup.py
 	pydocstyle autoflake.py setup.py
