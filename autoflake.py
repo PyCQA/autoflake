@@ -55,6 +55,13 @@ except NameError:
     unicode = str
 
 
+try:
+    RecursionError
+except NameError:
+    # Python before 3.5.
+    RecursionError = RuntimeError
+
+
 def standard_paths():
     """Yield paths to standard modules."""
     path = sysconfig.get_python_lib(standard_lib=True)
