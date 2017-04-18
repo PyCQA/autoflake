@@ -239,13 +239,14 @@ def filter_from_import(line, unused_module):
 
     # All of the import in this statement is unused
     if not filtered_imports:
-        return get_indentation(line) + 'pass' + \
-            get_line_ending(line)
+        return get_indentation(line) + 'pass' + get_line_ending(line)
 
     indentation += 'import '
 
-    return indentation + ', '.join(sorted(filtered_imports)) \
-        + get_line_ending(line)
+    return (
+        indentation +
+        ', '.join(sorted(filtered_imports)) +
+        get_line_ending(line))
 
 
 def break_up_import(line):
