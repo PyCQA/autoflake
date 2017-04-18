@@ -541,6 +541,12 @@ def main():
             autoflake.fix_code(code,
                                remove_unused_variables=True))
 
+    def test_fix_code_should_handle_pyflakes_recursion_error_gracefully(self):
+        code = 'x = [{}]'.format('+'.join(['abc' for _ in range(2000)]))
+        self.assertEqual(
+            code,
+            autoflake.fix_code(code))
+
     def test_useless_pass_line_numbers(self):
         self.assertEqual(
             [1],

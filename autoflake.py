@@ -120,7 +120,9 @@ def check(source):
     reporter = ListReporter()
     try:
         pyflakes.api.check(source, filename='<string>', reporter=reporter)
-    except (AttributeError, UnicodeDecodeError):  # pragma: no cover
+    except (AttributeError,
+            RecursionError,
+            UnicodeDecodeError):  # pragma: no cover
         pass
     return reporter.messages
 
