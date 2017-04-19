@@ -28,14 +28,14 @@ from __future__ import unicode_literals
 
 import ast
 import difflib
-from collections import defaultdict
+import collections
+import distutils.sysconfig
 import io
 import os
 import re
 import signal
 import sys
 import tokenize
-from distutils import sysconfig
 
 import pyflakes.api
 import pyflakes.messages
@@ -66,7 +66,7 @@ except NameError:
 
 def standard_paths():
     """Yield paths to standard modules."""
-    path = sysconfig.get_python_lib(standard_lib=True)
+    path = distutils.sysconfig.get_python_lib(standard_lib=True)
 
     for name in os.listdir(path):
         yield name
@@ -286,7 +286,7 @@ def filter_code(source, additional_imports=None,
 
     marked_import_line_numbers = frozenset(
         unused_import_line_numbers(messages))
-    marked_unused_module = defaultdict(lambda: [])
+    marked_unused_module = collections.defaultdict(lambda: [])
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
 
@@ -604,7 +604,7 @@ def _main(argv, standard_out, standard_error):
 
 
 def main():
-    """Main entry point."""
+    """Command-line entry point."""
     try:
         # Exit on broken pipe.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
