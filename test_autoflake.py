@@ -494,6 +494,20 @@ namedtuple
 from collections import defaultdict as abc, namedtuple as xyz
 """))
 
+    def test_fix_code_with_from_with_and_without_remove_all(self):
+        code = """\
+from x import a as b, c as d
+"""
+
+        self.assertEqual(
+            """\
+""",
+            autoflake.fix_code(code, remove_all_unused_imports=True))
+
+        self.assertEqual(
+            code,
+            autoflake.fix_code(code, remove_all_unused_imports=False))
+
     def test_fix_code_with_from_and_depth_module(self):
         self.assertEqual(
             """\

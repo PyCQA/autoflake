@@ -320,23 +320,27 @@ def filter_unused_import(line, unused_module, remove_all_unused_imports,
     """Return line if used, otherwise return None."""
     if multiline_import(line, previous_line):
         return line
-    elif ',' in line:
-        if re.match(r'^\s*from\s', line):
-            return filter_from_import(line, unused_module)
-        else:
-            return break_up_import(line)
+
+    is_from_import = re.match(r'^\s*from\s', line)
+
+    if ',' in line and not is_from_import:
+        return break_up_import(line)
+
+    package = extract_package_name(line)
+    if not remove_all_unused_imports and package not in imports:
+        return line
+
+    if ',' in line:
+        assert is_from_import
+        return filter_from_import(line, unused_module)
     else:
-        package = extract_package_name(line)
-        if not remove_all_unused_imports and package not in imports:
-            return line
-        else:
-            # We need to replace import with "pass" in case the import is the
-            # only line inside a block. For example,
-            # "if True:\n    import os". In such cases, if the import is
-            # removed, the block will be left hanging with no body.
-            return (get_indentation(line) +
-                    'pass' +
-                    get_line_ending(line))
+        # We need to replace import with "pass" in case the import is the
+        # only line inside a block. For example,
+        # "if True:\n    import os". In such cases, if the import is
+        # removed, the block will be left hanging with no body.
+        return (get_indentation(line) +
+                'pass' +
+                get_line_ending(line))
 
 
 def filter_unused_variable(line, previous_line=''):
