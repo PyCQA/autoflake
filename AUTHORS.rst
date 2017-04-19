@@ -2,6 +2,7 @@ Author
 ------
 - Steven Myint (https://github.com/myint)
 
-Patches
--------
+Contributors
+------------
 - tell-k (https://github.com/tell-k)
+- Adhika Setya Pramudita (https://github.com/adhikasp)
