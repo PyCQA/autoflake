@@ -15,11 +15,11 @@ env:
 install:
     - if [ "$PYFLAKES_VERSION" == "github" ];
       then pip install git+https://github.com/pyflakes/pyflakes; fi
-    - python setup.py --quiet install
+    - ./setup.py --quiet install
 
 script:
-    - python test_autoflake.py
-    - python test_acid.py test_acid.py
+    - ./test_autoflake.py
+    - ./test_fuzz.py *.py
 
 after_success:
     - pip install --quiet coverage

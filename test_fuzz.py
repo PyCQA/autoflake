@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Test that autoflake runs without crashing on various Python files."""
+"""Test that autoflake runs without crashing on arbitrary Python files."""
 
 from __future__ import print_function
 from __future__ import unicode_literals

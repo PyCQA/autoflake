@@ -4,5 +4,5 @@ include test_autoflake.py
 
 exclude .travis.yml
 exclude Makefile
-exclude test_acid.py
-exclude test_acid_pypi.py
+exclude test_fuzz.py
+exclude test_fuzz_pypi.py

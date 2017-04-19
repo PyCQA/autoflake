@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Run acid test against latest packages on PyPI."""
+"""Fuzz test against the latest packages on PyPI."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -12,7 +12,7 @@ import sys
 import tarfile
 import zipfile
 
-import test_acid
+import test_fuzz
 
 
 TMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -69,7 +69,7 @@ def main():
     except OSError:
         pass
 
-    args = test_acid.process_args()
+    args = test_fuzz.process_args()
     if args.files:
         # Copy
         names = list(args.files)
@@ -125,7 +125,7 @@ def main():
                 continue
 
             args.files = [package_tmp_dir]
-            if test_acid.check(args):
+            if test_fuzz.check(args):
                 checked_packages.append(package_name)
             else:
                 return 1
