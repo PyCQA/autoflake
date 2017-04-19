@@ -1094,7 +1094,7 @@ def temporary_file(contents, directory='.', prefix=''):
 
 
 @contextlib.contextmanager
-def temporary_directory(directory='.', prefix=''):
+def temporary_directory(directory='.', prefix='tmp.'):
     """Create temporary directory and yield its path."""
     temp_directory = tempfile.mkdtemp(prefix=prefix, dir=directory)
     try:
