@@ -93,7 +93,7 @@ def run(filename, command, verbose=False, options=None):
                 try:
                     check_syntax(temp_filename, raise_error=True)
                 except (SyntaxError, TypeError,
-                        UnicodeDecodeError) as exception:
+                        UnicodeDecodeError, ValueError) as exception:
                     sys.stderr.write('autoflake broke ' + filename + '\n' +
                                      str(exception) + '\n')
                     return False
@@ -121,7 +121,7 @@ def check_syntax(filename, raise_error=False):
         try:
             compile(input_file.read(), '<string>', 'exec', dont_inherit=True)
             return True
-        except (SyntaxError, TypeError, UnicodeDecodeError):
+        except (SyntaxError, TypeError, UnicodeDecodeError, ValueError):
             if raise_error:
                 raise
             else:
