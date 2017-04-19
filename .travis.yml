@@ -18,7 +18,7 @@ install:
     - ./setup.py --quiet install
 
 script:
-    - ./test_autoflake.py
+    - ./setup.py test
     - ./test_fuzz.py *.py
 
 after_success:
