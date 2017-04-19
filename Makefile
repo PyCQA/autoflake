@@ -2,7 +2,9 @@ check:
 	pycodestyle autoflake.py setup.py
 	pylint \
 		--reports=no \
-		--disable=invalid-name,no-member,too-few-public-methods,no-else-return \
+		--disable=invalid-name \
+		--disable=too-few-public-methods \
+		--disable=no-else-return \
 		--disable=redefined-builtin \
 		--rcfile=/dev/null \
 		autoflake.py setup.py
