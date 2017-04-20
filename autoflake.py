@@ -48,7 +48,6 @@ __version__ = '0.7'
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
 
 EXCEPT_REGEX = re.compile(r'^\s*except [\s,()\w]+ as \w+:$')
-FROM_IMPORT_REGEX = re.compile(r'^\s*from\s')
 
 
 try:
@@ -257,7 +256,7 @@ def break_up_import(line):
     assert ')' not in line
     assert ';' not in line
     assert '#' not in line
-    assert not re.match(FROM_IMPORT_REGEX, line)
+    assert not line.lstrip().startswith('from')
 
     newline = get_line_ending(line)
     if not newline:
@@ -322,7 +321,7 @@ def filter_unused_import(line, unused_module, remove_all_unused_imports,
     if multiline_import(line, previous_line):
         return line
 
-    is_from_import = re.match(FROM_IMPORT_REGEX, line)
+    is_from_import = line.lstrip().startswith('from')
 
     if ',' in line and not is_from_import:
         return break_up_import(line)
