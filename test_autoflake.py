@@ -96,6 +96,17 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(' \t ', autoflake.get_indentation(' \t abc  \n\t'))
         self.assertEqual('', autoflake.get_indentation('    '))
 
+    def test_filter_star_import(self):
+        self.assertEqual(
+            'from math import cos',
+            autoflake.filter_star_import('from math import *',
+                                         ['cos']))
+
+        self.assertEqual(
+            'from math import cos, sin',
+            autoflake.filter_star_import('from math import *',
+                                         ['sin', 'cos']))
+
     def test_filter_unused_variable(self):
         self.assertEqual('foo()',
                          autoflake.filter_unused_variable('x = foo()'))
@@ -291,6 +302,45 @@ import re  # noqa
 from subprocess import Popen  # NOQA
 x = 1
 """)))
+
+    def test_filter_code_expand_star_import(self):
+        self.assertEqual(
+            """\
+from math import sin
+sin(1)
+""",
+            ''.join(autoflake.filter_code("""\
+from math import *
+sin(1)
+""", expand_star_import=True)))
+
+        self.assertEqual(
+            """\
+from math import cos, sin
+sin(1)
+cos(1)
+""",
+            ''.join(autoflake.filter_code("""\
+from math import *
+sin(1)
+cos(1)
+""", expand_star_import=True)))
+
+    def test_filter_code_ignore_multiple_star_import(self):
+        self.assertEqual(
+            """\
+from math import *
+from re import *
+sin(1)
+cos(1)
+""",
+            ''.join(autoflake.filter_code("""\
+from math import *
+from re import *
+sin(1)
+cos(1)
+""", expand_star_import=True)))
+
 
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\

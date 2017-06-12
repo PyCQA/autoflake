@@ -142,6 +142,9 @@ def process_args():
     parser.add_argument('--command', default=AUTOFLAKE_BIN,
                         help='autoflake command (default: %(default)s)')
 
+    parser.add_argument('--expand-star-import', action='store_true',
+                        help='expand wildcard star import with undefined names')
+
     parser.add_argument('--imports',
                         help='pass to the autoflake "--imports" option')
 
@@ -174,6 +177,9 @@ def check(args):
                      if os.path.isdir(path)]
 
     options = []
+    if args.expand_star_import:
+        options.append('--expand-star-import')
+
     if args.imports:
         options.append('--imports=' + args.imports)
 

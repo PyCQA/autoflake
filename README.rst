@@ -91,11 +91,11 @@ To remove unused variables, use the ``--remove-unused-variables`` option.
 Below is the full listing of options::
 
     usage: autoflake [-h] [-i] [-r] [--imports IMPORTS]
-                     [--remove-all-unused-imports] [--remove-unused-variables]
-                     [--version]
+                     [--expand-single-star-import] [--remove-all-unused-imports]
+                     [--remove-unused-variables] [--version]
                      files [files ...]
 
-    Removes unused imports as reported by pyflakes.
+    Removes unused imports and unused variables as reported by pyflakes.
 
     positional arguments:
       files                 files to format
@@ -107,9 +107,11 @@ Below is the full listing of options::
       --imports IMPORTS     by default, only unused standard library imports are
                             removed; specify a comma-separated list of additional
                             modules/packages
+      --expand-single-star-import
+                            expand wildcard star import with undefined names
       --remove-all-unused-imports
                             remove all unused imports (not just those from the
-                            standard library
+                            standard library)
       --remove-unused-variables
                             remove unused variables
       --version             show program's version number and exit
