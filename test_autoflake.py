@@ -303,7 +303,7 @@ from subprocess import Popen  # NOQA
 x = 1
 """)))
 
-    def test_filter_code_expand_star_import(self):
+    def test_filter_code_expand_star_imports(self):
         self.assertEqual(
             """\
 from math import sin
@@ -312,7 +312,7 @@ sin(1)
             ''.join(autoflake.filter_code("""\
 from math import *
 sin(1)
-""", expand_star_import=True)))
+""", expand_star_imports=True)))
 
         self.assertEqual(
             """\
@@ -324,7 +324,7 @@ cos(1)
 from math import *
 sin(1)
 cos(1)
-""", expand_star_import=True)))
+""", expand_star_imports=True)))
 
     def test_filter_code_ignore_multiple_star_import(self):
         self.assertEqual(
@@ -339,7 +339,7 @@ from math import *
 from re import *
 sin(1)
 cos(1)
-""", expand_star_import=True)))
+""", expand_star_imports=True)))
 
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
