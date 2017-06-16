@@ -289,7 +289,7 @@ def break_up_import(line):
 
 
 def filter_code(source, additional_imports=None,
-                expand_star_import=False,
+                expand_star_imports=False,
                 remove_all_unused_imports=False,
                 remove_unused_variables=False):
     """Yield code with unused imports removed."""
@@ -306,7 +306,7 @@ def filter_code(source, additional_imports=None,
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
 
-    if expand_star_import and not (
+    if expand_star_imports and not (
         re.search(r'\b__all__\b', source) or
         re.search(r'\bdel\b', source)
     ):
@@ -492,7 +492,7 @@ def get_line_ending(line):
         return line[non_whitespace_index:]
 
 
-def fix_code(source, additional_imports=None, expand_star_import=False,
+def fix_code(source, additional_imports=None, expand_star_imports=False,
              remove_all_unused_imports=False, remove_unused_variables=False):
     """Return code with all filtering run on it."""
     if not source:
@@ -509,7 +509,7 @@ def fix_code(source, additional_imports=None, expand_star_import=False,
                 filter_code(
                     source,
                     additional_imports=additional_imports,
-                    expand_star_import=expand_star_import,
+                    expand_star_imports=expand_star_imports,
                     remove_all_unused_imports=remove_all_unused_imports,
                     remove_unused_variables=remove_unused_variables))))
 
@@ -531,7 +531,7 @@ def fix_file(filename, args, standard_out):
     filtered_source = fix_code(
         source,
         additional_imports=args.imports.split(',') if args.imports else None,
-        expand_star_import=args.expand_star_import,
+        expand_star_imports=args.expand_star_imports,
         remove_all_unused_imports=args.remove_all_unused_imports,
         remove_unused_variables=args.remove_unused_variables)
 
@@ -615,9 +615,12 @@ def _main(argv, standard_out, standard_error):
                         help='by default, only unused standard library '
                              'imports are removed; specify a comma-separated '
                              'list of additional modules/packages')
-    parser.add_argument('--expand-star-import', action='store_true',
-                        help='expand wildcard star import with undefined '
-                             'names')
+    parser.add_argument('--expand-star-imports', action='store_true',
+                        help='expand wildcard star imports with undefined '
+                             'names; this only triggers if there is only '
+                             'one star import in the file; this is skipped if '
+                             'there are any uses of `__all__` or `del` in the '
+                             'file')
     parser.add_argument('--remove-all-unused-imports', action='store_true',
                         help='remove all unused imports (not just those from '
                              'the standard library)')
