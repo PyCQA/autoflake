@@ -307,6 +307,7 @@ def filter_code(source, additional_imports=None,
         marked_unused_module[line_number].append(module_name)
 
     if expand_star_imports and not (
+        # See explanations in #18.
         re.search(r'\b__all__\b', source) or
         re.search(r'\bdel\b', source)
     ):
