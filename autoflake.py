@@ -117,19 +117,22 @@ def unused_import_module_name(messages):
             if module_name:
                 yield (message.lineno, module_name)
 
+
 def star_import_used_line_numbers(messages):
-    """Yield line number of star import usage"""
+    """Yield line number of star import usage."""
     for message in messages:
         if isinstance(message, pyflakes.messages.ImportStarUsed):
             yield message.lineno
 
+
 def star_import_usage_undefined_name(messages):
-    """Yield line number, undefined name, and its possible origin module"""
+    """Yield line number, undefined name, and its possible origin module."""
     for message in messages:
         if isinstance(message, pyflakes.messages.ImportStarUsage):
             undefined_name = message.message_args[0]
             module_name = message.message_args[1]
             yield (message.lineno, undefined_name, module_name)
+
 
 def unused_variable_line_numbers(messages):
     """Yield line numbers of unused variables."""
@@ -285,7 +288,7 @@ def break_up_import(line):
                     for i in sorted(imports.split(','))])
 
 
-def filter_code(source, additional_imports=None, 
+def filter_code(source, additional_imports=None,
                 expand_star_import=False,
                 remove_all_unused_imports=False,
                 remove_unused_variables=False):
@@ -308,14 +311,14 @@ def filter_code(source, additional_imports=None,
         re.search(r'\bdel\b', source)
     ):
         marked_star_import_line_numbers = frozenset(
-            star_import_used_line_numbers(messages))        
+            star_import_used_line_numbers(messages))
         if len(marked_star_import_line_numbers) > 1:
             # Auto expanding only possible for single star import
             marked_star_import_line_numbers = frozenset()
         else:
             undefined_names = []
             for line_number, undefined_name, _ \
-                 in star_import_usage_undefined_name(messages):
+                    in star_import_usage_undefined_name(messages):
                 undefined_names.append(undefined_name)
             if not undefined_names:
                 marked_star_import_line_numbers = frozenset()
@@ -349,9 +352,12 @@ def filter_code(source, additional_imports=None,
 
         previous_line = line
 
+
 def filter_star_import(line, marked_star_import_undefined_name):
+    """Return line with the star import expanded."""
     undefined_name = sorted(set(marked_star_import_undefined_name))
     return re.sub(r'\*', ', '.join(undefined_name), line)
+
 
 def filter_unused_import(line, unused_module, remove_all_unused_imports,
                          imports, previous_line=''):
@@ -610,7 +616,8 @@ def _main(argv, standard_out, standard_error):
                              'imports are removed; specify a comma-separated '
                              'list of additional modules/packages')
     parser.add_argument('--expand-star-import', action='store_true',
-                        help='expand wildcard star import with undefined names')
+                        help='expand wildcard star import with undefined '
+                             'names')
     parser.add_argument('--remove-all-unused-imports', action='store_true',
                         help='remove all unused imports (not just those from '
                              'the standard library)')

@@ -2,11 +2,8 @@ check:
 	pycodestyle autoflake.py setup.py
 	pylint \
 		--reports=no \
-		--disable=invalid-name \
-		--disable=too-few-public-methods \
-		--disable=no-else-return \
-		--disable=redefined-builtin \
 		--rcfile=/dev/null \
+		--errors-only \
 		autoflake.py setup.py
 	pydocstyle autoflake.py setup.py
 	check-manifest
