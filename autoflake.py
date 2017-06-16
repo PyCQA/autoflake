@@ -303,7 +303,10 @@ def filter_code(source, additional_imports=None,
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
 
-    if expand_star_import:
+    if expand_star_import and not (
+        re.search(r'\b__all__\b', source) or
+        re.search(r'\bdel\b', source)
+    ):
         marked_star_import_line_numbers = frozenset(
             star_import_used_line_numbers(messages))        
         if len(marked_star_import_line_numbers) > 1:
