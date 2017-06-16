@@ -16,12 +16,12 @@ import shlex
 import subprocess
 import sys
 
+import autoflake
+
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 AUTOFLAKE_BIN = "'{}' '{}'".format(sys.executable,
                                    os.path.join(ROOT_PATH, 'autoflake.py'))
-
-import autoflake
 
 if sys.stdout.isatty():
     YELLOW = '\x1b[33m'
