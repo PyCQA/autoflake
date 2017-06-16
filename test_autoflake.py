@@ -341,7 +341,6 @@ sin(1)
 cos(1)
 """, expand_star_import=True)))
 
-
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
 import os, \
