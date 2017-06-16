@@ -117,6 +117,19 @@ def unused_import_module_name(messages):
             if module_name:
                 yield (message.lineno, module_name)
 
+def star_import_used_line_numbers(messages):
+    """Yield line number of star import usage"""
+    for message in messages:
+        if isinstance(message, pyflakes.messages.ImportStarUsed):
+            yield message.lineno
+
+def star_import_usage_undefined_name(messages):
+    """Yield line number, undefined name, and its possible origin module"""
+    for message in messages:
+        if isinstance(message, pyflakes.messages.ImportStarUsage):
+            undefined_name = message.message_args[0]
+            module_name = message.message_args[1]
+            yield (message.lineno, undefined_name, module_name)
 
 def unused_variable_line_numbers(messages):
     """Yield line numbers of unused variables."""
@@ -272,7 +285,8 @@ def break_up_import(line):
                     for i in sorted(imports.split(','))])
 
 
-def filter_code(source, additional_imports=None,
+def filter_code(source, additional_imports=None, 
+                expand_star_import=False,
                 remove_all_unused_imports=False,
                 remove_unused_variables=False):
     """Yield code with unused imports removed."""
@@ -288,6 +302,22 @@ def filter_code(source, additional_imports=None,
     marked_unused_module = collections.defaultdict(lambda: [])
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
+
+    if expand_star_import:
+        marked_star_import_line_numbers = frozenset(
+            star_import_used_line_numbers(messages))        
+        if len(marked_star_import_line_numbers) > 1:
+            # Auto expanding only possible for single star import
+            marked_star_import_line_numbers = frozenset()
+        else:
+            undefined_names = []
+            for line_number, undefined_name, _ \
+                 in star_import_usage_undefined_name(messages):
+                undefined_names.append(undefined_name)
+            if not undefined_names:
+                marked_star_import_line_numbers = frozenset()
+    else:
+        marked_star_import_line_numbers = frozenset()
 
     if remove_unused_variables:
         marked_variable_line_numbers = frozenset(
@@ -309,11 +339,16 @@ def filter_code(source, additional_imports=None,
                 previous_line=previous_line)
         elif line_number in marked_variable_line_numbers:
             yield filter_unused_variable(line)
+        elif line_number in marked_star_import_line_numbers:
+            yield filter_star_import(line, undefined_names)
         else:
             yield line
 
         previous_line = line
 
+def filter_star_import(line, marked_star_import_undefined_name):
+    undefined_name = sorted(set(marked_star_import_undefined_name))
+    return re.sub(r'\*', ', '.join(undefined_name), line)
 
 def filter_unused_import(line, unused_module, remove_all_unused_imports,
                          imports, previous_line=''):
@@ -448,8 +483,8 @@ def get_line_ending(line):
         return line[non_whitespace_index:]
 
 
-def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
-             remove_unused_variables=False):
+def fix_code(source, additional_imports=None, expand_star_import=False,
+             remove_all_unused_imports=False, remove_unused_variables=False):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -465,6 +500,7 @@ def fix_code(source, additional_imports=None, remove_all_unused_imports=False,
                 filter_code(
                     source,
                     additional_imports=additional_imports,
+                    expand_star_import=expand_star_import,
                     remove_all_unused_imports=remove_all_unused_imports,
                     remove_unused_variables=remove_unused_variables))))
 
@@ -486,6 +522,7 @@ def fix_file(filename, args, standard_out):
     filtered_source = fix_code(
         source,
         additional_imports=args.imports.split(',') if args.imports else None,
+        expand_star_import=args.expand_star_import,
         remove_all_unused_imports=args.remove_all_unused_imports,
         remove_unused_variables=args.remove_unused_variables)
 
@@ -569,9 +606,11 @@ def _main(argv, standard_out, standard_error):
                         help='by default, only unused standard library '
                              'imports are removed; specify a comma-separated '
                              'list of additional modules/packages')
+    parser.add_argument('--expand-star-import', action='store_true',
+                        help='expand wildcard star import with undefined names')
     parser.add_argument('--remove-all-unused-imports', action='store_true',
                         help='remove all unused imports (not just those from '
-                             'the standard library')
+                             'the standard library)')
     parser.add_argument('--remove-unused-variables', action='store_true',
                         help='remove unused variables')
     parser.add_argument('--version', action='version',
