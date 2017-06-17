@@ -34,5 +34,5 @@ with open('README.rst') as readme:
         py_modules=['autoflake'],
         entry_points={
             'console_scripts': ['autoflake = autoflake:main']},
-        install_requires=['pyflakes>=1.0'],
+        install_requires=['pyflakes>=1.1.0'],
         test_suite='test_autoflake')
