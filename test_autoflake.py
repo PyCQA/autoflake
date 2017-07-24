@@ -915,6 +915,95 @@ def func11():
         self.assertFalse(autoflake.is_literal_or_name(' '))
         self.assertFalse(autoflake.is_literal_or_name(' 1'))
 
+    def test_is_python_file(self):
+        self.assertTrue(autoflake.is_python_file(
+            os.path.join(ROOT_DIRECTORY, 'autoflake.py')))
+
+        with temporary_file('#!/usr/bin/env python', suffix='') as filename:
+            self.assertTrue(autoflake.is_python_file(filename))
+
+        with temporary_file('#!/usr/bin/python', suffix='') as filename:
+            self.assertTrue(autoflake.is_python_file(filename))
+
+        with temporary_file('#!/usr/bin/python3', suffix='') as filename:
+            self.assertTrue(autoflake.is_python_file(filename))
+
+        with temporary_file('#!/usr/bin/pythonic', suffix='') as filename:
+            self.assertFalse(autoflake.is_python_file(filename))
+
+        with temporary_file('###!/usr/bin/python', suffix='') as filename:
+            self.assertFalse(autoflake.is_python_file(filename))
+
+        self.assertFalse(autoflake.is_python_file(os.devnull))
+        self.assertFalse(autoflake.is_python_file('/bin/bash'))
+
+    def test_match_file(self):
+        with temporary_file('', suffix='.py', prefix='.') as filename:
+            self.assertFalse(autoflake.match_file(filename, exclude=[]),
+                             msg=filename)
+
+        self.assertFalse(autoflake.match_file(os.devnull, exclude=[]))
+
+        with temporary_file('', suffix='.py', prefix='') as filename:
+            self.assertTrue(autoflake.match_file(filename, exclude=[]),
+                            msg=filename)
+
+    def test_find_files(self):
+        temp_directory = tempfile.mkdtemp()
+        try:
+            target = os.path.join(temp_directory, 'dir')
+            os.mkdir(target)
+            with open(os.path.join(target, 'a.py'), 'w'):
+                pass
+
+            exclude = os.path.join(target, 'ex')
+            os.mkdir(exclude)
+            with open(os.path.join(exclude, 'b.py'), 'w'):
+                pass
+
+            sub = os.path.join(exclude, 'sub')
+            os.mkdir(sub)
+            with open(os.path.join(sub, 'c.py'), 'w'):
+                pass
+
+            # FIXME: Avoid changing directory. This may interfere with parallel
+            # test runs.
+            cwd = os.getcwd()
+            os.chdir(temp_directory)
+            try:
+                files = list(autoflake.find_files(
+                    ['dir'], True, [os.path.join('dir', 'ex')]))
+            finally:
+                os.chdir(cwd)
+
+            file_names = [os.path.basename(f) for f in files]
+            self.assertIn('a.py', file_names)
+            self.assertNotIn('b.py', file_names)
+            self.assertNotIn('c.py', file_names)
+        finally:
+            shutil.rmtree(temp_directory)
+
+    def test_exclude(self):
+        temp_directory = tempfile.mkdtemp(dir='.')
+        try:
+            with open(os.path.join(temp_directory, 'a.py'), 'w') as output:
+                output.write("import re\n")
+
+            os.mkdir(os.path.join(temp_directory, 'd'))
+            with open(os.path.join(temp_directory, 'd', 'b.py'),
+                      'w') as output:
+                output.write('import os\n')
+
+            p = subprocess.Popen(list(AUTOFLAKE_COMMAND) +
+                      [temp_directory, '--recursive', '--exclude=a*'],
+                      stdout=subprocess.PIPE)
+            result = p.communicate()[0].decode('utf-8')
+
+            self.assertNotIn('import re', result)
+            self.assertIn('import os', result)
+        finally:
+            shutil.rmtree(temp_directory)
+
 
 class SystemTests(unittest.TestCase):
 
@@ -1130,9 +1219,9 @@ print(x)
 
 
 @contextlib.contextmanager
-def temporary_file(contents, directory='.', prefix=''):
+def temporary_file(contents, directory='.', suffix='.py', prefix=''):
     """Write contents to temporary file and yield it."""
-    f = tempfile.NamedTemporaryFile(suffix='.py', prefix=prefix,
+    f = tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix,
                                     delete=False, dir=directory)
     try:
         f.write(contents.encode())
