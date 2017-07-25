@@ -30,6 +30,7 @@ import ast
 import difflib
 import collections
 import distutils.sysconfig
+import fnmatch
 import io
 import os
 import re
@@ -48,7 +49,9 @@ __version__ = '0.7'
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
 
 EXCEPT_REGEX = re.compile(r'^\s*except [\s,()\w]+ as \w+:$')
+PYTHON_SHEBANG_REGEX = re.compile(r'^#!.*\bpython[23]?\b\s*$')
 
+MAX_PYTHON_FILE_DETECTION_BYTES = 1024
 
 try:
     unicode
@@ -549,13 +552,17 @@ def fix_file(filename, args, standard_out):
             standard_out.write(''.join(diff))
 
 
-def open_with_encoding(filename, encoding, mode='r'):
+def open_with_encoding(filename, encoding, mode='r',
+                       limit_byte_check=-1):
     """Return opened file with a specific encoding."""
+    if not encoding:
+        encoding = detect_encoding(filename, limit_byte_check=limit_byte_check)
+
     return io.open(filename, mode=mode, encoding=encoding,
                    newline='')  # Preserve line endings
 
 
-def detect_encoding(filename):
+def detect_encoding(filename, limit_byte_check=-1):
     """Return file encoding."""
     try:
         with open(filename, 'rb') as input_file:
@@ -563,7 +570,7 @@ def detect_encoding(filename):
 
             # Check for correctness of encoding.
             with open_with_encoding(filename, encoding) as input_file:
-                input_file.read()
+                input_file.read(limit_byte_check)
 
         return encoding
     except (LookupError, SyntaxError, UnicodeDecodeError):
@@ -600,6 +607,69 @@ def get_diff_text(old, new, filename):
     return text
 
 
+def _split_comma_separated(string):
+    """Return a set of strings."""
+    return set(text.strip() for text in string.split(',') if text.strip())
+
+
+def is_python_file(filename):
+    """Return True if filename is Python file."""
+    if filename.endswith('.py'):
+        return True
+
+    try:
+        with open_with_encoding(
+                filename,
+                None,
+                limit_byte_check=MAX_PYTHON_FILE_DETECTION_BYTES) as f:
+            text = f.read(MAX_PYTHON_FILE_DETECTION_BYTES)
+            if not text:
+                return False
+            first_line = text.splitlines()[0]
+    except (IOError, IndexError):
+        return False
+
+    if not PYTHON_SHEBANG_REGEX.match(first_line):
+        return False
+
+    return True
+
+
+def match_file(filename, exclude):
+    """Return True if file is okay for modifying/recursing."""
+    base_name = os.path.basename(filename)
+
+    if base_name.startswith('.'):
+        return False
+
+    for pattern in exclude:
+        if fnmatch.fnmatch(base_name, pattern):
+            return False
+        if fnmatch.fnmatch(filename, pattern):
+            return False
+
+    if not os.path.isdir(filename) and not is_python_file(filename):
+        return False
+
+    return True
+
+
+def find_files(filenames, recursive, exclude):
+    """Yield filenames."""
+    while filenames:
+        name = filenames.pop(0)
+        if recursive and os.path.isdir(name):
+            for root, directories, children in os.walk(name):
+                filenames += [os.path.join(root, f) for f in children
+                              if match_file(os.path.join(root, f),
+                                            exclude)]
+                directories[:] = [d for d in directories
+                                  if match_file(os.path.join(root, d),
+                                                exclude)]
+        else:
+            yield name
+
+
 def _main(argv, standard_out, standard_error):
     """Return exit status.
 
@@ -630,6 +700,9 @@ def _main(argv, standard_out, standard_error):
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
     parser.add_argument('files', nargs='+', help='files to format')
+    parser.add_argument('--exclude', metavar='globs',
+                        help='exclude file/directory names that match these '
+                             'comma-separated globs')
 
     args = parser.parse_args(argv[1:])
 
@@ -638,21 +711,17 @@ def _main(argv, standard_out, standard_error):
               file=standard_error)
         return 1
 
+    if args.exclude:
+        args.exclude = _split_comma_separated(args.exclude)
+    else:
+        args.exclude = set([])
+
     filenames = list(set(args.files))
-    while filenames:
-        name = filenames.pop(0)
-        if args.recursive and os.path.isdir(name):
-            for root, directories, children in os.walk(unicode(name)):
-                filenames += [os.path.join(root, f) for f in children
-                              if f.endswith('.py') and
-                              not f.startswith('.')]
-                directories[:] = [d for d in directories
-                                  if not d.startswith('.')]
-        else:
-            try:
-                fix_file(name, args=args, standard_out=standard_out)
-            except IOError as exception:
-                print(unicode(exception), file=standard_error)
+    for name in find_files(filenames, args.recursive, args.exclude):
+        try:
+            fix_file(name, args=args, standard_out=standard_out)
+        except IOError as exception:
+            print(unicode(exception), file=standard_error)
 
 
 def main():
