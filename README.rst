@@ -112,6 +112,8 @@ Below is the full listing of options::
                             this only triggers if there is only one star import in
                             the file; this is skipped if there are any uses of
                             `__all__` or `del` in the file
+      --keep-unused-import  keep unused import
+      --keep-useless-pass   keep useless pass statement
       --remove-all-unused-imports
                             remove all unused imports (not just those from the
                             standard library)

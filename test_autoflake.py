@@ -341,6 +341,13 @@ sin(1)
 cos(1)
 """, expand_star_imports=True)))
 
+    def test_filter_code_not_remove_import(self):
+        code = 'import math'
+        self.assertEqual(
+            code,
+            ''.join(autoflake.filter_code(code,
+                remove_unused_import=False)))
+
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
 import os, \
@@ -689,6 +696,13 @@ def main():
         self.assertEqual(
             code,
             autoflake.fix_code(code))
+
+    def test_fix_code_not_remove_pass(self):
+        code = 'pass'
+        self.assertEqual(
+            code,
+            autoflake.fix_code(code,
+                remove_useless_pass=False))
 
     def test_useless_pass_line_numbers(self):
         self.assertEqual(
