@@ -294,7 +294,8 @@ def break_up_import(line):
 def filter_code(source, additional_imports=None,
                 expand_star_imports=False,
                 remove_all_unused_imports=False,
-                remove_unused_variables=False):
+                remove_unused_variables=False,
+                remove_unused_import=True):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
@@ -303,8 +304,13 @@ def filter_code(source, additional_imports=None,
 
     messages = check(source)
 
-    marked_import_line_numbers = frozenset(
-        unused_import_line_numbers(messages))
+
+    if remove_unused_import:
+        marked_import_line_numbers = frozenset(
+            unused_import_line_numbers(messages))
+    else:
+        marked_import_line_numbers = frozenset()
+
     marked_unused_module = collections.defaultdict(lambda: [])
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
@@ -498,7 +504,7 @@ def get_line_ending(line):
 
 def fix_code(source, additional_imports=None, expand_star_imports=False,
              remove_all_unused_imports=False, remove_unused_variables=False,
-             remove_useless_pass=True):
+             remove_useless_pass=True, remove_unused_import=True):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -514,7 +520,9 @@ def fix_code(source, additional_imports=None, expand_star_imports=False,
             additional_imports=additional_imports,
             expand_star_imports=expand_star_imports,
             remove_all_unused_imports=remove_all_unused_imports,
-            remove_unused_variables=remove_unused_variables))
+            remove_unused_variables=remove_unused_variables,
+            remove_unused_import=remove_unused_import,
+        ))
         if remove_useless_pass:
             filtered_source = ''.join(filter_useless_pass(filtered_source))
 
@@ -540,6 +548,7 @@ def fix_file(filename, args, standard_out):
         remove_all_unused_imports=args.remove_all_unused_imports,
         remove_unused_variables=args.remove_unused_variables,
         remove_useless_pass=not args.keep_useless_pass,
+        remove_unused_import=not args.keep_unused_import,
     )
 
     if original_source != filtered_source:
@@ -695,6 +704,8 @@ def _main(argv, standard_out, standard_error):
                              'one star import in the file; this is skipped if '
                              'there are any uses of `__all__` or `del` in the '
                              'file')
+    parser.add_argument('--keep-unused-import', action='store_true',
+                        help='keep unused import')
     parser.add_argument('--keep-useless-pass', action='store_true',
                         help='keep useless pass statement')
     parser.add_argument('--remove-all-unused-imports', action='store_true',

@@ -341,6 +341,13 @@ sin(1)
 cos(1)
 """, expand_star_imports=True)))
 
+    def test_filter_code_not_remove_import(self):
+        code = 'import math'
+        self.assertEqual(
+            code,
+            ''.join(autoflake.filter_code(code,
+                remove_unused_import=False)))
+
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
 import os, \
