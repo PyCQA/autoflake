@@ -690,6 +690,13 @@ def main():
             code,
             autoflake.fix_code(code))
 
+    def test_fix_code_not_remove_pass(self):
+        code = 'pass'
+        self.assertEqual(
+            code,
+            autoflake.fix_code(code,
+                remove_useless_pass=False))
+
     def test_useless_pass_line_numbers(self):
         self.assertEqual(
             [1],
