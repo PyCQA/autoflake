@@ -723,7 +723,8 @@ def _main(argv, standard_out, standard_error):
     args = parser.parse_args(argv[1:])
 
     if args.remove_all_unused_imports and args.imports:
-        print('Using both --remove-all and --imports is redundant',
+        print('Using both --remove-all-unused-imports and --imports is '
+              'redundant',
               file=standard_error)
         return 1
 
