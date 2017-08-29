@@ -485,6 +485,49 @@ def foo():
 """
         self.assertEqual(line, ''.join(autoflake.filter_code(line)))
 
+    def test_filter_code_populate_all(self):
+        self.assertEqual("""
+import math
+import sys
+__all__ = ['math', 'sys']
+""", ''.join(autoflake.filter_code("""
+import math
+import sys
+""", populate_all=True)))
+
+    def test_filter_code_populate_all_appending(self):
+        self.assertEqual("""
+import math
+import sys
+__all__ = ['math', 'sys']
+""", ''.join(autoflake.filter_code("""
+import math
+import sys
+__all__ = ['math']
+""", populate_all=True)))
+
+    def test_filter_code_populate_all_ignore_comment(self):
+        self.assertEqual("""
+import math
+import sys
+# __all__ = ['math']
+__all__ = ['math', 'sys']
+""", ''.join(autoflake.filter_code("""
+import math
+import sys
+# __all__ = ['math']
+""", populate_all=True)))
+
+    def test_filter_code_populate_all_from_import(self):
+        self.assertEqual("""
+from a.b import Foo
+from a.c import Bar
+__all__ = ['Foo', 'Bar']
+""", ''.join(autoflake.filter_code("""
+from a.b import Foo
+from a.c import Bar
+""", populate_all=True)))
+
     def test_fix_code(self):
         self.assertEqual(
             """\
