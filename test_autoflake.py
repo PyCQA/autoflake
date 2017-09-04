@@ -528,6 +528,22 @@ from a.b import Foo
 from a.c import Bar
 """, populate_all=True)))
 
+    def test_filter_code_populate_all_as(self):
+        self.assertEqual("""
+import math as m
+__all__ = ['m']
+""", ''.join(autoflake.filter_code("""
+import math as m
+""", populate_all=True)))
+
+    def test_filter_code_populate_all_with_tab(self):
+        self.assertEqual("""
+import math\tas\tm
+__all__ = ['m']
+""", ''.join(autoflake.filter_code("""
+import math\tas\tm
+""", populate_all=True)))
+
     def test_fix_code(self):
         self.assertEqual(
             """\

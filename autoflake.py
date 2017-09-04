@@ -515,11 +515,13 @@ def get_imported_name(module):
     - `a as b` -> b
     """
     if '.' in module:
-        return str(module.split('.')[-1])
-    elif ' as ' in module:
-        return str(module.split(' as ')[-1])
+        name = module.split('.')[-1]
+    elif re.search(r'\bas\b', module):
+        name = re.split(r'\bas\b', module)[-1]
+    else:
+        name = module
     # str() to force python 2 to not use unicode
-    return str(module)
+    return str(name.strip())
 
 def get_indentation(line):
     """Return leading whitespace."""
