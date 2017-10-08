@@ -485,18 +485,13 @@ def filter_useless_pass(source):
 
 def populate_dunder_all_with_modules(source, marked_unused_module):
     """Return source with `__all__` properly populated."""
-    all_syntax = re.search('^__all__(.)+\]', source, flags=re.MULTILINE)
-    if all_syntax:
-        # If there are existing `__all__`, parse it and append to it
-        insert_position = all_syntax.span()[0]
-        end_position = all_syntax.span()[1]
-        all_modules = all_syntax.group().split('=')[1].strip()
-        all_modules = ast.literal_eval(all_modules)
-    else:
-        # If no existing `__all__`, always append in EOF
-        insert_position = len(source)
-        end_position = -1
-        all_modules = []
+    if re.search(r'\b__all__\b', source):
+        # If there are existing `__all__`, don't mess with it.
+        return source
+
+    insert_position = len(source)
+    end_position = -1
+    all_modules = []
 
     for modules in marked_unused_module.values():
         # Get the imported name, `a.b.Foo` -> Foo

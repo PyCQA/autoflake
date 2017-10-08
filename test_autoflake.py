@@ -495,28 +495,18 @@ import math
 import sys
 """, populate_dunder_all=True)))
 
-    def test_filter_code_populate_dunder_all_appending(self):
-        self.assertEqual("""
+    def test_filter_code_populate_dunder_all_should_not_create_a_mess(self):
+        code = """
 import math
 import sys
-__all__ = ['math', 'sys']
-""", ''.join(autoflake.filter_code("""
-import math
-import sys
-__all__ = ['math']
-""", populate_dunder_all=True)))
-
-    def test_filter_code_populate_dunder_all_ignore_comment(self):
-        self.assertEqual("""
-import math
-import sys
-# __all__ = ['math']
-__all__ = ['math', 'sys']
-""", ''.join(autoflake.filter_code("""
-import math
-import sys
-# __all__ = ['math']
-""", populate_dunder_all=True)))
+__all__ = [
+    'math', 'sys'
+]
+import abc
+"""
+        self.assertEqual(
+            code,
+            ''.join(autoflake.filter_code(code, populate_dunder_all=True)))
 
     def test_filter_code_populate_dunder_all_from_import(self):
         self.assertEqual("""
