@@ -544,6 +544,15 @@ __all__ = ['m']
 import math\tas\tm
 """, populate_dunder_all=True)))
 
+    def test_filter_code_populate_dunder_all_with_no_change(self):
+        code = """
+def foo():
+    bar = 0
+"""
+        self.assertEqual(
+            code,
+            ''.join(autoflake.filter_code(code, populate_dunder_all=True)))
+
     def test_fix_code(self):
         self.assertEqual(
             """\
@@ -1046,7 +1055,7 @@ def func11():
         temp_directory = tempfile.mkdtemp(dir='.')
         try:
             with open(os.path.join(temp_directory, 'a.py'), 'w') as output:
-                output.write("import re\n")
+                output.write('import re\n')
 
             os.mkdir(os.path.join(temp_directory, 'd'))
             with open(os.path.join(temp_directory, 'd', 'b.py'),
@@ -1054,8 +1063,8 @@ def func11():
                 output.write('import os\n')
 
             p = subprocess.Popen(list(AUTOFLAKE_COMMAND) +
-                      [temp_directory, '--recursive', '--exclude=a*'],
-                      stdout=subprocess.PIPE)
+                                 [temp_directory, '--recursive', '--exclude=a*'],
+                                 stdout=subprocess.PIPE)
             result = p.communicate()[0].decode('utf-8')
 
             self.assertNotIn('import re', result)

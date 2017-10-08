@@ -484,6 +484,7 @@ def filter_useless_pass(source):
 
 
 def populate_dunder_all_with_modules(source, marked_unused_module):
+    """Return source with `__all__` properly populated."""
     all_syntax = re.search('^__all__(.)+\]', source, flags=re.MULTILINE)
     if all_syntax:
         # If there are existing `__all__`, parse it and append to it
@@ -501,18 +502,24 @@ def populate_dunder_all_with_modules(source, marked_unused_module):
         # Get the imported name, `a.b.Foo` -> Foo
         all_modules += [get_imported_name(name) for name in modules]
 
-    new_all_syntax = '__all__ = ' + str(all_modules)
-    source = source[:insert_position] + new_all_syntax + source[end_position:]
-    return source
+    if all_modules:
+        new_all_syntax = '__all__ = ' + str(all_modules)
+        return (
+            source[:insert_position] +
+            new_all_syntax +
+            source[end_position:]
+        )
+    else:
+        return source
 
 
 def get_imported_name(module):
-    """
-    Return only imported name from pyflakes full module path
+    """Return only imported name from pyflakes full module path.
 
     Example:
     - `a.b.Foo` -> `Foo`
     - `a as b` -> b
+
     """
     if '.' in module:
         name = module.split('.')[-1]
@@ -522,6 +529,7 @@ def get_imported_name(module):
         name = module
     # str() to force python 2 to not use unicode
     return str(name.strip())
+
 
 def get_indentation(line):
     """Return leading whitespace."""
