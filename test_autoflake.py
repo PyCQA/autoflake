@@ -508,6 +508,14 @@ import abc
             code,
             ''.join(autoflake.filter_code(code, populate_dunder_all=True)))
 
+    def test_filter_code_populate_dunder_all_should_ignore_dotted_import(self):
+        code = """
+import foo.bar
+"""
+        self.assertEqual(
+            code,
+            ''.join(autoflake.filter_code(code, populate_dunder_all=True)))
+
     def test_filter_code_populate_dunder_all_from_import(self):
         self.assertEqual("""
 from a.b import Foo
