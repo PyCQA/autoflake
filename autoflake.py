@@ -43,7 +43,7 @@ import pyflakes.messages
 import pyflakes.reporter
 
 
-__version__ = '0.7'
+__version__ = '1.0a0'
 
 
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
@@ -717,11 +717,15 @@ def _main(argv, standard_out, standard_error):
         args.exclude = set([])
 
     filenames = list(set(args.files))
+    failure = False
     for name in find_files(filenames, args.recursive, args.exclude):
         try:
             fix_file(name, args=args, standard_out=standard_out)
         except IOError as exception:
             print(unicode(exception), file=standard_error)
+            failure = True
+
+    return 1 if failure else 0
 
 
 def main():
