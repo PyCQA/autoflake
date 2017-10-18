@@ -294,7 +294,8 @@ def break_up_import(line):
 def filter_code(source, additional_imports=None,
                 expand_star_imports=False,
                 remove_all_unused_imports=False,
-                remove_unused_variables=False):
+                remove_unused_variables=False,
+                populate_dunder_all=False):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
@@ -334,6 +335,10 @@ def filter_code(source, additional_imports=None,
             unused_variable_line_numbers(messages))
     else:
         marked_variable_line_numbers = frozenset()
+
+    if populate_dunder_all:
+        marked_import_line_numbers = frozenset()
+        source = populate_dunder_all_with_modules(source, marked_unused_module)
 
     sio = io.StringIO(source)
     previous_line = ''
@@ -478,6 +483,49 @@ def filter_useless_pass(source):
             yield line
 
 
+def populate_dunder_all_with_modules(source, marked_unused_module):
+    """Return source with `__all__` properly populated."""
+    if re.search(r'\b__all__\b', source):
+        # If there are existing `__all__`, don't mess with it.
+        return source
+
+    insert_position = len(source)
+    end_position = -1
+    all_modules = []
+
+    for modules in marked_unused_module.values():
+        # Get the imported name, `a.b.Foo` -> Foo
+        all_modules += [get_imported_name(name) for name in modules]
+
+    if all_modules:
+        new_all_syntax = '__all__ = ' + str(all_modules)
+        return (
+            source[:insert_position] +
+            new_all_syntax +
+            source[end_position:]
+        )
+    else:
+        return source
+
+
+def get_imported_name(module):
+    """Return only imported name from pyflakes full module path.
+
+    Example:
+    - `a.b.Foo` -> `Foo`
+    - `a as b` -> b
+
+    """
+    if '.' in module:
+        name = module.split('.')[-1]
+    elif re.search(r'\bas\b', module):
+        name = re.split(r'\bas\b', module)[-1]
+    else:
+        name = module
+    # str() to force python 2 to not use unicode
+    return str(name.strip())
+
+
 def get_indentation(line):
     """Return leading whitespace."""
     if line.strip():
@@ -497,7 +545,8 @@ def get_line_ending(line):
 
 
 def fix_code(source, additional_imports=None, expand_star_imports=False,
-             remove_all_unused_imports=False, remove_unused_variables=False):
+             remove_all_unused_imports=False, remove_unused_variables=False,
+             populate_dunder_all=False):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -515,9 +564,10 @@ def fix_code(source, additional_imports=None, expand_star_imports=False,
                     additional_imports=additional_imports,
                     expand_star_imports=expand_star_imports,
                     remove_all_unused_imports=remove_all_unused_imports,
-                    remove_unused_variables=remove_unused_variables))))
+                    remove_unused_variables=remove_unused_variables,
+                    populate_dunder_all=populate_dunder_all))))
 
-        if filtered_source == source:
+        if filtered_source == source or populate_dunder_all:
             break
         source = filtered_source
 
@@ -537,7 +587,9 @@ def fix_file(filename, args, standard_out):
         additional_imports=args.imports.split(',') if args.imports else None,
         expand_star_imports=args.expand_star_imports,
         remove_all_unused_imports=args.remove_all_unused_imports,
-        remove_unused_variables=args.remove_unused_variables)
+        remove_unused_variables=args.remove_unused_variables,
+        populate_dunder_all=args.populate_modules_dunder_all,
+    )
 
     if original_source != filtered_source:
         if args.in_place:
@@ -692,6 +744,9 @@ def _main(argv, standard_out, standard_error):
                              'one star import in the file; this is skipped if '
                              'there are any uses of `__all__` or `del` in the '
                              'file')
+    parser.add_argument('--populate-modules-dunder-all', action='store_true',
+                        help='populate `__all__` with unused import found in '
+                        'the code.')
     parser.add_argument('--remove-all-unused-imports', action='store_true',
                         help='remove all unused imports (not just those from '
                              'the standard library)')

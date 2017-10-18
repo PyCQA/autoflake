@@ -149,6 +149,10 @@ def process_args():
     parser.add_argument('--imports',
                         help='pass to the autoflake "--imports" option')
 
+    parser.add_argument('--populate-modules-dunder-all', action='store_true',
+                        help='populate `__all__` with unused import found in '
+                        'the code.')
+
     parser.add_argument('--remove-all-unused-imports', action='store_true',
                         help='pass "--remove-all-unused-imports" option to '
                              'autoflake')
@@ -189,6 +193,9 @@ def check(args):
 
     if args.remove_unused_variables:
         options.append('--remove-unused-variables')
+
+    if args.populate_modules_dunder_all:
+        options.append('--populate-modules-dunder-all')
 
     filenames = dir_paths
     completed_filenames = set()
