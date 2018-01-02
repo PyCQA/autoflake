@@ -144,6 +144,13 @@ def unused_variable_line_numbers(messages):
             yield message.lineno
 
 
+def duplicate_key_line_numbers(messages):
+    """Yield line numbers of duplicate keys."""
+    for message in messages:
+        if isinstance(message, pyflakes.messages.MultiValueRepeatedKeyLiteral):
+            yield message.lineno
+
+
 def check(source):
     """Return messages from pyflakes."""
     if sys.version_info[0] == 2 and isinstance(source, unicode):
@@ -294,6 +301,7 @@ def break_up_import(line):
 def filter_code(source, additional_imports=None,
                 expand_star_imports=False,
                 remove_all_unused_imports=False,
+                remove_duplicate_keys=False,
                 remove_unused_variables=False):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
@@ -335,6 +343,14 @@ def filter_code(source, additional_imports=None,
     else:
         marked_variable_line_numbers = frozenset()
 
+    if remove_duplicate_keys:
+        marked_key_line_numbers = frozenset(
+            duplicate_key_line_numbers(messages))
+    else:
+        marked_key_line_numbers = frozenset()
+
+    line_messages = get_messages_by_line(messages)
+
     sio = io.StringIO(source)
     previous_line = ''
     for line_number, line in enumerate(sio.readlines(), start=1):
@@ -349,12 +365,23 @@ def filter_code(source, additional_imports=None,
                 previous_line=previous_line)
         elif line_number in marked_variable_line_numbers:
             yield filter_unused_variable(line)
+        elif line_number in marked_key_line_numbers:
+            yield filter_duplicate_key(line, line_messages[line_number],
+                                       line_number, marked_key_line_numbers,
+                                       source)
         elif line_number in marked_star_import_line_numbers:
             yield filter_star_import(line, undefined_names)
         else:
             yield line
 
         previous_line = line
+
+
+def get_messages_by_line(messages):
+    line_messages = {}
+    for message in messages:
+        line_messages[message.lineno] = message
+    return line_messages
 
 
 def filter_star_import(line, marked_star_import_undefined_name):
@@ -412,6 +439,82 @@ def filter_unused_variable(line, previous_line=''):
         return get_indentation(line) + value
     else:
         return line
+
+
+def filter_duplicate_key(line, message, line_number, marked_line_numbers,
+                         source, previous_line=''):
+    """Return line if last occurence of key, otherwise return None."""
+    key = get_key_from_message(message)
+    if is_last_in_object(line, line_number, key, marked_line_numbers, source):
+        return line
+    elif is_one_line_object(line):
+        return re.sub(
+            r'(?:\'|")?%s(?:\'|")?: [^,]+, ' % stringify_key(key),
+            '',
+            line,
+            count=len(get_occurences_in_object(
+                        line,
+                        line_number,
+                        key,
+                        marked_line_numbers,
+                        source)))
+    else:
+        return ''
+
+
+def stringify_key(key):
+    return str(key)\
+        .replace('(', '\(').replace(')', '\)')\
+        .replace('{', '\{').replace('}', '\}')\
+        .replace('[', '\[').replace(']', '\]')\
+        .replace(' ', '\s?')
+
+
+def get_key_from_message(message):
+    return message.message_args[0]
+
+
+def is_last_in_object(line, line_number, key, marked_line_numbers, source):
+    obj_lines = get_occurences_in_object(
+        line,
+        line_number,
+        key,
+        marked_line_numbers,
+        source
+    )
+
+    if len(obj_lines) <= 1:
+        return False
+
+    if line_number == obj_lines[-1]:
+        return True
+    else:
+        return False
+
+
+def get_occurences_in_object(line, line_number, key, marked_line_numbers,
+                             source):
+    lines = source.split('\n')
+    opening_object_lines = [i for i, s in enumerate(lines, start=1) if '{' in s]
+    closing_object_lines = [i for i, s in enumerate(lines, start=1) if '}' in s]
+
+    obj = [i for i, s in enumerate(opening_object_lines)
+            if s <= line_number and closing_object_lines[i] >= line_number][0]
+
+    obj_lines = []
+    for ln in marked_line_numbers:
+        if opening_object_lines[obj] <= ln and closing_object_lines[obj] >= ln \
+            and re.search(
+                r'(?:\'|")?%s(?:\'|")?: [^,]+' % stringify_key(key),
+                lines[ln - 1]
+            ):
+            obj_lines.append(ln)
+
+    return obj_lines
+
+
+def is_one_line_object(line):
+    return '{' in line and '}' in line
 
 
 def is_literal_or_name(value):
@@ -497,7 +600,8 @@ def get_line_ending(line):
 
 
 def fix_code(source, additional_imports=None, expand_star_imports=False,
-             remove_all_unused_imports=False, remove_unused_variables=False):
+             remove_all_unused_imports=False, remove_duplicate_keys=False,
+             remove_unused_variables=False):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -515,6 +619,7 @@ def fix_code(source, additional_imports=None, expand_star_imports=False,
                     additional_imports=additional_imports,
                     expand_star_imports=expand_star_imports,
                     remove_all_unused_imports=remove_all_unused_imports,
+                    remove_duplicate_keys=remove_duplicate_keys,
                     remove_unused_variables=remove_unused_variables))))
 
         if filtered_source == source:
@@ -537,6 +642,7 @@ def fix_file(filename, args, standard_out):
         additional_imports=args.imports.split(',') if args.imports else None,
         expand_star_imports=args.expand_star_imports,
         remove_all_unused_imports=args.remove_all_unused_imports,
+        remove_duplicate_keys=args.remove_duplicate_keys,
         remove_unused_variables=args.remove_unused_variables)
 
     if original_source != filtered_source:
@@ -695,6 +801,8 @@ def _main(argv, standard_out, standard_error):
     parser.add_argument('--remove-all-unused-imports', action='store_true',
                         help='remove all unused imports (not just those from '
                              'the standard library)')
+    parser.add_argument('--remove-duplicate-keys', action='store_true',
+                        help='remove all duplicate keys in objects')
     parser.add_argument('--remove-unused-variables', action='store_true',
                         help='remove unused variables')
     parser.add_argument('--version', action='version',
