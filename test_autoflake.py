@@ -113,19 +113,19 @@ class UnitTests(unittest.TestCase):
 
         self.assertEqual("a = { 'a': 2 }",
                          autoflake.filter_duplicate_key(
-                            "a = { 'a': 1, 'a': 2 }",
-                            mock_line_message,
-                            1,
-                            [1],
-                            "a = { 'a': 1, 'a': 2 }"))
+                             "a = { 'a': 1, 'a': 2 }",
+                             mock_line_message,
+                             1,
+                             [1],
+                             "a = { 'a': 1, 'a': 2 }"))
 
         self.assertEqual("a = { 'a': 2 }",
                          autoflake.filter_duplicate_key(
-                            "a = { 'a': 1, 'a': 2 }",
-                            mock_line_message,
-                            3,
-                            [3],
-                            "\n\na = { 'a': 1, 'a': 2 }"))
+                             "a = { 'a': 1, 'a': 2 }",
+                             mock_line_message,
+                             3,
+                             [3],
+                             "\n\na = { 'a': 1, 'a': 2 }"))
 
     def test_filter_duplicate_key_multiple_lines(self):
         class mock_line_message(object):
@@ -143,31 +143,31 @@ a = {
 
         self.assertEqual('',
                          autoflake.filter_duplicate_key(
-                            "    'a': 1,",
-                            mock_line_message,
-                            2,
-                            [2, 3, 5],
-                            source))
+                             "    'a': 1,",
+                             mock_line_message,
+                             2,
+                             [2, 3, 5],
+                             source))
 
         self.assertEqual('',
                          autoflake.filter_duplicate_key(
-                            "    'a': 2,",
-                            mock_line_message,
-                            3,
-                            [2, 3, 5],
-                            source))
+                             "    'a': 2,",
+                             mock_line_message,
+                             3,
+                             [2, 3, 5],
+                             source))
 
         self.assertEqual("    'a': 3",
                          autoflake.filter_duplicate_key(
-                            "    'a': 3",
-                            mock_line_message,
-                            5,
-                            [2, 3, 5],
-                            source))
+                             "    'a': 3",
+                             mock_line_message,
+                             5,
+                             [2, 3, 5],
+                             source))
 
     def test_filter_duplicate_key_tuple(self):
         class mock_line_message(object):
-            message_args = ((0,1),)
+            message_args = ((0, 1),)
 
         source = """\
 a = {
@@ -181,27 +181,27 @@ a = {
 
         self.assertEqual('',
                          autoflake.filter_duplicate_key(
-                            '    (0,1): 1,',
-                            mock_line_message,
-                            2,
-                            [2, 3, 6],
-                            source))
+                             '    (0,1): 1,',
+                             mock_line_message,
+                             2,
+                             [2, 3, 6],
+                             source))
 
         self.assertEqual('',
                          autoflake.filter_duplicate_key(
-                            '    (0, 1): 2,',
-                            mock_line_message,
-                            3,
-                            [2, 3, 6],
-                            source))
+                             '    (0, 1): 2,',
+                             mock_line_message,
+                             3,
+                             [2, 3, 6],
+                             source))
 
         self.assertEqual('    (0, 1): 5,',
                          autoflake.filter_duplicate_key(
-                            '    (0, 1): 5,',
-                            mock_line_message,
-                            6,
-                            [2, 3, 6],
-                            source))
+                             '    (0, 1): 5,',
+                             mock_line_message,
+                             6,
+                             [2, 3, 6],
+                             source))
 
     def test_filter_unused_variable(self):
         self.assertEqual('foo()',
@@ -1083,7 +1083,7 @@ def func11():
         temp_directory = tempfile.mkdtemp(dir='.')
         try:
             with open(os.path.join(temp_directory, 'a.py'), 'w') as output:
-                output.write("import re\n")
+                output.write('import re\n')
 
             os.mkdir(os.path.join(temp_directory, 'd'))
             with open(os.path.join(temp_directory, 'd', 'b.py'),
@@ -1091,8 +1091,8 @@ def func11():
                 output.write('import os\n')
 
             p = subprocess.Popen(list(AUTOFLAKE_COMMAND) +
-                      [temp_directory, '--recursive', '--exclude=a*'],
-                      stdout=subprocess.PIPE)
+                                 [temp_directory, '--recursive', '--exclude=a*'],
+                                 stdout=subprocess.PIPE)
             result = p.communicate()[0].decode('utf-8')
 
             self.assertNotIn('import re', result)

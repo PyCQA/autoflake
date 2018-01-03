@@ -5,7 +5,6 @@
 This checks that autoflake never introduces incorrect syntax. This is
 done by doing a syntax check after the autoflake run. The number of
 Pyflakes warnings is also confirmed to always improve.
-
 """
 
 from __future__ import print_function
@@ -72,7 +71,6 @@ def run(filename, command, verbose=False, options=None):
     """Run autoflake on file at filename.
 
     Return True on success.
-
     """
     if not options:
         options = []
@@ -169,7 +167,6 @@ def check(args):
     """Run recursively run autoflake on directory of files.
 
     Return False if the fix results in broken syntax.
-
     """
     if args.files:
         dir_paths = args.files

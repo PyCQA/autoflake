@@ -34,7 +34,6 @@ def download_package(name, output_directory):
     """Download package to output_directory.
 
     Raise CalledProcessError on failure.
-
     """
     subprocess.check_call(['yolk', '--fetch-package={name}'.format(name=name)],
                           cwd=output_directory)

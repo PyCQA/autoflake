@@ -184,7 +184,6 @@ class ListReporter(pyflakes.reporter.Reporter):
         """Initialize.
 
         Ignore errors from Reporter.
-
         """
         ignore = StubFile()
         pyflakes.reporter.Reporter.__init__(self, ignore, ignore)
@@ -246,7 +245,6 @@ def filter_from_import(line, unused_module):
 
     Return line without unused import modules, or `pass` if all of the
     module in import is unused.
-
     """
     (indentation, imports) = re.split(pattern=r'\bimport\b',
                                       string=line, maxsplit=1)
@@ -443,7 +441,7 @@ def filter_unused_variable(line, previous_line=''):
 
 def filter_duplicate_key(line, message, line_number, marked_line_numbers,
                          source, previous_line=''):
-    """Return line if last occurence of key, otherwise return None."""
+    """Return line if last occurrence of key, otherwise return None."""
     key = get_key_from_message(message)
     if is_last_in_object(line, line_number, key, marked_line_numbers, source):
         return line
@@ -452,12 +450,12 @@ def filter_duplicate_key(line, message, line_number, marked_line_numbers,
             r'(?:\'|")?%s(?:\'|")?: [^,]+, ' % stringify_key(key),
             '',
             line,
-            count=len(get_occurences_in_object(
-                        line,
-                        line_number,
-                        key,
-                        marked_line_numbers,
-                        source)))
+            count=len(get_occurrence_in_object(
+                line,
+                line_number,
+                key,
+                marked_line_numbers,
+                source)))
     else:
         return ''
 
@@ -475,7 +473,7 @@ def get_key_from_message(message):
 
 
 def is_last_in_object(line, line_number, key, marked_line_numbers, source):
-    obj_lines = get_occurences_in_object(
+    obj_lines = get_occurrence_in_object(
         line,
         line_number,
         key,
@@ -492,22 +490,27 @@ def is_last_in_object(line, line_number, key, marked_line_numbers, source):
         return False
 
 
-def get_occurences_in_object(line, line_number, key, marked_line_numbers,
+def get_occurrence_in_object(line, line_number, key, marked_line_numbers,
                              source):
     lines = source.split('\n')
-    opening_object_lines = [i for i, s in enumerate(lines, start=1) if '{' in s]
-    closing_object_lines = [i for i, s in enumerate(lines, start=1) if '}' in s]
+    opening_object_lines = [
+        i for i, s in enumerate(lines, start=1) if '{' in s]
+    closing_object_lines = [
+        i for i, s in enumerate(lines, start=1) if '}' in s]
 
     obj = [i for i, s in enumerate(opening_object_lines)
-            if s <= line_number and closing_object_lines[i] >= line_number][0]
+           if s <= line_number and
+           closing_object_lines[i] >= line_number][0]
 
     obj_lines = []
     for ln in marked_line_numbers:
-        if opening_object_lines[obj] <= ln and closing_object_lines[obj] >= ln \
+        if (
+            opening_object_lines[obj] <= ln and
+            closing_object_lines[obj] >= ln
             and re.search(
                 r'(?:\'|")?%s(?:\'|")?: [^,]+' % stringify_key(key),
-                lines[ln - 1]
-            ):
+                lines[ln - 1])
+        ):
             obj_lines.append(ln)
 
     return obj_lines
@@ -780,7 +783,6 @@ def _main(argv, standard_out, standard_error):
     """Return exit status.
 
     0 means no error.
-
     """
     import argparse
     parser = argparse.ArgumentParser(description=__doc__, prog='autoflake')
