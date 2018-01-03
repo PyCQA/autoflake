@@ -13,6 +13,7 @@ check:
 coverage:
 	@coverage erase
 	@AUTOFLAKE_COVERAGE=1 coverage run test_autoflake.py
+	@coverage combine
 	@coverage report
 	@coverage html
 	@python -m webbrowser -n "file://${PWD}/htmlcov/index.html"
