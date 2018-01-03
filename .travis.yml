@@ -23,7 +23,8 @@ script:
 
 after_success:
     - pip install --quiet coverage
-    - coverage run --include='autoflake.py,test_autoflake.py' test_autoflake.py
+    - AUTOFLAKE_COVERAGE=1 coverage run --branch --parallel-mode --include='autoflake.py,test_autoflake.py' test_autoflake.py
+    - coverage combine
     - coverage report --show-missing
 
     - pip install --quiet coveralls
