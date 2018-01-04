@@ -821,6 +821,9 @@ def _main(argv, standard_out, standard_error):
                         help='make changes to files instead of printing diffs')
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='drill down directories recursively')
+    parser.add_argument('--exclude', metavar='globs',
+                        help='exclude file/directory names that match these '
+                             'comma-separated globs')
     parser.add_argument('--imports',
                         help='by default, only unused standard library '
                              'imports are removed; specify a comma-separated '
@@ -841,9 +844,6 @@ def _main(argv, standard_out, standard_error):
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
     parser.add_argument('files', nargs='+', help='files to format')
-    parser.add_argument('--exclude', metavar='globs',
-                        help='exclude file/directory names that match these '
-                             'comma-separated globs')
 
     args = parser.parse_args(argv[1:])
 

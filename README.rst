@@ -90,8 +90,9 @@ To remove unused variables, use the ``--remove-unused-variables`` option.
 
 Below is the full listing of options::
 
-    usage: autoflake [-h] [-i] [-r] [--imports IMPORTS] [--expand-star-imports]
-                     [--remove-all-unused-imports] [--remove-unused-variables]
+    usage: autoflake [-h] [-i] [-r] [--exclude globs] [--imports IMPORTS]
+                     [--expand-star-imports] [--remove-all-unused-imports]
+                     [--remove-duplicate-keys] [--remove-unused-variables]
                      [--version]
                      files [files ...]
 
@@ -104,6 +105,8 @@ Below is the full listing of options::
       -h, --help            show this help message and exit
       -i, --in-place        make changes to files instead of printing diffs
       -r, --recursive       drill down directories recursively
+      --exclude globs       exclude file/directory names that match these comma-
+                            separated globs
       --imports IMPORTS     by default, only unused standard library imports are
                             removed; specify a comma-separated list of additional
                             modules/packages
@@ -115,6 +118,8 @@ Below is the full listing of options::
       --remove-all-unused-imports
                             remove all unused imports (not just those from the
                             standard library)
+      --remove-duplicate-keys
+                            remove all duplicate keys in objects
       --remove-unused-variables
                             remove unused variables
       --version             show program's version number and exit
