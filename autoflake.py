@@ -151,25 +151,38 @@ def duplicate_key_line_numbers(messages, source):
         if isinstance(message, pyflakes.messages.MultiValueRepeatedKeyLiteral)]
 
     if messages:
-        good = True
         # Filter out complex cases. We don't want to bother trying to parse
-        # this stuff and get it right.
+        # this stuff and get it right. We can do it on a key-by-key basis.
+
+        key_to_messages = create_key_to_messages_dict(messages)
+
         lines = source.split('\n')
-        for message in messages:
-            line = lines[message.lineno - 1]
-            key = message.message_args[0]
 
-            if (
-                line.rstrip().endswith((':', '\\')) or
-                not dict_entry_has_key(line, key) or
-                '#' in line or
-                not line.rstrip().endswith(',')
-            ):
-                good = False
-
-        if good:
+        for (key, messages) in key_to_messages.items():
+            good = True
             for message in messages:
-                yield message.lineno
+                line = lines[message.lineno - 1]
+                key = message.message_args[0]
+
+                if (
+                    line.rstrip().endswith((':', '\\')) or
+                    not dict_entry_has_key(line, key) or
+                    '#' in line or
+                    not line.rstrip().endswith(',')
+                ):
+                    good = False
+
+            if good:
+                for message in messages:
+                    yield message.lineno
+
+
+def create_key_to_messages_dict(messages):
+    """Return dict mapping the key to list of messages."""
+    dictionary = collections.defaultdict(lambda: [])
+    for message in messages:
+        dictionary[message.message_args[0]].append(message)
+    return dictionary
 
 
 def check(source):

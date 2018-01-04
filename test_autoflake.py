@@ -464,6 +464,30 @@ print(a)
             ''.join(autoflake.filter_code(code,
                                           remove_duplicate_keys=True)))
 
+    def test_filter_code_should_ignore_complex_case_of_duplicate_key_partially(
+            self):
+        """We only handle simple cases."""
+        code = """\
+a = {(0,1): 1, (0, 1): 'two',
+  (0,1): 3,
+  (2,3): 4,
+  (2,3): 4,
+  (2,3): 5,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            """\
+a = {(0,1): 1, (0, 1): 'two',
+  (0,1): 3,
+  (2,3): 5,
+}
+print(a)
+""",
+            ''.join(autoflake.filter_code(code,
+                                          remove_duplicate_keys=True)))
+
     def test_filter_code_should_ignore_more_cases_of_duplicate_key(self):
         """We only handle simple cases."""
         code = """\
