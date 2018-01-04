@@ -144,11 +144,32 @@ def unused_variable_line_numbers(messages):
             yield message.lineno
 
 
-def duplicate_key_line_numbers(messages):
+def duplicate_key_line_numbers(messages, source):
     """Yield line numbers of duplicate keys."""
-    for message in messages:
-        if isinstance(message, pyflakes.messages.MultiValueRepeatedKeyLiteral):
-            yield message.lineno
+    messages = [
+        message for message in messages
+        if isinstance(message, pyflakes.messages.MultiValueRepeatedKeyLiteral)]
+
+    if messages:
+        good = True
+        # Filter out complex cases. We don't want to bother trying to parse
+        # this stuff and get it right.
+        lines = source.split('\n')
+        for message in messages:
+            line = lines[message.lineno - 1]
+            key = message.message_args[0]
+
+            if (
+                line.rstrip().endswith((':', '\\')) or
+                not dict_entry_has_key(line, key) or
+                '#' in line or
+                not line.rstrip().endswith(',')
+            ):
+                good = False
+
+        if good:
+            for message in messages:
+                yield message.lineno
 
 
 def check(source):
@@ -343,13 +364,7 @@ def filter_code(source, additional_imports=None,
 
     if remove_duplicate_keys:
         marked_key_line_numbers = frozenset(
-            duplicate_key_line_numbers(messages))
-        if (
-            marked_key_line_numbers and
-            any_complex_duplicate_key_cases(messages,
-                                            source)
-        ):
-            marked_key_line_numbers = frozenset()
+            duplicate_key_line_numbers(messages, source))
     else:
         marked_key_line_numbers = frozenset()
 
@@ -379,31 +394,6 @@ def filter_code(source, additional_imports=None,
             yield line
 
         previous_line = line
-
-
-def any_complex_duplicate_key_cases(messages, source):
-    """Return True if duplicate key lines contain complex code.
-
-    We don't want to bother trying to parse this stuff and get it right.
-    """
-    lines = source.split('\n')
-    for message in messages:
-        if not isinstance(message,
-                          pyflakes.messages.MultiValueRepeatedKeyLiteral):
-            continue
-
-        line = lines[message.lineno - 1]
-        key = message.message_args[0]
-
-        if (
-            line.rstrip().endswith((':', '\\')) or
-            not dict_entry_has_key(line, key) or
-            '#' in line or
-            not line.rstrip().endswith(',')
-        ):
-            return True
-
-    return False
 
 
 def get_messages_by_line(messages):
