@@ -1,10 +1,11 @@
 check:
-	pycodestyle autoflake.py setup.py
+	pyflakes ./*.py
 	pylint \
 		--reports=no \
 		--rcfile=/dev/null \
 		--errors-only \
 		autoflake.py setup.py
+	pycodestyle ./*.py
 	pydocstyle autoflake.py setup.py
 	check-manifest
 	python setup.py --long-description | rstcheck -

@@ -1101,9 +1101,10 @@ def func11():
                       'w') as output:
                 output.write('import os\n')
 
-            p = subprocess.Popen(list(AUTOFLAKE_COMMAND) +
-                                 [temp_directory, '--recursive', '--exclude=a*'],
-                                 stdout=subprocess.PIPE)
+            p = subprocess.Popen(
+                list(AUTOFLAKE_COMMAND) +
+                [temp_directory, '--recursive', '--exclude=a*'],
+                stdout=subprocess.PIPE)
             result = p.communicate()[0].decode('utf-8')
 
             self.assertNotIn('import re', result)

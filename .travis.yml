@@ -19,7 +19,12 @@ install:
 
 script:
     - ./setup.py test
-    - ./test_fuzz.py *.py
+    - ./test_fuzz.py ./*.py
+
+    - pyflakes ./*.py
+    - pip install pycodestyle pydocstyle
+    - pycodestyle ./*.py
+    - pydocstyle autoflake.py setup.py
 
 after_success:
     - pip install --quiet coverage
