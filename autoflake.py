@@ -388,6 +388,10 @@ def any_complex_duplicate_key_cases(messages, source):
     """
     lines = source.split('\n')
     for message in messages:
+        if not isinstance(message,
+                          pyflakes.messages.MultiValueRepeatedKeyLiteral):
+            continue
+
         line = lines[message.lineno - 1]
         key = message.message_args[0]
 
@@ -398,6 +402,8 @@ def any_complex_duplicate_key_cases(messages, source):
             not line.rstrip().endswith(',')
         ):
             return True
+
+    return False
 
 
 def get_messages_by_line(messages):

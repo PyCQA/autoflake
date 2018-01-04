@@ -1428,6 +1428,44 @@ print(a)
  print(a)
 """, '\n'.join(process.communicate()[0].decode().split('\n')[3:]))
 
+    def test_end_to_end_with_remove_duplicate_keys_and_other_errors(self):
+        with temporary_file("""\
+from math import *
+print(sin(4))
+a = { # Hello
+    'b': 456,
+    'a': 123,
+    'b': 7834,
+    'a': 'wow',
+    'b': 456,
+    'c': 'hello',
+    'c': 'hello2',
+    'b': 'hiya',
+    "b": 'hiya',
+}
+print(a)
+""") as filename:
+            process = subprocess.Popen(AUTOFLAKE_COMMAND +
+                                       ['--remove-duplicate-keys',
+                                        filename],
+                                       stdout=subprocess.PIPE)
+            self.assertEqual("""\
+ from math import *
+ print(sin(4))
+ a = { # Hello
+-    'b': 456,
+-    'a': 123,
+-    'b': 7834,
+     'a': 'wow',
+-    'b': 456,
+-    'c': 'hello',
+     'c': 'hello2',
+-    'b': 'hiya',
+     "b": 'hiya',
+ }
+ print(a)
+""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]))
+
     def test_end_to_end_with_remove_duplicate_keys_tuple(self):
         with temporary_file("""\
 a = {
