@@ -457,15 +457,6 @@ def filter_duplicate_key(line, message, line_number, marked_line_numbers,
         return ''
 
 
-def stringify_key(key):
-    """Return `key` with special characters escaped."""
-    return str(key)\
-        .replace('(', '\(').replace(')', '\)')\
-        .replace('{', '\{').replace('}', '\}')\
-        .replace('[', '\[').replace(']', '\]')\
-        .replace(' ', '\s?')
-
-
 def is_last_in_object(line, line_number, key, marked_line_numbers, source):
     """Return True if this line represents the last item in the dict."""
     obj_lines = get_occurrence_in_object(
@@ -477,7 +468,9 @@ def is_last_in_object(line, line_number, key, marked_line_numbers, source):
     )
 
     if len(obj_lines) <= 1:
-        return False
+        # This means it is too complex for us to parse. Keep the item by
+        # assuming it is the last item.
+        return True
 
     if line_number == obj_lines[-1]:
         return True
@@ -485,9 +478,21 @@ def is_last_in_object(line, line_number, key, marked_line_numbers, source):
         return False
 
 
+def dict_entry_has_key(line, key):
+    """Return True if `line` is a dict entry that uses `key`."""
+    result = re.match(r'\s*(.*)\s*:.*,?\s*$', line)
+
+    try:
+        candidate_key = ast.literal_eval(result.group(1))
+    except (SyntaxError, ValueError):
+        return False
+
+    return candidate_key == key
+
+
 def get_occurrence_in_object(line, line_number, key, marked_line_numbers,
                              source):
-    """Return lines relevant to object."""
+    """Return line numbers relevant to object."""
     lines = source.split('\n')
     opening_object_lines = [
         i for i, s in enumerate(lines, start=1) if '{' in s]
@@ -502,10 +507,8 @@ def get_occurrence_in_object(line, line_number, key, marked_line_numbers,
     for ln in marked_line_numbers:
         if (
             opening_object_lines[obj] <= ln and
-            closing_object_lines[obj] >= ln
-            and re.search(
-                r'(?:\'|")?%s(?:\'|")?: [^,]+' % stringify_key(key),
-                lines[ln - 1])
+            closing_object_lines[obj] >= ln and
+            dict_entry_has_key(lines[ln - 1], key)
         ):
             obj_lines.append(ln)
 

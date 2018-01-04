@@ -434,6 +434,22 @@ a = {
 print(a)
 """, remove_duplicate_keys=True)))
 
+    def test_filter_code_with_special_re_symbols_in_key(self):
+        self.assertEqual(
+            """\
+a = {
+  '????': 2,
+}
+print(a)
+""",
+            ''.join(autoflake.filter_code("""\
+a = {
+  '????': 3,
+  '????': 2,
+}
+print(a)
+""", remove_duplicate_keys=True)))
+
     def test_filter_code_should_ignore_complex_case_of_duplicate_key(self):
         """We only handle simple cases."""
         code = """\
