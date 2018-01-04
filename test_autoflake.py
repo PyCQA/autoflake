@@ -107,26 +107,6 @@ class UnitTests(unittest.TestCase):
             autoflake.filter_star_import('from math import *',
                                          ['sin', 'cos']))
 
-    def test_filter_duplicate_key_one_line(self):
-        class mock_line_message(object):
-            message_args = ('a',)
-
-        self.assertEqual("a = { 'a': 2 }",
-                         autoflake.filter_duplicate_key(
-                             "a = { 'a': 1, 'a': 2 }",
-                             mock_line_message,
-                             1,
-                             [1],
-                             "a = { 'a': 1, 'a': 2 }"))
-
-        self.assertEqual("a = { 'a': 2 }",
-                         autoflake.filter_duplicate_key(
-                             "a = { 'a': 1, 'a': 2 }",
-                             mock_line_message,
-                             3,
-                             [3],
-                             "\n\na = { 'a': 1, 'a': 2 }"))
-
     def test_filter_duplicate_key_multiple_lines(self):
         class mock_line_message(object):
             message_args = ('a',)
@@ -436,6 +416,37 @@ from re import *
 sin(1)
 cos(1)
 """, expand_star_imports=True)))
+
+    def test_filter_code_with_duplicate_key(self):
+        self.assertEqual(
+            """\
+a = {
+  (0,1): 3,
+}
+print(a)
+""",
+            ''.join(autoflake.filter_code("""\
+a = {
+  (0,1): 1,
+  (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+""", remove_duplicate_keys=True)))
+
+    def test_filter_code_should_ignore_complex_case_of_duplicate_key(self):
+        """We only handle simple cases."""
+        code = """\
+a = {(0,1): 1, (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.filter_code(code,
+                                          remove_duplicate_keys=True)))
 
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
@@ -1295,21 +1306,6 @@ print(x)
 +import os
  x = os.sep
  print(x)
-""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]))
-
-    def test_end_to_end_with_remove_duplicate_keys_one_line(self):
-        with temporary_file("""\
-a = { 'b': 123, 'a': 456, 'b': 754, 'c': 932, 'a': 983 }
-print(a)
-""") as filename:
-            process = subprocess.Popen(AUTOFLAKE_COMMAND +
-                                       ['--remove-duplicate-keys',
-                                        filename],
-                                       stdout=subprocess.PIPE)
-            self.assertEqual("""\
--a = { 'b': 123, 'a': 456, 'b': 754, 'c': 932, 'a': 983 }
-+a = { 'b': 754, 'c': 932, 'a': 983 }
- print(a)
 """, '\n'.join(process.communicate()[0].decode().split('\n')[3:]))
 
     def test_end_to_end_with_remove_duplicate_keys_multiple_lines(self):

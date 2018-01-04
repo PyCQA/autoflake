@@ -441,21 +441,17 @@ def filter_unused_variable(line, previous_line=''):
 
 def filter_duplicate_key(line, message, line_number, marked_line_numbers,
                          source, previous_line=''):
-    """Return line if last occurrence of key, otherwise return None."""
+    """Return line if last occurrence of key, otherwise return ''."""
     key = get_key_from_message(message)
-    if is_last_in_object(line, line_number, key, marked_line_numbers, source):
+    if '{' in line or '}' in line:
+        # Ignore complex cases.
         return line
-    elif is_one_line_object(line):
-        return re.sub(
-            r'(?:\'|")?%s(?:\'|")?: [^,]+, ' % stringify_key(key),
-            '',
-            line,
-            count=len(get_occurrence_in_object(
-                line,
-                line_number,
-                key,
-                marked_line_numbers,
-                source)))
+    elif is_last_in_object(line,
+                           line_number,
+                           key,
+                           marked_line_numbers,
+                           source):
+        return line
     else:
         return ''
 
@@ -514,10 +510,6 @@ def get_occurrence_in_object(line, line_number, key, marked_line_numbers,
             obj_lines.append(ln)
 
     return obj_lines
-
-
-def is_one_line_object(line):
-    return '{' in line and '}' in line
 
 
 def is_literal_or_name(value):
