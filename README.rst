@@ -132,7 +132,7 @@ To run the unit tests::
 
     $ ./test_autoflake.py
 
-There is also an fuzz test, which runs against any collection of given Python
+There is also a fuzz test, which runs against any collection of given Python
 files. It tests autoflake against the files and checks how well it does by
 running pyflakes on the file before and after. The test fails if the pyflakes
 results change for the worse. (This is done in memory. The actual files are
