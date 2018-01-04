@@ -376,6 +376,7 @@ def filter_code(source, additional_imports=None,
 
 
 def get_messages_by_line(messages):
+    """Return dictionary that maps line number to message."""
     line_messages = {}
     for message in messages:
         line_messages[message.lineno] = message
@@ -442,7 +443,7 @@ def filter_unused_variable(line, previous_line=''):
 def filter_duplicate_key(line, message, line_number, marked_line_numbers,
                          source, previous_line=''):
     """Return line if last occurrence of key, otherwise return ''."""
-    key = get_key_from_message(message)
+    key = message.message_args[0]
     if '{' in line or '}' in line:
         # Ignore complex cases.
         return line
@@ -457,6 +458,7 @@ def filter_duplicate_key(line, message, line_number, marked_line_numbers,
 
 
 def stringify_key(key):
+    """Return `key` with special characters escaped."""
     return str(key)\
         .replace('(', '\(').replace(')', '\)')\
         .replace('{', '\{').replace('}', '\}')\
@@ -464,11 +466,8 @@ def stringify_key(key):
         .replace(' ', '\s?')
 
 
-def get_key_from_message(message):
-    return message.message_args[0]
-
-
 def is_last_in_object(line, line_number, key, marked_line_numbers, source):
+    """Return True if this line represents the last item in the dict."""
     obj_lines = get_occurrence_in_object(
         line,
         line_number,
@@ -488,6 +487,7 @@ def is_last_in_object(line, line_number, key, marked_line_numbers, source):
 
 def get_occurrence_in_object(line, line_number, key, marked_line_numbers,
                              source):
+    """Return lines relevant to object."""
     lines = source.split('\n')
     opening_object_lines = [
         i for i, s in enumerate(lines, start=1) if '{' in s]
