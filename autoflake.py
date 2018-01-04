@@ -344,6 +344,11 @@ def filter_code(source, additional_imports=None,
     if remove_duplicate_keys:
         marked_key_line_numbers = frozenset(
             duplicate_key_line_numbers(messages))
+        if (
+            marked_key_line_numbers and
+            any_complex_duplicate_key_cases(marked_key_line_numbers, source)
+        ):
+            marked_key_line_numbers = frozenset()
     else:
         marked_key_line_numbers = frozenset()
 
@@ -373,6 +378,22 @@ def filter_code(source, additional_imports=None,
             yield line
 
         previous_line = line
+
+
+def any_complex_duplicate_key_cases(marked_line_numbers, source):
+    """Return True if duplicate key lines contain complex code.
+
+    We don't want to bother trying to parse this stuff and get it right.
+    """
+    lines = source.split('\n')
+    for line_number in marked_line_numbers:
+        line = lines[line_number - 1]
+
+        if line.rstrip().endswith((':', '\\')):
+            return True
+
+        if ':' not in line or '#' in line:
+            return True
 
 
 def get_messages_by_line(messages):
@@ -467,9 +488,9 @@ def is_last_in_object(line, line_number, key, marked_line_numbers, source):
         source
     )
 
-    if len(obj_lines) <= 1:
-        # This means it is too complex for us to parse. Keep the item by
-        # assuming it is the last item.
+    if obj_lines is None or len(obj_lines) <= 1:
+        # We failed to parse something. Don't touch. Keep the item by assuming
+        # it is the last item.
         return True
 
     if line_number == obj_lines[-1]:
@@ -481,6 +502,8 @@ def is_last_in_object(line, line_number, key, marked_line_numbers, source):
 def dict_entry_has_key(line, key):
     """Return True if `line` is a dict entry that uses `key`."""
     result = re.match(r'\s*(.*)\s*:.*,?\s*$', line)
+    if not result:
+        return False
 
     try:
         candidate_key = ast.literal_eval(result.group(1))
