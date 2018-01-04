@@ -151,6 +151,10 @@ def process_args():
                         help='pass "--remove-all-unused-imports" option to '
                              'autoflake')
 
+    parser.add_argument('--remove-duplicate-keys', action='store_true',
+                        help='pass "--remove-duplicate-keys" option to '
+                             'autoflake')
+
     parser.add_argument('--remove-unused-variables', action='store_true',
                         help='pass "--remove-unused-variables" option to '
                              'autoflake')
@@ -183,6 +187,9 @@ def check(args):
 
     if args.remove_all_unused_imports:
         options.append('--remove-all-unused-imports')
+
+    if args.remove_duplicate_keys:
+        options.append('--remove-duplicate-keys')
 
     if args.remove_unused_variables:
         options.append('--remove-unused-variables')
