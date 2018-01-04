@@ -499,6 +499,40 @@ print(a)
             ''.join(autoflake.filter_code(code,
                                           remove_duplicate_keys=True)))
 
+    def test_filter_code_should_ignore_duplicate_key_with_multiline_key(self):
+        """We only handle simple cases."""
+        code = """\
+a = {
+    (0,1
+    ): 1,
+    (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.filter_code(code,
+                                          remove_duplicate_keys=True)))
+
+    def test_filter_code_should_ignore_duplicate_key_with_no_comma(self):
+        """We don't want to delete the line and leave a lone comma."""
+        code = """\
+a = {
+    (0,1) : 1
+    ,
+    (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.filter_code(code,
+                                          remove_duplicate_keys=True)))
+
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
 import os, \

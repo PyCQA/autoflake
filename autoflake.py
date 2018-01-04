@@ -346,7 +346,8 @@ def filter_code(source, additional_imports=None,
             duplicate_key_line_numbers(messages))
         if (
             marked_key_line_numbers and
-            any_complex_duplicate_key_cases(marked_key_line_numbers, source)
+            any_complex_duplicate_key_cases(messages,
+                                            source)
         ):
             marked_key_line_numbers = frozenset()
     else:
@@ -380,19 +381,22 @@ def filter_code(source, additional_imports=None,
         previous_line = line
 
 
-def any_complex_duplicate_key_cases(marked_line_numbers, source):
+def any_complex_duplicate_key_cases(messages, source):
     """Return True if duplicate key lines contain complex code.
 
     We don't want to bother trying to parse this stuff and get it right.
     """
     lines = source.split('\n')
-    for line_number in marked_line_numbers:
-        line = lines[line_number - 1]
+    for message in messages:
+        line = lines[message.lineno - 1]
+        key = message.message_args[0]
 
-        if line.rstrip().endswith((':', '\\')):
-            return True
-
-        if ':' not in line or '#' in line:
+        if (
+            line.rstrip().endswith((':', '\\')) or
+            not dict_entry_has_key(line, key) or
+            '#' in line or
+            not line.rstrip().endswith(',')
+        ):
             return True
 
 
