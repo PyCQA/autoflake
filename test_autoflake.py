@@ -107,82 +107,6 @@ class UnitTests(unittest.TestCase):
             autoflake.filter_star_import('from math import *',
                                          ['sin', 'cos']))
 
-    def test_filter_duplicate_key_multiple_lines(self):
-        class mock_line_message(object):
-            message_args = ('a',)
-
-        source = """\
-a = {
-    'a': 1,
-    'a': 2,
-    'b': 1,
-    'a': 3,
-    'c': 5,
-}
-"""
-
-        self.assertEqual('',
-                         autoflake.filter_duplicate_key(
-                             "    'a': 1,",
-                             mock_line_message,
-                             2,
-                             [2, 3, 5],
-                             source))
-
-        self.assertEqual('',
-                         autoflake.filter_duplicate_key(
-                             "    'a': 2,",
-                             mock_line_message,
-                             3,
-                             [2, 3, 5],
-                             source))
-
-        self.assertEqual("    'a': 3",
-                         autoflake.filter_duplicate_key(
-                             "    'a': 3",
-                             mock_line_message,
-                             5,
-                             [2, 3, 5],
-                             source))
-
-    def test_filter_duplicate_key_tuple(self):
-        class mock_line_message(object):
-            message_args = ((0, 1),)
-
-        source = """\
-a = {
-    (0,1): 1,
-    (0, 1): 2,
-    (1,2): 1,
-    'a': 3,
-    (0, 1): 5,
-}
-"""
-
-        self.assertEqual('',
-                         autoflake.filter_duplicate_key(
-                             '    (0,1): 1,',
-                             mock_line_message,
-                             2,
-                             [2, 3, 6],
-                             source))
-
-        self.assertEqual('',
-                         autoflake.filter_duplicate_key(
-                             '    (0, 1): 2,',
-                             mock_line_message,
-                             3,
-                             [2, 3, 6],
-                             source))
-
-        self.assertEqual('    (0, 1): 5,',
-                         autoflake.filter_duplicate_key(
-                             '    (0, 1): 5,',
-                             mock_line_message,
-                             6,
-                             [2, 3, 6],
-                             source))
-
     def test_filter_unused_variable(self):
         self.assertEqual('foo()',
                          autoflake.filter_unused_variable('x = foo()'))
@@ -417,47 +341,6 @@ sin(1)
 cos(1)
 """, expand_star_imports=True)))
 
-    def test_filter_code_with_duplicate_key(self):
-        self.assertEqual(
-            """\
-a = {
-  (0,1): 3,
-}
-print(a)
-""",
-            ''.join(autoflake.filter_code("""\
-a = {
-  (0,1): 1,
-  (0, 1): 'two',
-  (0,1): 3,
-}
-print(a)
-""", remove_duplicate_keys=True)))
-
-    def test_filter_code_with_duplicate_key_longer(self):
-        self.assertEqual(
-            """\
-{
-    'a': 0,
-    'c': 2,
-    'd': 3,
-    'e': 4,
-    'f': 5,
-    'b': 6,
-}
-""",
-            ''.join(autoflake.filter_code("""\
-{
-    'a': 0,
-    'b': 1,
-    'c': 2,
-    'd': 3,
-    'e': 4,
-    'f': 5,
-    'b': 6,
-}
-""", remove_duplicate_keys=True)))
-
     def test_filter_code_with_special_re_symbols_in_key(self):
         self.assertEqual(
             """\
@@ -473,113 +356,6 @@ a = {
 }
 print(a)
 """, remove_duplicate_keys=True)))
-
-    def test_filter_code_should_ignore_complex_case_of_duplicate_key(self):
-        """We only handle simple cases."""
-        code = """\
-a = {(0,1): 1, (0, 1): 'two',
-  (0,1): 3,
-}
-print(a)
-"""
-
-        self.assertEqual(
-            code,
-            ''.join(autoflake.filter_code(code,
-                                          remove_duplicate_keys=True)))
-
-    def test_filter_code_should_ignore_complex_case_of_duplicate_key_partially(
-            self):
-        """We only handle simple cases."""
-        code = """\
-a = {(0,1): 1, (0, 1): 'two',
-  (0,1): 3,
-  (2,3): 4,
-  (2,3): 4,
-  (2,3): 5,
-}
-print(a)
-"""
-
-        self.assertEqual(
-            """\
-a = {(0,1): 1, (0, 1): 'two',
-  (0,1): 3,
-  (2,3): 5,
-}
-print(a)
-""",
-            ''.join(autoflake.filter_code(code,
-                                          remove_duplicate_keys=True)))
-
-    def test_filter_code_should_ignore_more_cases_of_duplicate_key(self):
-        """We only handle simple cases."""
-        code = """\
-a = {
-    (0,1):
-    1,
-    (0, 1): 'two',
-  (0,1): 3,
-}
-print(a)
-"""
-
-        self.assertEqual(
-            code,
-            ''.join(autoflake.filter_code(code,
-                                          remove_duplicate_keys=True)))
-
-    def test_filter_code_should_ignore_duplicate_key_with_comments(self):
-        """We only handle simple cases."""
-        code = """\
-a = {
-    (0,1)  # : f
-    :
-    1,
-    (0, 1): 'two',
-  (0,1): 3,
-}
-print(a)
-"""
-
-        self.assertEqual(
-            code,
-            ''.join(autoflake.filter_code(code,
-                                          remove_duplicate_keys=True)))
-
-    def test_filter_code_should_ignore_duplicate_key_with_multiline_key(self):
-        """We only handle simple cases."""
-        code = """\
-a = {
-    (0,1
-    ): 1,
-    (0, 1): 'two',
-  (0,1): 3,
-}
-print(a)
-"""
-
-        self.assertEqual(
-            code,
-            ''.join(autoflake.filter_code(code,
-                                          remove_duplicate_keys=True)))
-
-    def test_filter_code_should_ignore_duplicate_key_with_no_comma(self):
-        """We don't want to delete the line and leave a lone comma."""
-        code = """\
-a = {
-    (0,1) : 1
-    ,
-    (0, 1): 'two',
-  (0,1): 3,
-}
-print(a)
-"""
-
-        self.assertEqual(
-            code,
-            ''.join(autoflake.filter_code(code,
-                                          remove_duplicate_keys=True)))
 
     def test_multiline_import(self):
         self.assertTrue(autoflake.multiline_import(r"""\
@@ -929,6 +705,178 @@ def main():
         self.assertEqual(
             code,
             autoflake.fix_code(code))
+
+    def test_fix_code_with_duplicate_key(self):
+        self.assertEqual(
+            """\
+a = {
+  (0,1): 3,
+}
+print(a)
+""",
+            ''.join(autoflake.fix_code("""\
+a = {
+  (0,1): 1,
+  (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+""", remove_duplicate_keys=True)))
+
+    def test_fix_code_with_duplicate_key_longer(self):
+        self.assertEqual(
+            """\
+{
+    'a': 0,
+    'c': 2,
+    'd': 3,
+    'e': 4,
+    'f': 5,
+    'b': 6,
+}
+""",
+            ''.join(autoflake.fix_code("""\
+{
+    'a': 0,
+    'b': 1,
+    'c': 2,
+    'd': 3,
+    'e': 4,
+    'f': 5,
+    'b': 6,
+}
+""", remove_duplicate_keys=True)))
+
+    def test_fix_code_with_duplicate_key_with_many_braces(self):
+        self.assertEqual(
+            """\
+a = None
+
+{None: {None: None},
+ }
+
+{
+    None: a.b,
+}
+""",
+            ''.join(autoflake.fix_code("""\
+a = None
+
+{None: {None: None},
+ }
+
+{
+    None: a.a,
+    None: a.b,
+}
+""", remove_duplicate_keys=True)))
+
+    def test_fix_code_should_ignore_complex_case_of_duplicate_key(self):
+        """We only handle simple cases."""
+        code = """\
+a = {(0,1): 1, (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.fix_code(code,
+                                       remove_duplicate_keys=True)))
+
+    def test_fix_code_should_ignore_complex_case_of_duplicate_key_partially(
+            self):
+        """We only handle simple cases."""
+        code = """\
+a = {(0,1): 1, (0, 1): 'two',
+  (0,1): 3,
+  (2,3): 4,
+  (2,3): 4,
+  (2,3): 5,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            """\
+a = {(0,1): 1, (0, 1): 'two',
+  (0,1): 3,
+  (2,3): 5,
+}
+print(a)
+""",
+            ''.join(autoflake.fix_code(code,
+                                       remove_duplicate_keys=True)))
+
+    def test_fix_code_should_ignore_more_cases_of_duplicate_key(self):
+        """We only handle simple cases."""
+        code = """\
+a = {
+    (0,1):
+    1,
+    (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.fix_code(code,
+                                       remove_duplicate_keys=True)))
+
+    def test_fix_code_should_ignore_duplicate_key_with_comments(self):
+        """We only handle simple cases."""
+        code = """\
+a = {
+    (0,1)  # : f
+    :
+    1,
+    (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.fix_code(code,
+                                       remove_duplicate_keys=True)))
+
+    def test_fix_code_should_ignore_duplicate_key_with_multiline_key(self):
+        """We only handle simple cases."""
+        code = """\
+a = {
+    (0,1
+    ): 1,
+    (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.fix_code(code,
+                                       remove_duplicate_keys=True)))
+
+    def test_fix_code_should_ignore_duplicate_key_with_no_comma(self):
+        """We don't want to delete the line and leave a lone comma."""
+        code = """\
+a = {
+    (0,1) : 1
+    ,
+    (0, 1): 'two',
+  (0,1): 3,
+}
+print(a)
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.fix_code(code,
+                                       remove_duplicate_keys=True)))
 
     def test_useless_pass_line_numbers(self):
         self.assertEqual(
@@ -1453,7 +1401,6 @@ a = {
     'c': 'hello',
     'c': 'hello2',
     'b': 'hiya',
-    "b": 'hiya',
 }
 print(a)
 """) as filename:
@@ -1470,10 +1417,8 @@ print(a)
 -    'b': 456,
 -    'c': 'hello',
      'c': 'hello2',
--    'b': 'hiya',
-     "b": 'hiya',
+     'b': 'hiya',
  }
- print(a)
 """, '\n'.join(process.communicate()[0].decode().split('\n')[3:]))
 
     def test_end_to_end_with_remove_duplicate_keys_and_other_errors(self):
@@ -1489,7 +1434,6 @@ a = { # Hello
     'c': 'hello',
     'c': 'hello2',
     'b': 'hiya',
-    "b": 'hiya',
 }
 print(a)
 """) as filename:
@@ -1508,10 +1452,8 @@ print(a)
 -    'b': 456,
 -    'c': 'hello',
      'c': 'hello2',
--    'b': 'hiya',
-     "b": 'hiya',
+     'b': 'hiya',
  }
- print(a)
 """, '\n'.join(process.communicate()[0].decode().split('\n')[3:]))
 
     def test_end_to_end_with_remove_duplicate_keys_tuple(self):

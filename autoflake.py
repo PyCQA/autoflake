@@ -476,40 +476,11 @@ def filter_unused_variable(line, previous_line=''):
 
 def filter_duplicate_key(line, message, line_number, marked_line_numbers,
                          source, previous_line=''):
-    """Return line if last occurrence of key, otherwise return ''."""
-    key = message.message_args[0]
-    if '{' in line or '}' in line:
-        # Ignore complex cases.
-        return line
-    elif is_last_in_object(line,
-                           line_number,
-                           key,
-                           marked_line_numbers,
-                           source):
-        return line
-    else:
+    """Return '' if first occurrence of the key otherwise return `line`."""
+    if marked_line_numbers and line_number == sorted(marked_line_numbers)[0]:
         return ''
 
-
-def is_last_in_object(line, line_number, key, marked_line_numbers, source):
-    """Return True if this line represents the last item in the dict."""
-    obj_lines = get_occurrence_in_object(
-        line,
-        line_number,
-        key,
-        marked_line_numbers,
-        source
-    )
-
-    if obj_lines is None or len(obj_lines) <= 1:
-        # We failed to parse something. Don't touch. Keep the item by assuming
-        # it is the last item.
-        return True
-
-    if line_number == obj_lines[-1]:
-        return True
-    else:
-        return False
+    return line
 
 
 def dict_entry_has_key(line, key):
@@ -524,30 +495,6 @@ def dict_entry_has_key(line, key):
         return False
 
     return candidate_key == key
-
-
-def get_occurrence_in_object(line, line_number, key, marked_line_numbers,
-                             source):
-    """Return line numbers relevant to object."""
-    lines = source.split('\n')
-    opening_object_lines = [
-        i for i, s in enumerate(lines, start=1) if '{' in s]
-    closing_object_lines = [
-        i for i, s in enumerate(lines, start=1) if '}' in s]
-
-    obj = [i for i, s in enumerate(opening_object_lines)
-           if s <= line_number and
-           closing_object_lines[i] >= line_number][0]
-
-    obj_lines = []
-    for ln in sorted(marked_line_numbers):
-        if (
-            opening_object_lines[obj] <= ln <= closing_object_lines[obj] and
-            dict_entry_has_key(lines[ln - 1], key)
-        ):
-            obj_lines.append(ln)
-
-    return obj_lines
 
 
 def is_literal_or_name(value):
