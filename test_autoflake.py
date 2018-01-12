@@ -785,6 +785,22 @@ print(a)
             ''.join(autoflake.fix_code(code,
                                        remove_duplicate_keys=True)))
 
+    def test_fix_code_should_ignore_complex_case_of_duplicate_key_comma(self):
+        """We only handle simple cases."""
+        code = """\
+{
+    1: {0,
+    },
+    1: {2,
+    },
+}
+"""
+
+        self.assertEqual(
+            code,
+            ''.join(autoflake.fix_code(code,
+                                       remove_duplicate_keys=True)))
+
     def test_fix_code_should_ignore_complex_case_of_duplicate_key_partially(
             self):
         """We only handle simple cases."""
