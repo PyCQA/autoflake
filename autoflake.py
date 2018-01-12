@@ -542,8 +542,7 @@ def get_occurrence_in_object(line, line_number, key, marked_line_numbers,
     obj_lines = []
     for ln in sorted(marked_line_numbers):
         if (
-            opening_object_lines[obj] <= ln and
-            closing_object_lines[obj] >= ln and
+            opening_object_lines[obj] <= ln <= closing_object_lines[obj] and
             dict_entry_has_key(lines[ln - 1], key)
         ):
             obj_lines.append(ln)
