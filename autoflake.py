@@ -540,7 +540,7 @@ def get_occurrence_in_object(line, line_number, key, marked_line_numbers,
            closing_object_lines[i] >= line_number][0]
 
     obj_lines = []
-    for ln in marked_line_numbers:
+    for ln in sorted(marked_line_numbers):
         if (
             opening_object_lines[obj] <= ln and
             closing_object_lines[obj] >= ln and

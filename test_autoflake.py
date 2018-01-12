@@ -434,6 +434,30 @@ a = {
 print(a)
 """, remove_duplicate_keys=True)))
 
+    def test_filter_code_with_duplicate_key_longer(self):
+        self.assertEqual(
+            """\
+{
+    'a': 0,
+    'c': 2,
+    'd': 3,
+    'e': 4,
+    'f': 5,
+    'b': 6,
+}
+""",
+            ''.join(autoflake.filter_code("""\
+{
+    'a': 0,
+    'b': 1,
+    'c': 2,
+    'd': 3,
+    'e': 4,
+    'f': 5,
+    'b': 6,
+}
+""", remove_duplicate_keys=True)))
+
     def test_filter_code_with_special_re_symbols_in_key(self):
         self.assertEqual(
             """\
