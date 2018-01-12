@@ -164,12 +164,7 @@ def duplicate_key_line_numbers(messages, source):
                 line = lines[message.lineno - 1]
                 key = message.message_args[0]
 
-                if (
-                    line.rstrip().endswith((':', '\\')) or
-                    not dict_entry_has_key(line, key) or
-                    '#' in line or
-                    not line.rstrip().endswith(',')
-                ):
+                if not dict_entry_has_key(line, key):
                     good = False
 
             if good:
@@ -490,7 +485,10 @@ def dict_entry_has_key(line, key):
     itself.
 
     """
-    result = re.match(r'\s*(.*)\s*:\s*(.*),?\s*$', line)
+    if '#' in line:
+        return False
+
+    result = re.match(r'\s*(.*)\s*:\s*(.*),\s*$', line)
     if not result:
         return False
 
