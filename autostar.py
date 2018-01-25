@@ -28,10 +28,8 @@ from __future__ import unicode_literals
 
 import ast
 import difflib
-import collections
 import types
 import pprint
-import distutils.sysconfig
 import fnmatch
 import io
 import os
@@ -93,8 +91,13 @@ def find_wildcards(tree):
             imports = [tmp.name for tmp in node.names]
             if imports == ["*"]:
                 mod, loaded = load_from_wildcard(node.module)
-                wildcards[mod] = loaded
+
+                wildcards[mod] = (node.module, loaded)
     return wildcards
+
+def dump_tree(filecontents, filename):
+    tree = compile(filecontents, filename, 'exec', ast.PyCF_ONLY_AST)
+    print(astor.dump_tree(tree))
 
 
 def extract_attribute(target):
@@ -152,9 +155,26 @@ class ProtectedVisitor(ast.NodeVisitor):
         for target in node.targets:
             self._extract_targets(target)
         # print("Assignment:", ast.dump(node))
+        self.generic_visit(node)
+
         return node
     def visit_FunctionDef(self, node):
         self.assigned_names.add(node.name)
+        self.generic_visit(node)
+
+        return node
+
+    def visit_Import(self, node):
+        # self.assigned_names.add(node.name)
+        for name in node.names:
+            self.assigned_names.add(name.name)
+        self.generic_visit(node)
+        return node
+
+    def visit_ImportFrom(self, node):
+        # protect the relative imports, too
+        self.assigned_names.add(node.module)
+        self.generic_visit(node)
         return node
 
     def extract_names(self):
@@ -162,11 +182,13 @@ class ProtectedVisitor(ast.NodeVisitor):
         return list(self.assigned_names)
 
 
-class WildcardVisitor(ast.NodeVisitor):
-    def __init__(self, bad_contexts, protected_names):
-        super(WildcardVisitor, self).__init__()
+class WildcardFixer(ast.NodeVisitor):
+    def __init__(self, source_listing, bad_contexts, protected_names):
+        super(WildcardFixer, self).__init__()
         self.bad_contexts = bad_contexts
         self.protected_names = protected_names
+
+        self.source_listing = source_listing.split("\n")
 
     def visit_Call(self, node):
         as_src = astor.to_source(node)
@@ -187,29 +209,94 @@ class WildcardVisitor(ast.NodeVisitor):
             print(ast.dump(node.func))
 
         if not "." in fname:
+            keys = list(self.bad_contexts.keys())
+            keys.sort(key=lambda x: str(x))
+
             if fname not in self.protected_names:
-                for mod_name, funcs in self.bad_contexts.items():
-                    if fname in funcs:
-                        print("Should canonize? {} -> contained by: {}".format(fname.ljust(15), mod_name))
-                        return
-                # print(fname)
-                pass
+                for mod_name in keys:
+                    if fname in self.bad_contexts[mod_name][1]:
+
+                        # I'm not /totally/ sure where the -1 offset is coming from.
+                        assert fname in self.source_listing[node.lineno-1]
+
+                        old_pattern = r"\b{}\(".format(fname)
+                        new_pattern = r"{}.{}(".format(self.bad_contexts[mod_name][0], fname)
+
+
+                        if new_pattern not in self.source_listing[node.lineno-1]:
+                            patched = re.sub(old_pattern, new_pattern, self.source_listing[node.lineno-1])
+                            # print("Should canonize? {} -> contained by: {}:{}".format(fname.ljust(15), mod_name, self.bad_contexts[mod_name][0]))
+                            # print(self.source_listing[node.lineno-1])
+                            # print(patched)
+                            self.source_listing[node.lineno-1] = patched
+                        break
+
+        self.generic_visit(node)
 
         return node
+
+    def visit_Attribute(self, node):
+        fname = extract_attribute(node)
+
+        keys = list(self.bad_contexts.keys())
+        keys.sort(key=lambda x: str(x))
+
+        if fname not in self.protected_names:
+            for mod_name in keys:
+                if fname in self.bad_contexts[mod_name][1]:
+                    print(fname, ast.dump(node))
+                    pass
+
+        self.generic_visit(node)
+
+        return node
+
+    def visit_Name(self, node):
+        fname = node.id
+
+        keys = list(self.bad_contexts.keys())
+        keys.sort(key=lambda x: str(x))
+
+        if fname not in self.protected_names:
+            for mod_name in keys:
+                if fname in self.bad_contexts[mod_name][1]:
+                    # I'm not /totally/ sure where the -1 offset is coming from.
+                    assert fname in self.source_listing[node.lineno-1]
+
+                    old_pattern = r"\b{}\b".format(fname)
+                    new_pattern = r"{}.{}".format(self.bad_contexts[mod_name][0], fname)
+
+                    if new_pattern not in self.source_listing[node.lineno-1]:
+                        patched = re.sub(old_pattern, new_pattern, self.source_listing[node.lineno-1])
+                        # print("Should canonize? {} -> contained by: {}:{}".format(fname.ljust(15), mod_name, self.bad_contexts[mod_name][0]))
+                        # print(self.source_listing[node.lineno-1])
+                        # print(patched)
+                        self.source_listing[node.lineno-1] = patched
+                    break
+
+        self.generic_visit(node)
+
+        return node
+
+    def extract_source(self):
+        return "\n".join(self.source_listing)
+
 
 def auto_star(filename, filecontents):
     print("Processing file", filename)
     tree = compile(filecontents, filename, 'exec', ast.PyCF_ONLY_AST)
+
+    # dump_tree(tree)
+
     wildcards = find_wildcards(tree)
 
     assignment_visitor = ProtectedVisitor()
     assignment_visitor.visit(tree)
     var_names = assignment_visitor.extract_names()
 
-    visitor = WildcardVisitor(wildcards, var_names)
-    visitor.visit(tree)
-
-    # fixed_contents = fix_wildcards(wildcards, tree, filecontents)
+    visitor_1 = WildcardFixer(filecontents, wildcards, var_names)
+    visitor_1.visit(tree)
+    filecontents = visitor_1.extract_source()
 
     return filecontents
 
@@ -221,11 +308,15 @@ def fix_file(filename, args, standard_out):
     with open_with_encoding(filename, encoding=encoding) as input_file:
         source = input_file.read()
 
+    if args.dump_tree:
+        dump_tree(source, filename)
+        return
+
     original_source = source
 
-    if args.expand_star_imports:
-        source = auto_star(filename, source)
+    source = auto_star(filename, source)
 
+    print("Source has changed: {}".format(original_source != source))
     if original_source != source:
         if args.in_place:
             with open_with_encoding(filename, mode='w',
@@ -371,9 +462,9 @@ def _main(argv, standard_out, standard_error):
     parser.add_argument('--exclude', metavar='globs',
                         help='exclude file/directory names that match these '
                              'comma-separated globs')
-    parser.add_argument('--expand-star-imports', action='store_true',
-                        help='expand wildcard star imports with undefined '
-                             'names')
+    parser.add_argument('--dump-tree', action='store_true',
+                        help='Dump the ast tree, rather then do any processing.')
+
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
     parser.add_argument('files', nargs='+', help='files to format')
