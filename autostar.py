@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2012-2017 Steven Myint
+# Copyright (C) 2012-2017 Steven Myint, Connor Wolf
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -21,7 +21,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-"""Removes unused imports and unused variables as reported by pyflakes."""
+"""Attempts to find and fully qualify all starred imports in (a) file(s)."""
 
 from __future__ import print_function
 from __future__ import unicode_literals
@@ -29,7 +29,6 @@ from __future__ import unicode_literals
 import ast
 import difflib
 import types
-import pprint
 import fnmatch
 import io
 import os
@@ -40,8 +39,7 @@ import tokenize
 
 import astor
 
-__version__ = '1.2a0'
-
+__version__ = '0.0.1'
 
 
 PYTHON_SHEBANG_REGEX = re.compile(r'^#!.*\bpython[23]?\b\s*$')
