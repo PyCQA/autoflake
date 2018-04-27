@@ -619,9 +619,13 @@ def fix_code(source, additional_imports=None, expand_star_imports=False,
 
 def fix_file(filename, args, standard_out):
     """Run fix_code() on a file."""
-    encoding = detect_encoding(filename)
-    with open_with_encoding(filename, encoding=encoding) as input_file:
+    if filename == '-':
+        input_file = sys.stdin
         source = input_file.read()
+    else:
+        encoding = detect_encoding(filename)
+        with open_with_encoding(filename, encoding=encoding) as input_file:
+            source = input_file.read()
 
     original_source = source
 
@@ -634,7 +638,9 @@ def fix_file(filename, args, standard_out):
         remove_unused_variables=args.remove_unused_variables)
 
     if original_source != filtered_source:
-        if args.in_place:
+        if args.stdout:
+            sys.stdout.write(filtered_source)
+        elif args.in_place and input_file != sys.stdin:
             with open_with_encoding(filename, mode='w',
                                     encoding=encoding) as output_file:
                 output_file.write(filtered_source)
@@ -773,6 +779,8 @@ def _main(argv, standard_out, standard_error):
     parser = argparse.ArgumentParser(description=__doc__, prog='autoflake')
     parser.add_argument('-i', '--in-place', action='store_true',
                         help='make changes to files instead of printing diffs')
+    parser.add_argument('-s', '--stdout', action='store_true',
+                        help='Print formatted source to STDOUT.')
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='drill down directories recursively')
     parser.add_argument('--exclude', metavar='globs',
@@ -800,6 +808,10 @@ def _main(argv, standard_out, standard_error):
     parser.add_argument('files', nargs='+', help='files to format')
 
     args = parser.parse_args(argv[1:])
+
+    assert not (
+        args.in_place and args.stdout
+    ), 'Can only specify one of --stdout or --in-place'
 
     if args.remove_all_unused_imports and args.imports:
         print('Using both --remove-all and --imports is redundant',

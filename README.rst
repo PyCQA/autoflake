@@ -104,6 +104,7 @@ Below is the full listing of options::
     optional arguments:
       -h, --help            show this help message and exit
       -i, --in-place        make changes to files instead of printing diffs
+      -s, --stdout          print changed text to STDOUT
       -r, --recursive       drill down directories recursively
       --exclude globs       exclude file/directory names that match these comma-
                             separated globs
