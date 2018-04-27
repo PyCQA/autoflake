@@ -619,6 +619,7 @@ def fix_code(source, additional_imports=None, expand_star_imports=False,
 
 def fix_file(filename, args, standard_out):
     """Run fix_code() on a file."""
+
     if filename == '-':
         input_file = sys.stdin
         source = input_file.read()
