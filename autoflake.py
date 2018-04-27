@@ -637,10 +637,10 @@ def fix_file(filename, args, standard_out):
         remove_duplicate_keys=args.remove_duplicate_keys,
         remove_unused_variables=args.remove_unused_variables)
 
-    if original_source != filtered_source:
-        if args.stdout:
-            sys.stdout.write(filtered_source)
-        elif args.in_place and input_file != sys.stdin:
+    if args.stdout:
+        sys.stdout.write(filtered_source)
+    elif original_source != filtered_source:
+        if args.in_place and input_file != sys.stdin:
             with open_with_encoding(filename, mode='w',
                                     encoding=encoding) as output_file:
                 output_file.write(filtered_source)
