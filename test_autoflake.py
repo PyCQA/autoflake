@@ -501,6 +501,41 @@ def foo():
 """
         self.assertEqual(line, ''.join(autoflake.filter_code(line)))
 
+    def test_with_ignore_init_module_imports_flag(self):
+        # Need a temp directory in order to specify file name as __init__.py
+        temp_directory = tempfile.mkdtemp(dir='.')
+        temp_file = os.path.join(temp_directory, '__init__.py')
+        try:
+            with open(temp_file, 'w') as output:
+                output.write('import re\n')
+
+            p = subprocess.Popen(
+                list(AUTOFLAKE_COMMAND) +
+                ['--ignore-init-module-imports', temp_file],
+                stdout=subprocess.PIPE)
+            result = p.communicate()[0].decode('utf-8')
+
+            self.assertNotIn('import re', result)
+        finally:
+            shutil.rmtree(temp_directory)
+
+    def test_without_ignore_init_module_imports_flag(self):
+        # Need a temp directory in order to specify file name as __init__.py
+        temp_directory = tempfile.mkdtemp(dir='.')
+        temp_file = os.path.join(temp_directory, '__init__.py')
+        try:
+            with open(temp_file, 'w') as output:
+                output.write('import re\n')
+
+            p = subprocess.Popen(
+                list(AUTOFLAKE_COMMAND) + [temp_file],
+                stdout=subprocess.PIPE)
+            result = p.communicate()[0].decode('utf-8')
+
+            self.assertIn('import re', result)
+        finally:
+            shutil.rmtree(temp_directory)
+
     def test_fix_code(self):
         self.assertEqual(
             """\
