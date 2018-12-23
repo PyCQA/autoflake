@@ -139,3 +139,32 @@ results change for the worse. (This is done in memory. The actual files are
 left untouched.)::
 
     $ ./test_fuzz.py --verbose
+
+
+Excluding specific lines
+========================
+
+It might be the case that you have some imports for their side effects, even
+if you are not using them directly in that file.
+
+That is common, for example, in Flask based applications. In where you import
+Python modules (files) that imported a main ``app``, to have them included in
+the routes.
+
+For example:
+
+.. code-block:: python
+
+    from .endpoints import role, token, user, utils
+
+As those imports are not being used directly, if you are using the option
+``--remove-all-unused-imports``, they would be removed.
+
+To prevent that, without having to exclude the entire file, you can add a
+``# noqa`` comment at the end of the line, like:
+
+.. code-block:: python
+
+    from .endpoints import role, token, user, utils  # noqa
+
+That line will instruct ``autoflake`` to let that specific line as is.
