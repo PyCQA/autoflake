@@ -615,7 +615,7 @@ def fix_code(source, additional_imports=None, expand_star_imports=False,
                     remove_duplicate_keys=remove_duplicate_keys,
                     remove_unused_variables=remove_unused_variables,
                     ignore_init_module_imports=ignore_init_module_imports,
-                    ))))
+                ))))
 
         if filtered_source == source:
             break
@@ -647,7 +647,7 @@ def fix_file(filename, args, standard_out):
         remove_duplicate_keys=args.remove_duplicate_keys,
         remove_unused_variables=args.remove_unused_variables,
         ignore_init_module_imports=ignore_init_module_imports,
-        )
+    )
 
     if original_source != filtered_source:
         if args.in_place:
@@ -745,18 +745,25 @@ def is_python_file(filename):
     return True
 
 
-def match_file(filename, exclude):
-    """Return True if file is okay for modifying/recursing."""
+def is_exclude_file(filename, exclude):
+    """Return True if file matches exclude pattern."""
     base_name = os.path.basename(filename)
 
     if base_name.startswith('.'):
-        return False
+        return True
 
     for pattern in exclude:
         if fnmatch.fnmatch(base_name, pattern):
-            return False
+            return True
         if fnmatch.fnmatch(filename, pattern):
-            return False
+            return True
+    return False
+
+
+def match_file(filename, exclude):
+    """Return True if file is okay for modifying/recursing."""
+    if is_exclude_file(filename, exclude):
+        return False
 
     if not os.path.isdir(filename) and not is_python_file(filename):
         return False
@@ -777,7 +784,8 @@ def find_files(filenames, recursive, exclude):
                                   if match_file(os.path.join(root, d),
                                                 exclude)]
         else:
-            yield name
+            if not is_exclude_file(name, exclude):
+                yield name
 
 
 def _main(argv, standard_out, standard_error):
