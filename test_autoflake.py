@@ -1191,6 +1191,23 @@ def func11():
         self.assertFalse(autoflake.is_python_file(os.devnull))
         self.assertFalse(autoflake.is_python_file('/bin/bash'))
 
+    def test_is_exclude_file(self):
+        self.assertTrue(autoflake.is_exclude_file(
+            "1.py", ["test*", "1*"]))
+
+        self.assertFalse(autoflake.is_exclude_file(
+            "2.py", ["test*", "1*"]))
+
+        # folder glob
+        self.assertTrue(autoflake.is_exclude_file(
+            "test/test.py", ["test/**.py"]))
+
+        self.assertTrue(autoflake.is_exclude_file(
+            "test/auto_test.py", ["test/*_test.py"]))
+
+        self.assertFalse(autoflake.is_exclude_file(
+            "test/auto_auto.py", ["test/*_test.py"]))
+
     def test_match_file(self):
         with temporary_file('', suffix='.py', prefix='.') as filename:
             self.assertFalse(autoflake.match_file(filename, exclude=[]),
