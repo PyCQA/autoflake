@@ -1354,7 +1354,6 @@ except ImportError:
     pass
 """, f.read())
 
-
     def test_check_with_empty_file(self):
         line = ''
 
@@ -1364,7 +1363,6 @@ except ImportError:
                             standard_out=output_file,
                             standard_error=None)
             self.assertEqual('No issues detected!', output_file.getvalue())
-
 
     def test_check_correct_file(self):
         with temporary_file("""\
@@ -1377,7 +1375,6 @@ print(x)
                             standard_out=output_file,
                             standard_error=None)
             self.assertEqual('No issues detected!', output_file.getvalue())
-
 
     def test_check_useless_pass(self):
         with temporary_file("""\
@@ -1400,8 +1397,8 @@ except ImportError:
                                 standard_out=output_file,
                                 standard_error=None)
                 self.assertEqual(cm.exception.code, 1)
-                self.assertEqual('Unused imports/variables detected.', output_file.getvalue())
-
+                self.assertEqual('Unused imports/variables detected.',
+                                 output_file.getvalue())
 
     def test_in_place_with_empty_file(self):
         line = ''
