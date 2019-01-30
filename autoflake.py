@@ -650,6 +650,9 @@ def fix_file(filename, args, standard_out):
     )
 
     if original_source != filtered_source:
+        if args.check:
+            standard_out.write('Unused imports/variables detected.')
+            sys.exit(1)
         if args.in_place:
             with open_with_encoding(filename, mode='w',
                                     encoding=encoding) as output_file:
@@ -660,6 +663,9 @@ def fix_file(filename, args, standard_out):
                 io.StringIO(filtered_source).readlines(),
                 filename)
             standard_out.write(''.join(diff))
+    else:
+        if args.check:
+            standard_out.write('No issues detected!')
 
 
 def open_with_encoding(filename, encoding, mode='r',
@@ -795,6 +801,8 @@ def _main(argv, standard_out, standard_error):
     """
     import argparse
     parser = argparse.ArgumentParser(description=__doc__, prog='autoflake')
+    parser.add_argument('-c', '--check', action='store_true',
+                        help='return error code if changes are needed')
     parser.add_argument('-i', '--in-place', action='store_true',
                         help='make changes to files instead of printing diffs')
     parser.add_argument('-r', '--recursive', action='store_true',
