@@ -8,3 +8,4 @@ Contributors
 - Adhika Setya Pramudita (https://github.com/adhikasp)
 - Andrew Dassonville (https://github.com/andrewda)
 - toddrme2178 (https://github.com/toddrme2178)
+- James Curtin (https://github.com/jamescurtin)
