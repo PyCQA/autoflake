@@ -110,6 +110,8 @@ class UnitTests(unittest.TestCase):
     def test_filter_unused_variable(self):
         self.assertEqual('foo()',
                          autoflake.filter_unused_variable('x = foo()'))
+        self.assertEqual('foo(k=None)',
+                         autoflake.filter_unused_variable('x = foo(k=None)'))
 
         self.assertEqual('    foo()',
                          autoflake.filter_unused_variable('    x = foo()'))
