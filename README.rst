@@ -119,6 +119,8 @@ Below is the full listing of options::
       --remove-all-unused-imports
                             remove all unused imports (not just those from the
                             standard library)
+      --ignore-init-module-imports
+                            exclude __init__.py when removing unused imports
       --remove-duplicate-keys
                             remove all duplicate keys in objects
       --remove-unused-variables
