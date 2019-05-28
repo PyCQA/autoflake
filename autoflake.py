@@ -665,7 +665,7 @@ def fix_file(filename, args, standard_out):
             standard_out.write(''.join(diff))
     else:
         if args.check:
-            standard_out.write('No issues detected!')
+            standard_out.write('No issues detected!\n')
 
 
 def open_with_encoding(filename, encoding, mode='r',
