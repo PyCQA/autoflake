@@ -1362,7 +1362,7 @@ except ImportError:
             autoflake._main(argv=['my_fake_program', '--check', filename],
                             standard_out=output_file,
                             standard_error=None)
-            self.assertEqual('No issues detected!', output_file.getvalue())
+            self.assertEqual('No issues detected!\n', output_file.getvalue())
 
     def test_check_correct_file(self):
         with temporary_file("""\
@@ -1374,7 +1374,7 @@ print(x)
             autoflake._main(argv=['my_fake_program', '--check', filename],
                             standard_out=output_file,
                             standard_error=None)
-            self.assertEqual('No issues detected!', output_file.getvalue())
+            self.assertEqual('No issues detected!\n', output_file.getvalue())
 
     def test_check_useless_pass(self):
         with temporary_file("""\
