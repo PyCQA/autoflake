@@ -39,7 +39,7 @@ import tokenize
 
 import astor
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 
 PYTHON_SHEBANG_REGEX = re.compile(r'^#!.*\bpython[23]?\b\s*$')
@@ -119,7 +119,7 @@ def extract_attribute(target):
     else:
         print("Dynamic attribute! How?")
         print(ast.dump(target))
-        raise RuntimeError
+        # raise RuntimeError
 
     # Attribute objects are unwrapped in reverse order.
     item_path.reverse()
@@ -190,7 +190,7 @@ class WildcardFixer(ast.NodeVisitor):
 
     def visit_Call(self, node):
         as_src = astor.to_source(node)
-
+        fname = "."
         fnode = node.func
         if isinstance(fnode, ast.Name):
             fname = fnode.id
@@ -200,7 +200,9 @@ class WildcardFixer(ast.NodeVisitor):
                 fname = extract_attribute(fnode)
             except RuntimeError:
                 print("Wat?")
+                print("""'''""")
                 print(as_src)
+                print("""'''""")
         else:
             print("Wat?")
             # print(ast.dump(node))
