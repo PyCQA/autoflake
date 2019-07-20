@@ -23,7 +23,7 @@ script:
     - pyflakes ./*.py
     - pip install pycodestyle pydocstyle
     - pycodestyle ./*.py
-    - pydocstyle autoflake.py setup.py
+    - if [ "$TRAVIS_PYTHON_VERSION" != "3.4" ]; then pydocstyle autoflake.py setup.py; fi
 
 after_success:
     - pip install --quiet coverage
