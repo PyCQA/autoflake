@@ -651,7 +651,9 @@ def fix_file(filename, args, standard_out):
 
     if original_source != filtered_source:
         if args.check:
-            standard_out.write('{filename} Unused imports/variables detected.'.format(filename=filename))
+            standard_out.write(
+                '{filename}: Unused imports/variables detected'.format(
+                    filename=filename))
             sys.exit(1)
         if args.in_place:
             with open_with_encoding(filename, mode='w',
