@@ -13,3 +13,4 @@ Contributors
 - Nobuhiro Kasai (https://github.com/sh4869)
 - James Curtin (https://github.com/jamescurtin)
 - Sargun Dhillon (https://github.com/sargun)
+- Anton Ogorodnikov (https://github.com/arxell)
