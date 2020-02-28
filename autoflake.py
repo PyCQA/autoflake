@@ -271,6 +271,105 @@ def multiline_statement(line, previous_line=''):
         return True
 
 
+class Continuation(object):
+    """Allows a rewrite operation to span multiple lines.
+
+    In the main rewrite loop, every time a helper function returns a
+    ``Continuation`` object instead of a string, this object will be called
+    with the following line.
+    """
+    def __init__(self, line):
+        self.accumulator = collections.deque([line])
+
+    def __call__(self, line):
+        """Process line considering the accumulator.
+
+        Return self to keep processing the following lines or a string
+        with the final result of all the lines processed at once.
+        """
+        raise NotImplementedError("Abstract method needs to be overwritten")
+
+
+def _valid_char_in_line(char, line):
+    """Returns True if a char appears in the line and is not commented"""
+    comment_index = line.find('#')
+    char_index = line.find(char)
+    valid_char_in_line = (
+        char_index >= 0 and
+        (comment_index > char_index or comment_index < 0)
+    )
+    return valid_char_in_line
+
+
+class FilterMultilineFromImport(Continuation):
+    IMPORT_RE = re.compile(r'\bimport\b')
+    INDENTATION_RE = re.compile(r'^\s*\(?')
+    REST_RE = re.compile(r'\s*[)#\\].*$')
+    TRAILING_RE = re.compile(r'\s*,?\s*$')
+
+    def __init__(self, line):
+        self.parentesized = '(' in line
+        self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
+        Continuation.__init__(self, imports)
+
+    def is_over(self, line):
+        """Returns True if the multiline import statement is over"""
+        if self.parentesized:
+            return _valid_char_in_line(')', line)
+
+        return not _valid_char_in_line('\\', line)
+
+    def parse_line(self, line):
+        """Break the line in indentation, actual imports and the rest.
+
+        Returns a tuple with 3 strings: indentation, the actual modules being
+        imported and the rest (comments, line continuation (``\\``) and
+        eventual hanging commas).
+        """
+        indentation = ""
+        imports = line
+        rest = ""
+
+        match = self.INDENTATION_RE.search(imports)
+        if match:
+            indentation = match.group(0)
+            imports = imports.replace(indentation, '', 1)
+
+        match = self.REST_RE.search(imports)
+        if match:
+            rest = match.group(0)
+            imports = imports.replace(rest, '', 1)
+
+        match = self.TRAILING_RE.search(imports)
+        if match:
+            rest = match.group(0) + rest
+            imports = imports.rstrip(" \t,")
+
+        return (indentation, imports, rest)
+
+    def fix_line(self, line):
+        indentation, imports, rest = self.parse_line(line)
+        if imports:
+            pretend_single_line = self.from_ + " from " + imports
+            # TODO: call original filter_from_import
+            _, fixed = self.IMPORT_RE.split(pretend_single_line, maxsplit=1)
+            line = indentation + fixed + rest
+        if line.strip():
+            return line
+        else:
+            # This will skip when the line is left empty
+            return ""
+
+    def __call__(self, line):
+        self.accumulator.append(line)
+        if not self.is_over(line):
+            return self
+        new_text = "".join(self.fix_line(line) for line in self.accumulator)
+        # TODO: remove duplicated commas
+        return new_text
+
+
+
 def filter_from_import(line, unused_module):
     """Parse and filter ``from something import a, b, c``.
 
@@ -387,26 +486,32 @@ def filter_code(source, additional_imports=None,
 
     sio = io.StringIO(source)
     previous_line = ''
+    result = None
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if '#' in line:
-            yield line
+        if isinstance(result, Continuation):
+            result = result(line)
+        elif '#' in line:
+            result = line
         elif line_number in marked_import_line_numbers:
-            yield filter_unused_import(
+            result = filter_unused_import(
                 line,
                 unused_module=marked_unused_module[line_number],
                 remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
                 previous_line=previous_line)
         elif line_number in marked_variable_line_numbers:
-            yield filter_unused_variable(line)
+            result = filter_unused_variable(line)
         elif line_number in marked_key_line_numbers:
-            yield filter_duplicate_key(line, line_messages[line_number],
+            result = filter_duplicate_key(line, line_messages[line_number],
                                        line_number, marked_key_line_numbers,
                                        source)
         elif line_number in marked_star_import_line_numbers:
-            yield filter_star_import(line, undefined_names)
+            result = filter_star_import(line, undefined_names)
         else:
-            yield line
+            result = line
+
+        if not isinstance(result, Continuation):
+            yield result
 
         previous_line = line
 

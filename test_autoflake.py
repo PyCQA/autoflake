@@ -16,6 +16,7 @@ import tempfile
 import unittest
 
 import autoflake
+from autoflake import FilterMultilineFromImport
 
 
 ROOT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -1622,6 +1623,40 @@ print(x)
             self.assertIn(
                 'redundant',
                 process.communicate()[1].decode())
+
+
+class MultilineFromImportTests(unittest.TestCase):
+    def test_is_over(self):
+        filt = FilterMultilineFromImport('from . import (')
+        self.assertEqual(filt.is_over('module)'), True)
+        self.assertEqual(filt.is_over('  )'), True)
+        self.assertEqual(filt.is_over('  )  # comment'), True)
+        self.assertEqual(filt.is_over('#  )'), False)
+        self.assertEqual(filt.is_over('module'), False)
+        self.assertEqual(filt.is_over('module, \\'), False)
+        self.assertEqual(filt.is_over(''), False)
+
+        filt = FilterMultilineFromImport('from . import module, \\')
+        self.assertEqual(filt.is_over('module'), True)
+        self.assertEqual(filt.is_over(''), True)
+        self.assertEqual(filt.is_over('m1, m2  # comment with \\'), True)
+        self.assertEqual(filt.is_over('m1, m2 \\'), False)
+        self.assertEqual(filt.is_over('m1, m2 \\  #'), False)
+        self.assertEqual(filt.is_over('m1, m2 \\  # comment with \\'), False)
+        self.assertEqual(filt.is_over('\\'), False)
+
+    def test_parse_line(self):
+        filt = FilterMultilineFromImport('from . import (')
+        self.assertEqual(filt.parse_line("  a, b"), ("  ", "a, b", ""))
+        self.assertEqual(filt.parse_line("a, b,  "), ("", "a, b", ",  "))
+        self.assertEqual(filt.parse_line("a, b  ,  "), ("", "a, b", "  ,  "))
+        self.assertEqual(filt.parse_line("a, b"), ("", "a, b", ""))
+        self.assertEqual(filt.parse_line("a, b  "), ("", "a, b", "  "))
+        self.assertEqual(filt.parse_line("a, b,"), ("", "a, b", ","))
+        self.assertEqual(filt.parse_line("  "), ("  ", "", ""))
+        self.assertEqual(filt.parse_line("a, b)"), ("", "a, b", ")"))
+        self.assertEqual(filt.parse_line("a, b, ) "), ("", "a, b", ", ) "))
+        self.assertEqual(filt.parse_line("a, b\\  "), ("", "a, b", "\\  "))
 
 
 @contextlib.contextmanager
