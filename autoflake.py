@@ -409,11 +409,14 @@ class FilterMultilineImport(PendingFix):
         return self.fix(self.accumulator)
 
 
-def _filter_imports(imports, base_module=None, unused_module=()):
+def _filter_imports(imports, parent=None, unused_module=()):
     # We compare full module name (``a.module`` not `module`) to
     # guarantee the exact same module as detected from pyflakes.
+    sep = '' if parent and parent[0] == '.' else '.'
+
     def full_name(name):
-        return name if base_module is None else base_module + '.' + name
+        return name if parent is None else parent + sep + name
+
     return [x for x in imports if full_name(x) not in unused_module]
 
 

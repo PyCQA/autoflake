@@ -1771,6 +1771,45 @@ class MultilineFromImportTests(unittest.TestCase):
             ')\n',
         )
 
+    def test_fix_relative(self):
+        # Example m0 (isort)
+        self.unused = ['.lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'from . import (lib1, lib2, lib3,\n',
+            '               lib4, lib5, lib6)\n'
+        ],
+            'from . import (lib2,\n'
+            '               lib5, lib6)\n'
+        )
+
+        # Example m1(isort)
+        self.unused = ['..lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'from .. import (lib1,\n',
+            '                lib2,\n',
+            '                lib3,\n',
+            '                lib4,\n',
+            '                lib5,\n',
+            '                lib6)\n'
+        ],
+            'from .. import (lib2,\n'
+            '                lib5,\n'
+            '                lib6)\n'
+        )
+
+        # Example m2 (isort)
+        self.unused = ['...lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'from ... import \\\n',
+            '    lib1, lib2, lib3, \\\n',
+            '    lib4, lib5, lib6\n'
+        ],
+            'from ... import \\\n'
+            '    lib2, \\\n'
+            '    lib5, lib6\n'
+        )
+
+    def test_fix_without_from(self):
         self.unused = ['lib' + str(x) for x in (1, 3, 4)]
 
         # Multiline but not "from"
