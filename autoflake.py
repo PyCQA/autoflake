@@ -35,6 +35,7 @@ import io
 import os
 import re
 import signal
+import string
 import sys
 import tokenize
 
@@ -302,14 +303,20 @@ def _valid_char_in_line(char, line):
 
 
 class FilterMultilineFromImport(PendingFix):
-    IMPORT_RE = re.compile(r'\bimport\b')
-    INDENTATION_RE = re.compile(r'^\s*\(?')
-    REST_RE = re.compile(r'\s*[)#\\].*$')
-    TRAILING_RE = re.compile(r'\s*,?\s*$')
+    IMPORT_RE = re.compile(r'\s*\bimport\b\s*')
+    INDENTATION_RE = re.compile(r'^\s*')
+    HANGING_LPAR_RE = re.compile(r'^\s*\(\s*(#.*)?$')
+    BASE_RE = re.compile(r'\bfrom\s+([^ ]+)')
 
-    def __init__(self, line):
+    Parsed = collections.namedtuple('Parsed',
+                                    'indentation leading_comma imports '
+                                    'trailing_comma line_continuation')
+
+    def __init__(self, line, unused_module=()):
+        self.unused = unused_module
         self.parentesized = '(' in line
         self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
+        self.base = self.BASE_RE.search(self.from_).group(1)
         PendingFix.__init__(self, imports)
 
     def is_over(self, line):
@@ -320,54 +327,91 @@ class FilterMultilineFromImport(PendingFix):
         return not _valid_char_in_line('\\', line)
 
     def parse_line(self, line):
-        """Break the line in indentation, actual imports and the rest.
+        """Break the line in the different components"""
+        match = self.INDENTATION_RE.search(line)
+        indentation = match.group(0)
+        # Remove the extra space (indentation already stored) so we can detect
+        # leading commas and line continuation
+        imports = line.strip()
+        leading_comma = ',' if imports and imports[0] == ',' else ''
+        line_continuation = ' \\' if imports and imports[-1] == '\\' else ''
 
-        Returns a tuple with 3 strings: indentation, the actual modules being
-        imported and the rest (comments, line continuation (``\\``) and
-        eventual hanging commas).
-        """
-        indentation = ""
-        imports = line
-        rest = ""
+        # Remove the line continuation (already stored) and hanging pars so we
+        # can detect trailing commas
+        imports = imports.strip(string.whitespace + '()\\')
+        trailing_comma = ',' if imports and imports[-1] == ',' else ''
 
-        match = self.INDENTATION_RE.search(imports)
-        if match:
-            indentation = match.group(0)
-            imports = imports.replace(indentation, '', 1)
+        # Finally remove the remaining trailing/leading chars
+        imports = imports.strip(string.whitespace + ',')
 
-        match = self.REST_RE.search(imports)
-        if match:
-            rest = match.group(0)
-            imports = imports.replace(rest, '', 1)
-
-        match = self.TRAILING_RE.search(imports)
-        if match:
-            rest = match.group(0) + rest
-            imports = imports.rstrip(" \t,")
-
-        return (indentation, imports, rest)
+        return self.Parsed(indentation, leading_comma, imports,
+                           trailing_comma, line_continuation)
 
     def fix_line(self, line):
-        indentation, imports, rest = self.parse_line(line)
-        if imports:
-            pretend_single_line = self.from_ + " from " + imports
-            # TODO: call original filter_from_import
-            _, fixed = self.IMPORT_RE.split(pretend_single_line, maxsplit=1)
-            line = indentation + fixed + rest
-        if line.strip():
+        parsed = self.parse_line(line)
+        if not parsed.imports:
+            # Do nothing if the line does not contain any actual import
             return line
-        else:
-            # This will skip when the line is left empty
-            return ""
+        imports = [x.strip() for x in parsed.imports.split(',')]
+        clean_imports = _filter_imports(imports, self.base, self.unused)
+        ending = get_line_ending(line).lstrip(' \t')
+
+        if not clean_imports:
+            # Even when there is no import left, a single comma might still be
+            # necessary
+            if parsed.leading_comma and parsed.trailing_comma:
+                return (parsed.indentation + parsed.leading_comma +
+                        parsed.line_continuation + ending)
+            else:
+                # The line can be removed
+                return None
+
+        if parsed.leading_comma:
+            # By inserting an empty element at the beginning of the list we
+            # force a trailing comma correctly separated by a space
+            clean_imports.insert(0, '')
+        import_str = ', '.join(clean_imports)
+
+        return (parsed.indentation + import_str + parsed.trailing_comma +
+                parsed.line_continuation + ending)
+
+    def fix(self, accumulated):
+        new_lines = collections.deque()
+        for line in accumulated:
+            # Don't change if the line contains a comment or is empty except
+            # for trailing characters (but preserve indentation)
+            comment = '#' in line
+            without_trailing = line.rstrip(string.whitespace + '()\\')
+            empty = len(without_trailing.strip()) < 1
+            if comment or empty:
+                ending = get_line_ending(line).lstrip(' \t')
+                new_lines.append(line.rstrip() + ending)
+            else:
+                new_lines.append(self.fix_line(line))
+
+        code = ''.join(x for x in new_lines if x)  # Filter None out
+        ending = get_line_ending(code).lstrip(' \t')
+        code = code.rstrip(string.whitespace + '\\')  # Avoid extra \
+        if self.parentesized:
+            if '(' not in code:
+                code = '(' + code.lstrip(' \t')
+            if ')' not in code:
+                code = code + ')'
+
+        return self.from_ + ' import ' + code + ending
 
     def __call__(self, line):
         self.accumulator.append(line)
         if not self.is_over(line):
             return self
-        new_text = "".join(self.fix_line(line) for line in self.accumulator)
-        # TODO: remove duplicated commas
-        return new_text
 
+        return self.fix(self.accumulator)
+
+
+def _filter_imports(imports, base_module, unused_module):
+    # We compare full module name (``a.module`` not `module`) to
+    # guarantee the exact same module as detected from pyflakes.
+    return [x for x in imports if base_module + '.' + x not in unused_module]
 
 
 def filter_from_import(line, unused_module):
@@ -381,15 +425,11 @@ def filter_from_import(line, unused_module):
     base_module = re.search(pattern=r'\bfrom\s+([^ ]+)',
                             string=indentation).group(1)
 
-    # Create an imported module list with base module name
-    # ex ``from a import b, c as d`` -> ``['a.b', 'a.c as d']``
-    imports = re.split(pattern=r',', string=imports.strip())
-    imports = [base_module + '.' + x.strip() for x in imports]
+    imports = re.split(pattern=r'\s*,\s*', string=imports.strip())
 
     # We compare full module name (``a.module`` not `module`) to
     # guarantee the exact same module as detected from pyflakes.
-    filtered_imports = [x.replace(base_module + '.', '')
-                        for x in imports if x not in unused_module]
+    filtered_imports = _filter_imports(imports, base_module, unused_module)
 
     # All of the import in this statement is unused
     if not filtered_imports:

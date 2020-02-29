@@ -6,6 +6,7 @@
 from __future__ import unicode_literals
 
 import contextlib
+import functools
 import io
 import os
 import re
@@ -16,7 +17,6 @@ import tempfile
 import unittest
 
 import autoflake
-from autoflake import FilterMultilineFromImport
 
 
 ROOT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -1627,36 +1627,147 @@ print(x)
 
 class MultilineFromImportTests(unittest.TestCase):
     def test_is_over(self):
-        filt = FilterMultilineFromImport('from . import (')
-        self.assertEqual(filt.is_over('module)'), True)
-        self.assertEqual(filt.is_over('  )'), True)
-        self.assertEqual(filt.is_over('  )  # comment'), True)
-        self.assertEqual(filt.is_over('#  )'), False)
-        self.assertEqual(filt.is_over('module'), False)
-        self.assertEqual(filt.is_over('module, \\'), False)
-        self.assertEqual(filt.is_over(''), False)
+        filt = autoflake.FilterMultilineFromImport('from . import (')
+        self.assertTrue(filt.is_over('module)'))
+        self.assertTrue(filt.is_over('  )'))
+        self.assertTrue(filt.is_over('  )  # comment'))
+        self.assertFalse(filt.is_over('#  )'))
+        self.assertFalse(filt.is_over('module'))
+        self.assertFalse(filt.is_over('module, \\'))
+        self.assertFalse(filt.is_over(''))
 
-        filt = FilterMultilineFromImport('from . import module, \\')
-        self.assertEqual(filt.is_over('module'), True)
-        self.assertEqual(filt.is_over(''), True)
-        self.assertEqual(filt.is_over('m1, m2  # comment with \\'), True)
-        self.assertEqual(filt.is_over('m1, m2 \\'), False)
-        self.assertEqual(filt.is_over('m1, m2 \\  #'), False)
-        self.assertEqual(filt.is_over('m1, m2 \\  # comment with \\'), False)
-        self.assertEqual(filt.is_over('\\'), False)
+        filt = autoflake.FilterMultilineFromImport('from . import module, \\')
+        self.assertTrue(filt.is_over('module'))
+        self.assertTrue(filt.is_over(''))
+        self.assertTrue(filt.is_over('m1, m2  # comment with \\'))
+        self.assertFalse(filt.is_over('m1, m2 \\'))
+        self.assertFalse(filt.is_over('m1, m2 \\  #'))
+        self.assertFalse(filt.is_over('m1, m2 \\  # comment with \\'))
+        self.assertFalse(filt.is_over('\\'))
+
+    def assert_parse(self, line, result):
+        self.assertEqual(tuple(self.parser.parse_line(line)), result)
 
     def test_parse_line(self):
-        filt = FilterMultilineFromImport('from . import (')
-        self.assertEqual(filt.parse_line("  a, b"), ("  ", "a, b", ""))
-        self.assertEqual(filt.parse_line("a, b,  "), ("", "a, b", ",  "))
-        self.assertEqual(filt.parse_line("a, b  ,  "), ("", "a, b", "  ,  "))
-        self.assertEqual(filt.parse_line("a, b"), ("", "a, b", ""))
-        self.assertEqual(filt.parse_line("a, b  "), ("", "a, b", "  "))
-        self.assertEqual(filt.parse_line("a, b,"), ("", "a, b", ","))
-        self.assertEqual(filt.parse_line("  "), ("  ", "", ""))
-        self.assertEqual(filt.parse_line("a, b)"), ("", "a, b", ")"))
-        self.assertEqual(filt.parse_line("a, b, ) "), ("", "a, b", ", ) "))
-        self.assertEqual(filt.parse_line("a, b\\  "), ("", "a, b", "\\  "))
+        self.parser = autoflake.FilterMultilineFromImport('from . import (')
+        self.assert_parse('  a, b',    ('  ', '' , 'a, b', '' , '')) # noqa
+        self.assert_parse('a, b,  ',   (''  , '' , 'a, b', ',', '')) # noqa
+        self.assert_parse(' ,a, b , ', (' ' , ',', 'a, b', ',', '')) # noqa
+        self.assert_parse('a, b',      (''  , '' , 'a, b', '' , '')) # noqa
+        self.assert_parse('a, b  ',    (''  , '' , 'a, b', '' , '')) # noqa
+        self.assert_parse('a, b,',     (''  , '' , 'a, b', ',', '')) # noqa
+        self.assert_parse('  ',        ('  ', '' , ''    , '' , '')) # noqa
+        self.assert_parse(' (',        (' ' , '' , ''    , '' , '')) # noqa
+        self.assert_parse('a, b)',     (''  , '' , 'a, b', '' , '')) # noqa
+        self.assert_parse('a, b, ) ',  (''  , '' , 'a, b', ',', '')) # noqa
+        self.assert_parse('a, b\\  ',  (''  , '' , 'a, b', '' , ' \\')) # noqa
+        self.assert_parse(' ,a, )\\',  (' ' , ',', 'a'   , ',', ' \\')) # noqa
+        self.assert_parse(' (a, )\\',  (' ' , '' , 'a'   , ',', ' \\')) # noqa
+        self.assert_parse(' \\ ',      (' ' , '' , ''    , '' , ' \\')) # noqa
+
+    UNUSED = ['third_party.lib' + str(x) for x in (1, 3, 4)]
+
+    def assert_fix(self, lines, result):
+        fixer = autoflake.FilterMultilineFromImport(lines[0], self.UNUSED)
+        fixed = functools.reduce(lambda acc, x: acc(x), lines[1:], fixer)
+        self.assertEqual(fixed, result)
+
+    def test_fix(self):
+        # Example m0 (isort)
+        self.assert_fix([
+            'from third_party import (lib1, lib2, lib3,\n',
+            '                         lib4, lib5, lib6)\n'
+        ],
+            'from third_party import (lib2,\n'
+            '                         lib5, lib6)\n'
+        )
+
+        # Example m1(isort)
+        self.assert_fix([
+            'from third_party import (lib1,\n',
+            '                         lib2,\n',
+            '                         lib3,\n',
+            '                         lib4,\n',
+            '                         lib5,\n',
+            '                         lib6)\n'
+        ],
+            'from third_party import (lib2,\n'
+            '                         lib5,\n'
+            '                         lib6)\n'
+        )
+
+        # Example m2 (isort)
+        self.assert_fix([
+            'from third_party import \\\n',
+            '    lib1, lib2, lib3, \\\n',
+            '    lib4, lib5, lib6\n'
+        ],
+            'from third_party import \\\n'
+            '    lib2, \\\n'
+            '    lib5, lib6\n'
+        )
+
+        # Example m3 (isort)
+        self.assert_fix([
+            'from third_party import (\n',
+            '    lib1,\n',
+            '    lib2,\n',
+            '    lib3,\n',
+            '    lib4,\n',
+            '    lib5\n',
+            ')\n'
+        ],
+            'from third_party import (\n'
+            '    lib2,\n'
+            '    lib5\n'
+            ')\n'
+        )
+
+        # Example m4 (isort)
+        self.assert_fix([
+            'from third_party import (\n',
+            '    lib1, lib2, lib3, lib4,\n',
+            '    lib5, lib6)\n'
+        ],
+            'from third_party import (\n'
+            '    lib2,\n'
+            '    lib5, lib6)\n'
+        )
+
+        # Example m5 (isort)
+        self.assert_fix([
+            'from third_party import (\n',
+            '    lib1, lib2, lib3, lib4,\n',
+            '    lib5, lib6\n',
+            ')\n'
+        ],
+            'from third_party import (\n'
+            '    lib2,\n'
+            '    lib5, lib6\n'
+            ')\n'
+        )
+
+        # Some Deviations
+        self.assert_fix([
+            'from third_party import ( # comment\n',
+            '    lib1,\\\n',  # only unused + line continuation
+            '    lib2, \n',
+            '    libA\n',  # used import with no commas
+            '    ,lib3, \n',  # leading and trailing commas with unused import
+            '    libB, \n',
+            '    \\  \n',  # empty line with continuation
+            '    lib4,  # noqa \n',  # unused import with comment
+            ')\n'
+        ],
+            'from third_party import ( # comment\n'
+            '    lib2,\n'
+            '    libA\n'
+            '    ,\n'
+            '    libB,\n'
+            '    \\\n'
+            '    lib4,  # noqa\n'
+            ')\n',
+        )
 
 
 @contextlib.contextmanager
