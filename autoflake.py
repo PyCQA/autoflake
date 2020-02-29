@@ -271,11 +271,11 @@ def multiline_statement(line, previous_line=''):
         return True
 
 
-class Continuation(object):
+class PendingFix(object):
     """Allows a rewrite operation to span multiple lines.
 
     In the main rewrite loop, every time a helper function returns a
-    ``Continuation`` object instead of a string, this object will be called
+    ``PendingFix`` object instead of a string, this object will be called
     with the following line.
     """
     def __init__(self, line):
@@ -301,7 +301,7 @@ def _valid_char_in_line(char, line):
     return valid_char_in_line
 
 
-class FilterMultilineFromImport(Continuation):
+class FilterMultilineFromImport(PendingFix):
     IMPORT_RE = re.compile(r'\bimport\b')
     INDENTATION_RE = re.compile(r'^\s*\(?')
     REST_RE = re.compile(r'\s*[)#\\].*$')
@@ -310,7 +310,7 @@ class FilterMultilineFromImport(Continuation):
     def __init__(self, line):
         self.parentesized = '(' in line
         self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
-        Continuation.__init__(self, imports)
+        PendingFix.__init__(self, imports)
 
     def is_over(self, line):
         """Returns True if the multiline import statement is over"""
@@ -488,7 +488,7 @@ def filter_code(source, additional_imports=None,
     previous_line = ''
     result = None
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if isinstance(result, Continuation):
+        if isinstance(result, PendingFix):
             result = result(line)
         elif '#' in line:
             result = line
@@ -510,7 +510,7 @@ def filter_code(source, additional_imports=None,
         else:
             result = line
 
-        if not isinstance(result, Continuation):
+        if not isinstance(result, PendingFix):
             yield result
 
         previous_line = line
