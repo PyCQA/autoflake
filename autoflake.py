@@ -302,8 +302,8 @@ def _valid_char_in_line(char, line):
     return valid_char_in_line
 
 
-class FilterMultilineFromImport(PendingFix):
-    IMPORT_RE = re.compile(r'\s*\bimport\b\s*')
+class FilterMultilineImport(PendingFix):
+    IMPORT_RE = re.compile(r'\bimport\b\s*')
     INDENTATION_RE = re.compile(r'^\s*')
     HANGING_LPAR_RE = re.compile(r'^\s*\(\s*(#.*)?$')
     BASE_RE = re.compile(r'\bfrom\s+([^ ]+)')
@@ -316,7 +316,8 @@ class FilterMultilineFromImport(PendingFix):
         self.unused = unused_module
         self.parentesized = '(' in line
         self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
-        self.base = self.BASE_RE.search(self.from_).group(1)
+        match = self.BASE_RE.search(self.from_)
+        self.base = match.group(1) if match else None
         PendingFix.__init__(self, imports)
 
     def is_over(self, line):
@@ -398,7 +399,7 @@ class FilterMultilineFromImport(PendingFix):
             if ')' not in code:
                 code = code + ')'
 
-        return self.from_ + ' import ' + code + ending
+        return self.from_ + 'import ' + code + ending
 
     def __call__(self, line):
         self.accumulator.append(line)
@@ -408,10 +409,12 @@ class FilterMultilineFromImport(PendingFix):
         return self.fix(self.accumulator)
 
 
-def _filter_imports(imports, base_module, unused_module):
+def _filter_imports(imports, base_module=None, unused_module=()):
     # We compare full module name (``a.module`` not `module`) to
     # guarantee the exact same module as detected from pyflakes.
-    return [x for x in imports if base_module + '.' + x not in unused_module]
+    def full_name(name):
+        return name if base_module is None else base_module + '.' + name
+    return [x for x in imports if full_name(x) not in unused_module]
 
 
 def filter_from_import(line, unused_module):

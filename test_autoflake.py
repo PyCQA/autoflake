@@ -1627,7 +1627,7 @@ print(x)
 
 class MultilineFromImportTests(unittest.TestCase):
     def test_is_over(self):
-        filt = autoflake.FilterMultilineFromImport('from . import (')
+        filt = autoflake.FilterMultilineImport('from . import (')
         self.assertTrue(filt.is_over('module)'))
         self.assertTrue(filt.is_over('  )'))
         self.assertTrue(filt.is_over('  )  # comment'))
@@ -1636,7 +1636,7 @@ class MultilineFromImportTests(unittest.TestCase):
         self.assertFalse(filt.is_over('module, \\'))
         self.assertFalse(filt.is_over(''))
 
-        filt = autoflake.FilterMultilineFromImport('from . import module, \\')
+        filt = autoflake.FilterMultilineImport('from . import module, \\')
         self.assertTrue(filt.is_over('module'))
         self.assertTrue(filt.is_over(''))
         self.assertTrue(filt.is_over('m1, m2  # comment with \\'))
@@ -1649,7 +1649,7 @@ class MultilineFromImportTests(unittest.TestCase):
         self.assertEqual(tuple(self.parser.parse_line(line)), result)
 
     def test_parse_line(self):
-        self.parser = autoflake.FilterMultilineFromImport('from . import (')
+        self.parser = autoflake.FilterMultilineImport('from . import (')
         self.assert_parse('  a, b',    ('  ', '' , 'a, b', '' , '')) # noqa
         self.assert_parse('a, b,  ',   (''  , '' , 'a, b', ',', '')) # noqa
         self.assert_parse(' ,a, b , ', (' ' , ',', 'a, b', ',', '')) # noqa
@@ -1665,14 +1665,16 @@ class MultilineFromImportTests(unittest.TestCase):
         self.assert_parse(' (a, )\\',  (' ' , '' , 'a'   , ',', ' \\')) # noqa
         self.assert_parse(' \\ ',      (' ' , '' , ''    , '' , ' \\')) # noqa
 
-    UNUSED = ['third_party.lib' + str(x) for x in (1, 3, 4)]
+    unused = ()
 
     def assert_fix(self, lines, result):
-        fixer = autoflake.FilterMultilineFromImport(lines[0], self.UNUSED)
+        fixer = autoflake.FilterMultilineImport(lines[0], self.unused)
         fixed = functools.reduce(lambda acc, x: acc(x), lines[1:], fixer)
         self.assertEqual(fixed, result)
 
     def test_fix(self):
+        self.unused = ['third_party.lib' + str(x) for x in (1, 3, 4)]
+
         # Example m0 (isort)
         self.assert_fix([
             'from third_party import (lib1, lib2, lib3,\n',
@@ -1767,6 +1769,48 @@ class MultilineFromImportTests(unittest.TestCase):
             '    \\\n'
             '    lib4,  # noqa\n'
             ')\n',
+        )
+
+        self.unused = ['lib' + str(x) for x in (1, 3, 4)]
+
+        # Multiline but not "from"
+        self.assert_fix([
+            'import \\\n',
+            '    lib1, lib2, lib3, \\\n',
+            '    lib4, lib5, lib6\n'
+        ],
+            'import \\\n'
+            '    lib2, \\\n'
+            '    lib5, lib6\n'
+        )
+        self.assert_fix([
+            'import lib1, lib2, lib3, \\\n',
+            '       lib4, lib5, lib6\n'
+        ],
+            'import lib2, \\\n'
+            '       lib5, lib6\n'
+        )
+
+        # Problematic example without "from"
+        self.assert_fix([
+            'import \\\n',
+            '    lib1,\\\n',
+            '    lib2, \\\n',
+            '    libA\\\n',  # used import with no commas
+            '    ,lib3, \\\n',  # leading and trailing commas with unused
+            '    libB, \\\n',
+            '    \\  \n',  # empty line with continuation
+            '    lib4  # noqa \\\n'  # unused import with comment
+            '\n'
+        ],
+            'import \\\n'
+            '    lib2, \\\n'
+            '    libA \\\n'
+            '    , \\\n'
+            '    libB, \\\n'
+            '    \\\n'
+            '    lib4  # noqa\n'
+            '\n'
         )
 
 
