@@ -319,6 +319,13 @@ def _fix_leading_comma(text):
     return indent + content
 
 
+def _top_module(module_name):
+    """Return the name of the top level module in the hierarchy"""
+    if module_name[0] == '.':
+        return '%LOCAL_MODULE%'
+    return module_name.split('.')[0]
+
+
 class FilterMultilineImport(PendingFix):
     IMPORT_RE = re.compile(r'\bimport\b\s*')
     INDENTATION_RE = re.compile(r'^\s*')
@@ -329,16 +336,26 @@ class FilterMultilineImport(PendingFix):
                                     'indentation leading_comma imports '
                                     'trailing_comma line_continuation')
 
-    def __init__(self, line, previous_line='', unused_module=()):
-        self.unused = unused_module
+    def __init__(self, line, unused_module=(), remove_all_unused_imports=False,
+                 safe_to_remove=SAFE_IMPORTS, previous_line=''):
+        self.remove = unused_module
         self.parenthesized = '(' in line
         self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
         match = self.BASE_RE.search(self.from_)
         self.base = match.group(1) if match else None
         self.give_up = False
 
+        if not remove_all_unused_imports:
+            if self.base and _top_module(self.base) not in safe_to_remove:
+                self.give_up = True
+            else:
+                self.remove = [
+                    x for x in unused_module
+                    if _top_module(x) in safe_to_remove
+                ]
+
         if '\\' in previous_line:
-            # Ignore things like "try: \<new line> import" ...
+            # Ignore tricky things like "try: \<new line> import" ...
             self.give_up = True
 
         self.analyze(line)
@@ -386,7 +403,7 @@ class FilterMultilineImport(PendingFix):
             # Do nothing if the line does not contain any actual import
             return line
         imports = [x.strip() for x in parsed.imports.split(',')]
-        clean_imports = _filter_imports(imports, self.base, self.unused)
+        clean_imports = _filter_imports(imports, self.base, self.remove)
         ending = get_line_ending(line).lstrip(' \t')
 
         if not clean_imports:
@@ -477,9 +494,6 @@ def filter_from_import(line, unused_module):
                             string=indentation).group(1)
 
     imports = re.split(pattern=r'\s*,\s*', string=imports.strip())
-
-    # We compare full module name (``a.module`` not `module`) to
-    # guarantee the exact same module as detected from pyflakes.
     filtered_imports = _filter_imports(imports, base_module, unused_module)
 
     # All of the import in this statement is unused
@@ -629,7 +643,9 @@ def filter_unused_import(line, unused_module, remove_all_unused_imports,
         return line
 
     if multiline_import(line, previous_line):
-        filt = FilterMultilineImport(line, previous_line, unused_module)
+        filt = FilterMultilineImport(line, unused_module,
+                                     remove_all_unused_imports,
+                                     imports, previous_line)
         return filt()
         # TODO consider the other params: remove_all_unused_imports, imports
 

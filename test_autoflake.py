@@ -1704,9 +1704,12 @@ class MultilineFromImportTests(unittest.TestCase):
 
     unused = ()
 
-    def assert_fix(self, lines, result):
-        fixer = autoflake.FilterMultilineImport(lines[0],
-                                                unused_module=self.unused)
+    def assert_fix(self, lines, result, remove_all=True):
+        fixer = autoflake.FilterMultilineImport(
+            lines[0],
+            remove_all_unused_imports=remove_all,
+            unused_module=self.unused
+        )
         fixed = functools.reduce(lambda acc, x: acc(x), lines[1:], fixer)
         self.assertEqual(fixed, result)
 
@@ -1999,6 +2002,44 @@ class MultilineFromImportTests(unittest.TestCase):
             ')\n'
         ],
             '\t\tpass\n'
+        )
+
+    def test_without_remove_all(self):
+        self.unused = ['lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'import \\\n',
+            '    lib1,\\\n',
+            '    lib3,\\\n',
+            '    lib4\n',
+        ],
+            'import \\\n'
+            '    lib1, \\\n'
+            '    lib3, \\\n'
+            '    lib4\n',
+            remove_all=False
+        )
+
+        self.unused += ['os.path.' + x for x in ('dirname', 'isdir', 'join')]
+        self.assert_fix([
+            'from os.path import (\n',
+            '    dirname,\n',
+            '    isdir,\n',
+            '    join,\n',
+            ')\n'
+        ],
+            'pass\n',
+            remove_all=False
+        )
+        self.assert_fix([
+            'import \\\n',
+            '    os.path.dirname, \\\n',
+            '    lib1, \\\n',
+            '    lib3\n',
+        ],
+            'import \\\n'
+            '    lib1, \\\n'
+            '    lib3\n',
+            remove_all=False
         )
 
 
