@@ -423,13 +423,12 @@ import os, math, subprocess
                 unused_module=['foo.abc', 'foo.subprocess',
                                'foo.math']))
 
-    def test_filter_code_should_ignore_multiline_imports(self):
+    def test_filter_code_multiline_imports(self):
         self.assertEqual(
             r"""\
 import os
 pass
-import os, \
-    math, subprocess
+import os
 os.foo()
 """,
             ''.join(autoflake.filter_code(r"""\
@@ -438,6 +437,39 @@ import re
 import os, \
     math, subprocess
 os.foo()
+""")))
+
+    def test_filter_code_multiline_from_imports(self):
+        self.assertEqual(
+            r"""\
+import os
+pass
+from os.path import (
+    join,
+)
+join('a', 'b')
+pass
+os.foo()
+from os.path import \
+    isdir
+isdir('42')
+""",
+            ''.join(autoflake.filter_code(r"""\
+import os
+import re
+from os.path import (
+    exists,
+    join,
+)
+join('a', 'b')
+from os.path import \
+    abspath, basename, \
+    commonpath
+os.foo()
+from os.path import \
+    isfile \
+    , isdir
+isdir('42')
 """)))
 
     def test_filter_code_should_ignore_semicolons(self):
@@ -1645,6 +1677,11 @@ class MultilineFromImportTests(unittest.TestCase):
         self.assertFalse(filt.is_over('m1, m2 \\  # comment with \\'))
         self.assertFalse(filt.is_over('\\'))
 
+        # "Multiline" imports that are not really multiline
+        filt = autoflake.FilterMultilineImport('import os; '
+                                               'import math, subprocess')
+        self.assertTrue(filt.is_over())
+
     def assert_parse(self, line, result):
         self.assertEqual(tuple(self.parser.parse_line(line)), result)
 
@@ -1668,7 +1705,8 @@ class MultilineFromImportTests(unittest.TestCase):
     unused = ()
 
     def assert_fix(self, lines, result):
-        fixer = autoflake.FilterMultilineImport(lines[0], self.unused)
+        fixer = autoflake.FilterMultilineImport(lines[0],
+                                                unused_module=self.unused)
         fixed = functools.reduce(lambda acc, x: acc(x), lines[1:], fixer)
         self.assertEqual(fixed, result)
 
@@ -1696,6 +1734,20 @@ class MultilineFromImportTests(unittest.TestCase):
             'from third_party import (lib2,\n'
             '                         lib5,\n'
             '                         lib6)\n'
+        )
+
+        # Variation m1(isort)
+        self.assert_fix([
+            'from third_party import (lib1\n',
+            '                        ,lib2\n',
+            '                        ,lib3\n',
+            '                        ,lib4\n',
+            '                        ,lib5\n',
+            '                        ,lib6)\n'
+        ],
+            'from third_party import (lib2\n'
+            '                        , lib5\n'
+            '                        , lib6)\n'
         )
 
         # Example m2 (isort)
@@ -1752,8 +1804,8 @@ class MultilineFromImportTests(unittest.TestCase):
         # Some Deviations
         self.assert_fix([
             'from third_party import ( # comment\n',
-            '    lib1,\\\n',  # only unused + line continuation
-            '    lib2, \n',
+            '    lib1\\\n',  # only unused + line continuation
+            '    ,lib2, \n',
             '    libA\n',  # used import with no commas
             '    ,lib3, \n',  # leading and trailing commas with unused import
             '    libB, \n',
@@ -1769,6 +1821,30 @@ class MultilineFromImportTests(unittest.TestCase):
             '    \\\n'
             '    lib4,  # noqa\n'
             ')\n',
+        )
+
+    def test_indentation(self):
+        # Some weird indentation examples
+        self.unused = ['third_party.lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            '    from third_party import (\n',
+            '            lib1, lib2, lib3, lib4,\n',
+            '    lib5, lib6\n',
+            ')\n'
+        ],
+            '    from third_party import (\n'
+            '            lib2,\n'
+            '    lib5, lib6\n'
+            ')\n'
+        )
+        self.assert_fix([
+            '\tfrom third_party import \\\n',
+            '\t\tlib1, lib2, lib3, \\\n',
+            '\t\tlib4, lib5, lib6\n'
+        ],
+            '\tfrom third_party import \\\n'
+            '\t\tlib2, \\\n'
+            '\t\tlib5, lib6\n'
         )
 
     def test_fix_relative(self):
@@ -1809,18 +1885,35 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib5, lib6\n'
         )
 
+        # Example m3 (isort)
+        self.unused = ['.parent.lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'from .parent import (\n',
+            '    lib1,\n',
+            '    lib2,\n',
+            '    lib3,\n',
+            '    lib4,\n',
+            '    lib5\n',
+            ')\n'
+        ],
+            'from .parent import (\n'
+            '    lib2,\n'
+            '    lib5\n'
+            ')\n'
+        )
+
     def test_fix_without_from(self):
         self.unused = ['lib' + str(x) for x in (1, 3, 4)]
 
         # Multiline but not "from"
         self.assert_fix([
             'import \\\n',
-            '    lib1, lib2, lib3, \\\n',
-            '    lib4, lib5, lib6\n'
+            '    lib1, lib2, lib3 \\\n',
+            '    ,lib4, lib5, lib6\n'
         ],
             'import \\\n'
-            '    lib2, \\\n'
-            '    lib5, lib6\n'
+            '    lib2 \\\n'
+            '    , lib5, lib6\n'
         )
         self.assert_fix([
             'import lib1, lib2, lib3, \\\n',
@@ -1850,6 +1943,62 @@ class MultilineFromImportTests(unittest.TestCase):
             '    \\\n'
             '    lib4  # noqa\n'
             '\n'
+        )
+
+    def test_give_up_on_semicolon(self):
+        self.unused = ['lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'import \\\n',
+            '    lib1, lib2, lib3, \\\n',
+            '    lib4, lib5; import lib6\n'
+        ],
+            'import \\\n'
+            '    lib1, lib2, lib3, \\\n'
+            '    lib4, lib5; import lib6\n'
+        )
+        self.unused = ['.lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'from . import ( # comment\n',
+            '    lib1,\\\n',  # only unused + line continuation
+            '    lib2, \n',
+            '    libA\n',  # used import with no commas
+            '    ,lib3, \n',  # leading and trailing commas with unused import
+            '    libB, \n',
+            '    \\  \n',  # empty line with continuation
+            '    lib4,  # noqa \n',  # unused import with comment
+            ') ; import sys\n'
+        ],
+            'from . import ( # comment\n'
+            '    lib1,\\\n'
+            '    lib2, \n'
+            '    libA\n'
+            '    ,lib3, \n'
+            '    libB, \n'
+            '    \\  \n'
+            '    lib4,  # noqa \n'
+            ') ; import sys\n'
+        )
+
+    def test_no_empty_imports(self):
+        self.unused = ['lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'import \\\n',
+            '    lib1, lib3, \\\n',
+            '    lib4 \n'
+        ],
+            'pass\n'
+        )
+
+        # Indented parenthesized block
+        self.unused = ['.parent.lib' + str(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            '\t\tfrom .parent import (\n',
+            '    lib1,\n',
+            '    lib3,\n',
+            '    lib4,\n',
+            ')\n'
+        ],
+            '\t\tpass\n'
         )
 
 

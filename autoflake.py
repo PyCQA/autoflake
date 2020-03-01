@@ -32,6 +32,7 @@ import collections
 import distutils.sysconfig
 import fnmatch
 import io
+import itertools
 import os
 import re
 import signal
@@ -251,10 +252,6 @@ def multiline_import(line, previous_line=''):
         if symbol in line:
             return True
 
-    # Ignore doctests.
-    if line.lstrip().startswith('>'):
-        return True
-
     return multiline_statement(line, previous_line)
 
 
@@ -302,6 +299,26 @@ def _valid_char_in_line(char, line):
     return valid_char_in_line
 
 
+def _fix_leading_comma(text):
+    r"""Fix the situation ``\\\s*,``  or ``\(\s*,`` (+consider comments)"""
+    # Calculate indentation absorbing the leading ( or \into it
+    content = text.lstrip(string.whitespace + '\\(')
+    indent = text.replace(content, '')
+
+    if content.startswith('#'):
+        # Pop comment from content into `indent`
+        lines = content.splitlines(keepends=True)
+        indent += lines[0]  # <-- comment
+        content = content.replace(lines[0], '')
+        # Pop indentation from the second line into `indent`
+        orig_content = content
+        content = orig_content.lstrip()
+        indent += orig_content.replace(content, '')
+
+    content = content.lstrip(string.whitespace + ',')
+    return indent + content
+
+
 class FilterMultilineImport(PendingFix):
     IMPORT_RE = re.compile(r'\bimport\b\s*')
     INDENTATION_RE = re.compile(r'^\s*')
@@ -312,20 +329,35 @@ class FilterMultilineImport(PendingFix):
                                     'indentation leading_comma imports '
                                     'trailing_comma line_continuation')
 
-    def __init__(self, line, unused_module=()):
+    def __init__(self, line, previous_line='', unused_module=()):
         self.unused = unused_module
-        self.parentesized = '(' in line
+        self.parenthesized = '(' in line
         self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
         match = self.BASE_RE.search(self.from_)
         self.base = match.group(1) if match else None
+        self.give_up = False
+
+        if '\\' in previous_line:
+            # Ignore things like "try: \<new line> import" ...
+            self.give_up = True
+
+        self.analyze(line)
+
         PendingFix.__init__(self, imports)
 
-    def is_over(self, line):
+    def is_over(self, line=None):
         """Returns True if the multiline import statement is over"""
-        if self.parentesized:
+        if line is None:
+            line = self.accumulator[-1]
+
+        if self.parenthesized:
             return _valid_char_in_line(')', line)
 
         return not _valid_char_in_line('\\', line)
+
+    def analyze(self, line):
+        if any(ch in line for ch in ';:'):
+            self.give_up = True
 
     def parse_line(self, line):
         """Break the line in the different components"""
@@ -377,6 +409,7 @@ class FilterMultilineImport(PendingFix):
                 parsed.line_continuation + ending)
 
     def fix(self, accumulated):
+        """Given a collection of accumulated lines, fix the entire import."""
         new_lines = collections.deque()
         for line in accumulated:
             # Don't change if the line contains a comment or is empty except
@@ -390,21 +423,33 @@ class FilterMultilineImport(PendingFix):
             else:
                 new_lines.append(self.fix_line(line))
 
-        code = ''.join(x for x in new_lines if x)  # Filter None out
+        code = ''.join(x for x in new_lines if x)  # Filter out 'None's
+        code = _fix_leading_comma(code)
         ending = get_line_ending(code).lstrip(' \t')
-        code = code.rstrip(string.whitespace + '\\')  # Avoid extra \
-        if self.parentesized:
+        code = code.rstrip(string.whitespace + '\\,')  # Avoid trailing \ ,
+        if self.parenthesized:  # Add parenthesis if needed
             if '(' not in code:
-                code = '(' + code.lstrip(' \t')
+                code = '(' + code.lstrip(' \t,')
             if ')' not in code:
                 code = code + ')'
+        code += ending
 
-        return self.from_ + 'import ' + code + ending
+        # Replace empty imports with a pass
+        empty = len(code.strip(string.whitespace + '\\()')) < 1
+        if empty:
+            indentation = self.INDENTATION_RE.search(self.from_).group(0)
+            return indentation + 'pass' + ending
 
-    def __call__(self, line):
-        self.accumulator.append(line)
+        return self.from_ + 'import ' + code
+
+    def __call__(self, line=None):
+        if line:
+            self.accumulator.append(line)
+            self.analyze(line)
         if not self.is_over(line):
             return self
+        if self.give_up:
+            return self.from_ + 'import ' + ''.join(self.accumulator)
 
         return self.fix(self.accumulator)
 
@@ -412,7 +457,7 @@ class FilterMultilineImport(PendingFix):
 def _filter_imports(imports, parent=None, unused_module=()):
     # We compare full module name (``a.module`` not `module`) to
     # guarantee the exact same module as detected from pyflakes.
-    sep = '' if parent and parent[0] == '.' else '.'
+    sep = '' if parent and parent[-1] == '.' else '.'
 
     def full_name(name):
         return name if parent is None else parent + sep + name
@@ -579,8 +624,14 @@ def filter_star_import(line, marked_star_import_undefined_name):
 def filter_unused_import(line, unused_module, remove_all_unused_imports,
                          imports, previous_line=''):
     """Return line if used, otherwise return None."""
-    if multiline_import(line, previous_line):
+    # Ignore doctests.
+    if line.lstrip().startswith('>'):
         return line
+
+    if multiline_import(line, previous_line):
+        filt = FilterMultilineImport(line, previous_line, unused_module)
+        return filt()
+        # TODO consider the other params: remove_all_unused_imports, imports
 
     is_from_import = line.lstrip().startswith('from')
 
