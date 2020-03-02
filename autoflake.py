@@ -382,6 +382,7 @@ class FilterMultilineImport(PendingFix):
     def fix(self, accumulated):
         """Given a collection of accumulated lines, fix the entire import."""
         old_imports = ''.join(accumulated)
+        ending = get_line_ending(old_imports)
         # Split imports into segments that contain the module name +
         # comma + whitespace and eventual <newline> \ ( ) chars
         segments = [x for x in self.SEGMENT_RE.findall(old_imports) if x]
@@ -392,26 +393,32 @@ class FilterMultilineImport(PendingFix):
         if len(keep) == len(segments):
             return self.from_ + 'import ' + ''.join(accumulated)
 
-        # Since it is very difficult to deal with all the line breaks and
-        # continuations, let's use the code layout that already exists and
-        # just replace the module identifiers inside the first N-1 segments
-        # + the last segment
-        templates = list(zip(modules, segments))
-        templates = templates[:len(keep)-1] + templates[-1:]
-        # It is important to keep the last segment, since it might contain
-        # important chars like `)`
-        new_imports = ''.join(
-            template.replace(module, keep[i])
-            for i, (module, template) in enumerate(templates)
-        )
+        fixed = ''
+        if keep:
+            # Since it is very difficult to deal with all the line breaks and
+            # continuations, let's use the code layout that already exists and
+            # just replace the module identifiers inside the first N-1 segments
+            # + the last segment
+            templates = list(zip(modules, segments))
+            templates = templates[:len(keep)-1] + templates[-1:]
+            # It is important to keep the last segment, since it might contain
+            # important chars like `)`
+            fixed = ''.join(
+                template.replace(module, keep[i])
+                for i, (module, template) in enumerate(templates)
+            )
+
+            # Fix the edge case: inline parenthesis + just one surviving import
+            if self.parenthesized and any(ch not in fixed for ch in '()'):
+                fixed = fixed.strip(string.whitespace + '()') + ending
 
         # Replace empty imports with a "pass" statement
-        empty = len(new_imports.strip(string.whitespace + '\\(),')) < 1
+        empty = len(fixed.strip(string.whitespace + '\\(),')) < 1
         if empty:
             indentation = self.INDENTATION_RE.search(self.from_).group(0)
-            return indentation + 'pass' + get_line_ending(old_imports)
+            return indentation + 'pass' + ending
 
-        return self.from_ + 'import ' + new_imports
+        return self.from_ + 'import ' + fixed
 
     def __call__(self, line=None):
         """Accumulate all the lines in the import and then trigger the fix."""

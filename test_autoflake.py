@@ -1663,6 +1663,7 @@ class MultilineFromImportTests(unittest.TestCase):
         self.assertTrue(filt.is_over('module)\n'))
         self.assertTrue(filt.is_over('  )\n'))
         self.assertTrue(filt.is_over('  )  # comment\n'))
+        self.assertTrue(filt.is_over('from module import (a, b)\n'))
         self.assertFalse(filt.is_over('#  )'))
         self.assertFalse(filt.is_over('module\n'))
         self.assertFalse(filt.is_over('module, \\\n'))
@@ -1690,7 +1691,7 @@ class MultilineFromImportTests(unittest.TestCase):
             remove_all_unused_imports=remove_all,
             unused_module=self.unused
         )
-        fixed = functools.reduce(lambda acc, x: acc(x), lines[1:], fixer)
+        fixed = functools.reduce(lambda acc, x: acc(x), lines[1:], fixer())
         self.assertEqual(fixed, result)
 
     def test_fix(self):
@@ -1971,7 +1972,8 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib5.x.y.z\n'
         )
 
-    def test_give_up_on_semicolon(self):
+    def test_give_up(self):
+        # Semicolon
         self.unused = ['lib' + str(x) for x in (1, 3, 4)]
         self.assert_fix([
             'import \\\n',
@@ -1982,6 +1984,7 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib1, lib2, lib3, \\\n'
             '    lib4, lib5; import lib6\n'
         )
+        # Comments
         self.unused = ['.lib' + str(x) for x in (1, 3, 4)]
         self.assert_fix([
             'from . import ( # comment\n',
@@ -2005,7 +2008,7 @@ class MultilineFromImportTests(unittest.TestCase):
             ') ; import sys\n'
         )
 
-    def test_just_one_import(self):
+    def test_just_one_import_used(self):
         self.unused = ['lib2']
         self.assert_fix([
             'import \\\n',
@@ -2019,6 +2022,45 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib2\n'
         ],
             'pass\n'
+        )
+        # Example from issue #8
+        self.unused = ['re.subn']
+        self.assert_fix([
+            '\tfrom re import (subn)\n',
+        ],
+            '\tpass\n',
+        )
+
+    def test_just_one_import_left(self):
+        # Examples from issue #8
+        self.unused = ['math.sqrt']
+        self.assert_fix([
+            'from math import (\n',
+            '        sqrt,\n',
+            '        log\n',
+            '    )\n'
+        ],
+            'from math import (\n'
+            '        log\n'
+            '    )\n'
+        )
+        self.unused = ['module.b']
+        self.assert_fix([
+            'from module import (a, b)\n',
+        ],
+            'from module import a\n',
+        )
+        self.assert_fix([
+            'from module import (a,\n',
+            '                    b)\n',
+        ],
+            'from module import a\n',
+        )
+        self.unused = []
+        self.assert_fix([
+            'from re import (subn)\n',
+        ],
+            'from re import (subn)\n',
         )
 
     def test_no_empty_imports(self):
