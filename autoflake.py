@@ -299,16 +299,6 @@ def _valid_char_in_line(char, line):
     return valid_char_in_line
 
 
-def _fix_leading_comma(text):
-    r"""Fix the situation ``\\\s*,``  or ``\(\s*,`` (+consider comments)"""
-    # Calculate indentation absorbing the leading ( or \into it
-    content = text.lstrip(string.whitespace + '\\(')
-    indent = text.replace(content, '')
-    # Now it is safe to remove the leading comma and the following whitespace
-    content = content.lstrip(string.whitespace + ',')
-    return indent + content
-
-
 def _top_module(module_name):
     """Return the name of the top level module in the hierarchy"""
     if module_name[0] == '.':
@@ -321,14 +311,26 @@ def _modules_to_remove(unused_modules, safe_to_remove=SAFE_IMPORTS):
     return [x for x in unused_modules if _top_module(x) in safe_to_remove]
 
 
+def _segment_module(segment):
+    """Extract the module identifier inside the segment.
+
+    It might be the case the segment does not have a module (e.g. is composed
+    just by a parenthesis or line continuation and whitespace). In this
+    scenario we just keep the segment... These characters are not valid in
+    identifiers, so they will never be contained in the list of unused modules
+    anyway.
+    """
+    return segment.strip(string.whitespace + ',\\()') or segment
+
+
 class FilterMultilineImport(PendingFix):
     IMPORT_RE = re.compile(r'\bimport\b\s*')
     INDENTATION_RE = re.compile(r'^\s*')
     BASE_RE = re.compile(r'\bfrom\s+([^ ]+)')
-
-    Parsed = collections.namedtuple('Parsed',
-                                    'indentation leading_comma imports '
-                                    'trailing_comma line_continuation')
+    SEGMENT_RE = re.compile(
+        r'([^,\s]+(?:[\s\\]+as[\s\\]+[^,\s]+)?[,\s\\)]*)', re.M)
+    # ^ module + comma + following space (including new line and continuation)
+    IDENTIFIER_RE = re.compile(r'[^,\s]+')
 
     def __init__(self, line, unused_module=(), remove_all_unused_imports=False,
                  safe_to_remove=SAFE_IMPORTS, previous_line=''):
@@ -366,76 +368,40 @@ class FilterMultilineImport(PendingFix):
         if any(ch in line for ch in ';:#'):
             self.give_up = True
 
-    def parse_line(self, line):
-        """Break the line in the different components"""
-        match = self.INDENTATION_RE.search(line)
-        indentation = match.group(0)
-        # Remove the extra space (indentation already stored) so we can detect
-        # leading commas and line continuation
-        imports = line.strip()
-        leading_comma = ',' if imports and imports[0] == ',' else ''
-        line_continuation = ' \\' if imports and imports[-1] == '\\' else ''
-
-        # Remove the line continuation (already stored) and hanging pars so we
-        # can detect trailing commas
-        imports = imports.strip(string.whitespace + '()\\')
-        trailing_comma = ',' if imports and imports[-1] == ',' else ''
-
-        # Finally remove the remaining trailing/leading chars
-        imports = imports.strip(string.whitespace + ',')
-
-        return self.Parsed(indentation, leading_comma, imports,
-                           trailing_comma, line_continuation)
-
-    def fix_line(self, line):
-        parsed = self.parse_line(line)
-        if not parsed.imports:
-            # Do nothing if the line does not contain any actual import
-            return line
-        imports = [x.strip() for x in parsed.imports.split(',')]
-        clean_imports = _filter_imports(imports, self.base, self.remove)
-        ending = get_line_ending(line).strip(' \t')
-
-        if not clean_imports:
-            # Even when there is no import left, a single comma might still be
-            # necessary
-            if parsed.leading_comma and parsed.trailing_comma:
-                return (parsed.indentation + parsed.leading_comma +
-                        parsed.line_continuation + ending)
-            else:
-                # The line can be removed
-                return None
-
-        if parsed.leading_comma:
-            # By inserting an empty element at the beginning of the list we
-            # force a trailing comma correctly separated by a space
-            clean_imports.insert(0, '')
-        import_str = ', '.join(clean_imports)
-
-        return (parsed.indentation + import_str + parsed.trailing_comma +
-                parsed.line_continuation + ending)
-
     def fix(self, accumulated):
         """Given a collection of accumulated lines, fix the entire import."""
-        new_lines = [self.fix_line(x) for x in accumulated]
-        imports = ''.join(x for x in new_lines if x)  # Filter out 'None's
-        imports = _fix_leading_comma(imports)
-        ending = get_line_ending(imports).strip(' \t')
-        imports = imports.rstrip(string.whitespace + '\\,')  # Trailing \ ,
-        if self.parenthesized:  # Add parenthesis if needed
-            if '(' not in imports:
-                imports = '(' + imports.lstrip(' \t,')
-            if ')' not in imports:
-                imports = imports + ')'
-        imports += ending
 
-        # Replace empty imports with a pass
-        empty = len(imports.strip(string.whitespace + '\\()')) < 1
+        old_imports = ''.join(accumulated)
+        # Split imports into segments that contain the module name +
+        # comma + whitespace and eventual <newline> \ ( ) chars
+        segments = [x for x in self.SEGMENT_RE.findall(old_imports) if x]
+        modules = [_segment_module(x) for x in segments]
+        keep = _filter_imports(modules, self.base, self.remove)
+
+        # Short-circuit if no import was discarded
+        if len(keep) == len(segments):
+            return self.from_ + 'import ' + ''.join(accumulated)
+
+        # Since it is very difficult to deal with all the line breaks and
+        # continuations, let's use the code layout that already exists and
+        # just replace the module identifiers inside the first N-1 segments
+        # + the last segment
+        templates = list(zip(modules, segments))
+        templates = templates[:len(keep)-1] + templates[-1:]
+        # It is important to keep the last segment, since it might contain
+        # important chars like `)`
+        new_imports = ''.join(
+            template.replace(module, keep[i])
+            for i, (module, template) in enumerate(templates)
+        )
+
+        # Replace empty imports with a "pass" statement
+        empty = len(new_imports.strip(string.whitespace + '\\(),')) < 1
         if empty:
             indentation = self.INDENTATION_RE.search(self.from_).group(0)
-            return indentation + 'pass' + ending
+            return indentation + 'pass' + get_line_ending(old_imports)
 
-        return self.from_ + 'import ' + imports
+        return self.from_ + 'import ' + new_imports
 
     def __call__(self, line=None):
         if line:

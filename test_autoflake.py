@@ -1682,26 +1682,6 @@ class MultilineFromImportTests(unittest.TestCase):
                                                'import math, subprocess')
         self.assertTrue(filt.is_over())
 
-    def assert_parse(self, line, result):
-        self.assertEqual(tuple(self.parser.parse_line(line)), result)
-
-    def test_parse_line(self):
-        self.parser = autoflake.FilterMultilineImport('from . import (')
-        self.assert_parse('  a, b',    ('  ', '' , 'a, b', '' , '')) # noqa
-        self.assert_parse('a, b,  ',   (''  , '' , 'a, b', ',', '')) # noqa
-        self.assert_parse(' ,a, b , ', (' ' , ',', 'a, b', ',', '')) # noqa
-        self.assert_parse('a, b',      (''  , '' , 'a, b', '' , '')) # noqa
-        self.assert_parse('a, b  ',    (''  , '' , 'a, b', '' , '')) # noqa
-        self.assert_parse('a, b,',     (''  , '' , 'a, b', ',', '')) # noqa
-        self.assert_parse('  ',        ('  ', '' , ''    , '' , '')) # noqa
-        self.assert_parse(' (',        (' ' , '' , ''    , '' , '')) # noqa
-        self.assert_parse('a, b)',     (''  , '' , 'a, b', '' , '')) # noqa
-        self.assert_parse('a, b, ) ',  (''  , '' , 'a, b', ',', '')) # noqa
-        self.assert_parse('a, b\\  ',  (''  , '' , 'a, b', '' , ' \\')) # noqa
-        self.assert_parse(' ,a, )\\',  (' ' , ',', 'a'   , ',', ' \\')) # noqa
-        self.assert_parse(' (a, )\\',  (' ' , '' , 'a'   , ',', ' \\')) # noqa
-        self.assert_parse(' \\ ',      (' ' , '' , ''    , '' , ' \\')) # noqa
-
     unused = ()
 
     def assert_fix(self, lines, result, remove_all=True):
@@ -1721,8 +1701,7 @@ class MultilineFromImportTests(unittest.TestCase):
             'from third_party import (lib1, lib2, lib3,\n',
             '                         lib4, lib5, lib6)\n'
         ],
-            'from third_party import (lib2,\n'
-            '                         lib5, lib6)\n'
+            'from third_party import (lib2, lib5, lib6)\n'
         )
 
         # Example m1(isort)
@@ -1749,8 +1728,8 @@ class MultilineFromImportTests(unittest.TestCase):
             '                        ,lib6)\n'
         ],
             'from third_party import (lib2\n'
-            '                        , lib5\n'
-            '                        , lib6)\n'
+            '                        ,lib5\n'
+            '                        ,lib6)\n'
         )
 
         # Example m2 (isort)
@@ -1760,8 +1739,7 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib4, lib5, lib6\n'
         ],
             'from third_party import \\\n'
-            '    lib2, \\\n'
-            '    lib5, lib6\n'
+            '    lib2, lib5, lib6\n'
         )
 
         # Example m3 (isort)
@@ -1787,8 +1765,7 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib5, lib6)\n'
         ],
             'from third_party import (\n'
-            '    lib2,\n'
-            '    lib5, lib6)\n'
+            '    lib2, lib5, lib6)\n'
         )
 
         # Example m5 (isort)
@@ -1799,8 +1776,7 @@ class MultilineFromImportTests(unittest.TestCase):
             ')\n'
         ],
             'from third_party import (\n'
-            '    lib2,\n'
-            '    lib5, lib6\n'
+            '    lib2, lib5, lib6\n'
             ')\n'
         )
 
@@ -1817,12 +1793,50 @@ class MultilineFromImportTests(unittest.TestCase):
             ')\n'
         ],
             'from third_party import (\n'
-            '    lib2,\n'
-            '    libA\n'
-            '    ,\n'
+            '    lib2\\\n'
+            '    ,libA, \n'
             '    libB,\n'
-            '    \\\n'
             ')\n',
+        )
+
+        self.assert_fix([
+            'from third_party import (\n',
+            '    lib1\n',
+            ',\n',
+            '    lib2\n',
+            ',\n',
+            '    lib3\n',
+            ',\n',
+            '    lib4\n',
+            ',\n',
+            '    lib5\n',
+            ')\n'
+        ],
+            'from third_party import (\n'
+            '    lib2\n'
+            ',\n'
+            '    lib5\n'
+            ')\n'
+        )
+
+        self.assert_fix([
+            'from third_party import (\n',
+            '    lib1 \\\n',
+            ', \\\n',
+            '    lib2 \\\n',
+            ',\\\n',
+            '    lib3\n',
+            ',\n',
+            '    lib4\n',
+            ',\n',
+            '    lib5 \\\n',
+            ')\n'
+        ],
+            'from third_party import (\n'
+            '    lib2 \\\n'
+            ', \\\n'
+            '    lib5 \\\n'
+            ')\n'
         )
 
     def test_indentation(self):
@@ -1835,8 +1849,7 @@ class MultilineFromImportTests(unittest.TestCase):
             ')\n'
         ],
             '    from third_party import (\n'
-            '            lib2,\n'
-            '    lib5, lib6\n'
+            '            lib2, lib5, lib6\n'
             ')\n'
         )
         self.assert_fix([
@@ -1845,8 +1858,7 @@ class MultilineFromImportTests(unittest.TestCase):
             '\t\tlib4, lib5, lib6\n'
         ],
             '\tfrom third_party import \\\n'
-            '\t\tlib2, \\\n'
-            '\t\tlib5, lib6\n'
+            '\t\tlib2, lib5, lib6\n'
         )
 
     def test_fix_relative(self):
@@ -1856,8 +1868,7 @@ class MultilineFromImportTests(unittest.TestCase):
             'from . import (lib1, lib2, lib3,\n',
             '               lib4, lib5, lib6)\n'
         ],
-            'from . import (lib2,\n'
-            '               lib5, lib6)\n'
+            'from . import (lib2, lib5, lib6)\n'
         )
 
         # Example m1(isort)
@@ -1883,8 +1894,7 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib4, lib5, lib6\n'
         ],
             'from ... import \\\n'
-            '    lib2, \\\n'
-            '    lib5, lib6\n'
+            '    lib2, lib5, lib6\n'
         )
 
         # Example m3 (isort)
@@ -1914,15 +1924,13 @@ class MultilineFromImportTests(unittest.TestCase):
             '    ,lib4, lib5, lib6\n'
         ],
             'import \\\n'
-            '    lib2 \\\n'
-            '    , lib5, lib6\n'
+            '    lib2, lib5, lib6\n'
         )
         self.assert_fix([
             'import lib1, lib2, lib3, \\\n',
             '       lib4, lib5, lib6\n'
         ],
-            'import lib2, \\\n'
-            '       lib5, lib6\n'
+            'import lib2, lib5, lib6\n'
         )
 
         # Problematic example without "from"
@@ -1938,11 +1946,29 @@ class MultilineFromImportTests(unittest.TestCase):
             '\n'
         ],
             'import \\\n'
-            '    lib2, \\\n'
-            '    libA \\\n'
-            '    , \\\n'
-            '    libB\n'
+            '    lib2,\\\n'
+            '    libA, \\\n'
+            '    libB\\\n'
             '\n'
+        )
+
+        self.unused = ['lib{}.x.y.z'.format(x) for x in (1, 3, 4)]
+        self.assert_fix([
+            'import \\\n',
+            '    lib1.x.y.z \\',
+            '    , \\\n',
+            '    lib2.x.y.z \\\n',
+            '    , \\\n',
+            '    lib3.x.y.z \\\n',
+            '    , \\\n',
+            '    lib4.x.y.z \\\n',
+            '    , \\\n',
+            '    lib5.x.y.z\n'
+        ],
+            'import \\\n'
+            '    lib2.x.y.z \\'
+            '    , \\\n'
+            '    lib5.x.y.z\n'
         )
 
     def test_give_up_on_semicolon(self):
@@ -1979,6 +2005,22 @@ class MultilineFromImportTests(unittest.TestCase):
             ') ; import sys\n'
         )
 
+    def test_just_one_import(self):
+        self.unused = ['lib2']
+        self.assert_fix([
+            'import \\\n',
+            '    lib1\n'
+        ],
+            'import \\\n'
+            '    lib1\n'
+        )
+        self.assert_fix([
+            'import \\\n',
+            '    lib2\n'
+        ],
+            'pass\n'
+        )
+
     def test_no_empty_imports(self):
         self.unused = ['lib' + str(x) for x in (1, 3, 4)]
         self.assert_fix([
@@ -1986,7 +2028,7 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib1, lib3, \\\n',
             '    lib4 \n'
         ],
-            'pass\n'
+            'pass \n'
         )
 
         # Indented parenthesized block
@@ -2010,8 +2052,8 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib4\n',
         ],
             'import \\\n'
-            '    lib1, \\\n'
-            '    lib3, \\\n'
+            '    lib1,\\\n'
+            '    lib3,\\\n'
             '    lib4\n',
             remove_all=False
         )
