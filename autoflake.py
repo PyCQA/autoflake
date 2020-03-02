@@ -602,7 +602,6 @@ def filter_unused_import(line, unused_module, remove_all_unused_imports,
                                      remove_all_unused_imports,
                                      imports, previous_line)
         return filt()
-        # TODO consider the other params: remove_all_unused_imports, imports
 
     is_from_import = line.lstrip().startswith('from')
 
