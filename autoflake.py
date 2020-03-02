@@ -32,7 +32,6 @@ import collections
 import distutils.sysconfig
 import fnmatch
 import io
-import itertools
 import os
 import re
 import signal
@@ -564,8 +563,8 @@ def filter_code(source, additional_imports=None,
             result = filter_unused_variable(line)
         elif line_number in marked_key_line_numbers:
             result = filter_duplicate_key(line, line_messages[line_number],
-                                       line_number, marked_key_line_numbers,
-                                       source)
+                                          line_number, marked_key_line_numbers,
+                                          source)
         elif line_number in marked_star_import_line_numbers:
             result = filter_star_import(line, undefined_names)
         else:
