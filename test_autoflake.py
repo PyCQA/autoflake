@@ -1659,23 +1659,23 @@ print(x)
 
 class MultilineFromImportTests(unittest.TestCase):
     def test_is_over(self):
-        filt = autoflake.FilterMultilineImport('from . import (')
-        self.assertTrue(filt.is_over('module)'))
-        self.assertTrue(filt.is_over('  )'))
-        self.assertTrue(filt.is_over('  )  # comment'))
+        filt = autoflake.FilterMultilineImport('from . import (\n')
+        self.assertTrue(filt.is_over('module)\n'))
+        self.assertTrue(filt.is_over('  )\n'))
+        self.assertTrue(filt.is_over('  )  # comment\n'))
         self.assertFalse(filt.is_over('#  )'))
-        self.assertFalse(filt.is_over('module'))
-        self.assertFalse(filt.is_over('module, \\'))
-        self.assertFalse(filt.is_over(''))
+        self.assertFalse(filt.is_over('module\n'))
+        self.assertFalse(filt.is_over('module, \\\n'))
+        self.assertFalse(filt.is_over('\n'))
 
-        filt = autoflake.FilterMultilineImport('from . import module, \\')
-        self.assertTrue(filt.is_over('module'))
-        self.assertTrue(filt.is_over(''))
-        self.assertTrue(filt.is_over('m1, m2  # comment with \\'))
-        self.assertFalse(filt.is_over('m1, m2 \\'))
-        self.assertFalse(filt.is_over('m1, m2 \\  #'))
-        self.assertFalse(filt.is_over('m1, m2 \\  # comment with \\'))
-        self.assertFalse(filt.is_over('\\'))
+        filt = autoflake.FilterMultilineImport('from . import module, \\\n')
+        self.assertTrue(filt.is_over('module\n'))
+        self.assertTrue(filt.is_over('\n'))
+        self.assertTrue(filt.is_over('m1, m2  # comment with \\\n'))
+        self.assertFalse(filt.is_over('m1, m2 \\\n'))
+        self.assertFalse(filt.is_over('m1, m2 \\  #\n'))
+        self.assertFalse(filt.is_over('m1, m2 \\  # comment with \\\n'))
+        self.assertFalse(filt.is_over('\\\n'))
 
         # "Multiline" imports that are not really multiline
         filt = autoflake.FilterMultilineImport('import os; '
@@ -1806,23 +1806,22 @@ class MultilineFromImportTests(unittest.TestCase):
 
         # Some Deviations
         self.assert_fix([
-            'from third_party import ( # comment\n',
+            'from third_party import (\n',
             '    lib1\\\n',  # only unused + line continuation
             '    ,lib2, \n',
             '    libA\n',  # used import with no commas
             '    ,lib3, \n',  # leading and trailing commas with unused import
             '    libB, \n',
-            '    \\  \n',  # empty line with continuation
-            '    lib4,  # noqa \n',  # unused import with comment
+            '    \\\n',  # empty line with continuation
+            '    lib4,\n',  # unused import with comment
             ')\n'
         ],
-            'from third_party import ( # comment\n'
+            'from third_party import (\n'
             '    lib2,\n'
             '    libA\n'
             '    ,\n'
             '    libB,\n'
             '    \\\n'
-            '    lib4,  # noqa\n'
             ')\n',
         )
 
@@ -1935,16 +1934,14 @@ class MultilineFromImportTests(unittest.TestCase):
             '    ,lib3, \\\n',  # leading and trailing commas with unused
             '    libB, \\\n',
             '    \\  \n',  # empty line with continuation
-            '    lib4  # noqa \\\n'  # unused import with comment
+            '    lib4\\\n',  # unused import with comment
             '\n'
         ],
             'import \\\n'
             '    lib2, \\\n'
             '    libA \\\n'
             '    , \\\n'
-            '    libB, \\\n'
-            '    \\\n'
-            '    lib4  # noqa\n'
+            '    libB\n'
             '\n'
         )
 
