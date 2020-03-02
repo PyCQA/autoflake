@@ -276,7 +276,9 @@ class PendingFix(object):
     ``PendingFix`` object instead of a string, this object will be called
     with the following line.
     """
+
     def __init__(self, line):
+        """Analyse and store the first line."""
         self.accumulator = collections.deque([line])
 
     def __call__(self, line):
@@ -289,7 +291,7 @@ class PendingFix(object):
 
 
 def _valid_char_in_line(char, line):
-    """Returns True if a char appears in the line and is not commented"""
+    """Return True if a char appears in the line and is not commented."""
     comment_index = line.find('#')
     char_index = line.find(char)
     valid_char_in_line = (
@@ -300,14 +302,14 @@ def _valid_char_in_line(char, line):
 
 
 def _top_module(module_name):
-    """Return the name of the top level module in the hierarchy"""
+    """Return the name of the top level module in the hierarchy."""
     if module_name[0] == '.':
         return '%LOCAL_MODULE%'
     return module_name.split('.')[0]
 
 
 def _modules_to_remove(unused_modules, safe_to_remove=SAFE_IMPORTS):
-    """Discard unused modules that are not safe to remove from the list"""
+    """Discard unused modules that are not safe to remove from the list."""
     return [x for x in unused_modules if _top_module(x) in safe_to_remove]
 
 
@@ -324,6 +326,14 @@ def _segment_module(segment):
 
 
 class FilterMultilineImport(PendingFix):
+    """Remove unused imports from multiline import statements.
+
+    This class handles both the cases: "from imports" and "direct imports".
+
+    Some limitations exist (e.g. imports with comments, lines joined by ``;``,
+    etc). In these cases, the statement is left unchanged to avoid problems.
+    """
+
     IMPORT_RE = re.compile(r'\bimport\b\s*')
     INDENTATION_RE = re.compile(r'^\s*')
     BASE_RE = re.compile(r'\bfrom\s+([^ ]+)')
@@ -334,6 +344,7 @@ class FilterMultilineImport(PendingFix):
 
     def __init__(self, line, unused_module=(), remove_all_unused_imports=False,
                  safe_to_remove=SAFE_IMPORTS, previous_line=''):
+        """Receive the same parameters as ``filter_unused_import``."""
         self.remove = unused_module
         self.parenthesized = '(' in line
         self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
@@ -356,7 +367,7 @@ class FilterMultilineImport(PendingFix):
         PendingFix.__init__(self, imports)
 
     def is_over(self, line=None):
-        """Returns True if the multiline import statement is over"""
+        """Return True if the multiline import statement is over."""
         line = line or self.accumulator[-1]
 
         if self.parenthesized:
@@ -365,12 +376,12 @@ class FilterMultilineImport(PendingFix):
         return not _valid_char_in_line('\\', line)
 
     def analyze(self, line):
+        """Decide if the statement will be fixed or left unchanged."""
         if any(ch in line for ch in ';:#'):
             self.give_up = True
 
     def fix(self, accumulated):
         """Given a collection of accumulated lines, fix the entire import."""
-
         old_imports = ''.join(accumulated)
         # Split imports into segments that contain the module name +
         # comma + whitespace and eventual <newline> \ ( ) chars
@@ -404,6 +415,7 @@ class FilterMultilineImport(PendingFix):
         return self.from_ + 'import ' + new_imports
 
     def __call__(self, line=None):
+        """Accumulate all the lines in the import and then trigger the fix."""
         if line:
             self.accumulator.append(line)
             self.analyze(line)
