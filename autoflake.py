@@ -45,6 +45,7 @@ import pyflakes.reporter
 
 __version__ = '1.3.1'
 
+CONFIG_FILE = "setup.cfg"
 
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
 
@@ -835,6 +836,15 @@ def _main(argv, standard_out, standard_error):
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
     parser.add_argument('files', nargs='+', help='files to format')
+
+    if os.path.isfile(CONFIG_FILE):
+        import configparser
+        config = configparser.ConfigParser()
+        config.read(CONFIG_FILE)
+        if "autoflake" in config.sections():
+            for opt in config.options("autoflake"):
+                normalized_opt = opt.replace('_', '-')
+                argv.append("--" + normalized_opt)
 
     args = parser.parse_args(argv[1:])
 
