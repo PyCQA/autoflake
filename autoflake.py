@@ -32,6 +32,7 @@ import collections
 import distutils.sysconfig
 import fnmatch
 import io
+import logging
 import os
 import re
 import signal
@@ -45,6 +46,9 @@ import pyflakes.reporter
 
 __version__ = '1.3.1'
 
+
+_LOGGER = logging.getLogger('autoflake')
+_LOGGER.propagate = False
 
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
 
@@ -659,6 +663,7 @@ def fix_file(filename, args, standard_out):
             with open_with_encoding(filename, mode='w',
                                     encoding=encoding) as output_file:
                 output_file.write(filtered_source)
+            _LOGGER.info('Fixed %s', filename)
         else:
             diff = get_diff_text(
                 io.StringIO(original_source).readlines(),
@@ -668,6 +673,8 @@ def fix_file(filename, args, standard_out):
     else:
         if args.check:
             standard_out.write('No issues detected!\n')
+        else:
+            _LOGGER.debug('Clean %s: nothing to fix', filename)
 
 
 def open_with_encoding(filename, encoding, mode='r',
@@ -771,6 +778,7 @@ def is_exclude_file(filename, exclude):
 def match_file(filename, exclude):
     """Return True if file is okay for modifying/recursing."""
     if is_exclude_file(filename, exclude):
+        _LOGGER.debug('Skipped %s: matched to exclude pattern', filename)
         return False
 
     if not os.path.isdir(filename) and not is_python_file(filename):
@@ -794,6 +802,8 @@ def find_files(filenames, recursive, exclude):
         else:
             if not is_exclude_file(name, exclude):
                 yield name
+            else:
+                _LOGGER.debug('Skipped %s: matched to exclude pattern', name)
 
 
 def _main(argv, standard_out, standard_error):
@@ -834,13 +844,26 @@ def _main(argv, standard_out, standard_error):
                         help='remove unused variables')
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
+    parser.add_argument('-v', '--verbose', action='count', dest='verbosity',
+                        default=0, help='print more verbose logs (you can '
+                                        'repeat `-v` to make it more verbose)')
     parser.add_argument('files', nargs='+', help='files to format')
 
     args = parser.parse_args(argv[1:])
 
+    if standard_error is None:
+        _LOGGER.addHandler(logging.NullHandler())
+    else:
+        _LOGGER.addHandler(logging.StreamHandler(standard_error))
+        loglevels = [logging.WARNING, logging.INFO, logging.DEBUG]
+        try:
+            loglevel = loglevels[args.verbosity]
+        except IndexError:  # Too much -v
+            loglevel = loglevels[-1]
+        _LOGGER.setLevel(loglevel)
+
     if args.remove_all_unused_imports and args.imports:
-        print('Using both --remove-all and --imports is redundant',
-              file=standard_error)
+        _LOGGER.error('Using both --remove-all and --imports is redundant')
         return 1
 
     if args.exclude:
@@ -854,7 +877,7 @@ def _main(argv, standard_out, standard_error):
         try:
             fix_file(name, args=args, standard_out=standard_out)
         except IOError as exception:
-            print(unicode(exception), file=standard_error)
+            _LOGGER.error(unicode(exception))
             failure = True
 
     return 1 if failure else 0
