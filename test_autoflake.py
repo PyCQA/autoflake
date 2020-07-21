@@ -109,48 +109,62 @@ class UnitTests(unittest.TestCase):
 
     def test_filter_unused_variable(self):
         self.assertEqual('foo()',
-                         autoflake.filter_unused_variable('x = foo()'))
+                         autoflake.filter_unused_variable('x = foo()', 'x'))
 
         self.assertEqual('    foo()',
-                         autoflake.filter_unused_variable('    x = foo()'))
+                         autoflake.filter_unused_variable('    x = foo()', 'x'))
+
+    def test_filter_unused_variable_kwarg(self):
+        self.assertEqual('foo(k=None)',
+                         autoflake.filter_unused_variable('x = foo(k=None)', 'x'))
 
     def test_filter_unused_variable_with_literal_or_name(self):
         self.assertEqual('pass',
-                         autoflake.filter_unused_variable('x = 1'))
+                         autoflake.filter_unused_variable('x = 1', 'x'))
 
         self.assertEqual('pass',
-                         autoflake.filter_unused_variable('x = y'))
+                         autoflake.filter_unused_variable('x = y', 'x'))
 
         self.assertEqual('pass',
-                         autoflake.filter_unused_variable('x = {}'))
+                         autoflake.filter_unused_variable('x = {}', 'x'))
 
     def test_filter_unused_variable_with_basic_data_structures(self):
         self.assertEqual('pass',
-                         autoflake.filter_unused_variable('x = dict()'))
+                         autoflake.filter_unused_variable('x = dict()', 'x'))
 
         self.assertEqual('pass',
-                         autoflake.filter_unused_variable('x = list()'))
+                         autoflake.filter_unused_variable('x = list()', 'x'))
 
         self.assertEqual('pass',
-                         autoflake.filter_unused_variable('x = set()'))
+                         autoflake.filter_unused_variable('x = set()', 'x'))
 
     def test_filter_unused_variable_should_ignore_multiline(self):
-        self.assertEqual('x = foo()\\',
-                         autoflake.filter_unused_variable('x = foo()\\'))
+        self.assertEqual('foo()\\',
+                         autoflake.filter_unused_variable('x = foo()\\', 'x'))
+        self.assertEqual('x = foo(\\',
+                         autoflake.filter_unused_variable('x = foo(\\', 'x'))
+        self.assertEqual('x = foo(',
+                         autoflake.filter_unused_variable('x = foo(', 'x'))
+
 
     def test_filter_unused_variable_should_multiple_assignments(self):
-        self.assertEqual('x = y = foo()',
-                         autoflake.filter_unused_variable('x = y = foo()'))
+        self.assertEqual('y = foo()',
+                         autoflake.filter_unused_variable('x = y = foo()', 'x'))
+        self.assertEqual('x = foo()',
+                         autoflake.filter_unused_variable('x = y = foo()', 'y'))
+        self.assertEqual('foo()',
+                         autoflake.filter_unused_variable('x = y = foo()', 'xy'))
+
 
     def test_filter_unused_variable_with_exception(self):
         self.assertEqual(
             'except Exception:',
-            autoflake.filter_unused_variable('except Exception as exception:'))
+            autoflake.filter_unused_variable('except Exception as exception:', {'exception'}))
 
         self.assertEqual(
             'except (ImportError, ValueError):',
             autoflake.filter_unused_variable(
-                'except (ImportError, ValueError) as foo:'))
+                'except (ImportError, ValueError) as foo:', {'foo'}))
 
     def test_filter_code(self):
         self.assertEqual(

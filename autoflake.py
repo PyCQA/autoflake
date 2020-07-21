@@ -28,6 +28,7 @@ from __future__ import unicode_literals
 
 import ast
 import difflib
+import functools
 import collections
 import distutils.sysconfig
 import fnmatch
@@ -140,10 +141,11 @@ def star_import_usage_undefined_name(messages):
 
 
 def unused_variable_line_numbers(messages):
-    """Yield line numbers of unused variables."""
-    for message in messages:
-        if isinstance(message, pyflakes.messages.UnusedVariable):
-            yield message.lineno
+    """Dict of line numbers to unused variables."""
+    return {
+        m.lineno: frozenset(m.message_args)
+        for m in messages
+    }
 
 
 def duplicate_key_line_numbers(messages, source):
@@ -372,10 +374,11 @@ def filter_code(source, additional_imports=None,
         marked_star_import_line_numbers = frozenset()
 
     if remove_unused_variables:
-        marked_variable_line_numbers = frozenset(
-            unused_variable_line_numbers(messages))
+        marked_variable_line_numbers = (
+            unused_variable_line_numbers(messages)
+        )
     else:
-        marked_variable_line_numbers = frozenset()
+        marked_variable_line_numbers = {}
 
     if remove_duplicate_keys:
         marked_key_line_numbers = frozenset(
@@ -388,6 +391,7 @@ def filter_code(source, additional_imports=None,
     sio = io.StringIO(source)
     previous_line = ''
     for line_number, line in enumerate(sio.readlines(), start=1):
+        unused_vars = marked_variable_line_numbers.get(line_number)
         if '#' in line:
             yield line
         elif line_number in marked_import_line_numbers:
@@ -397,8 +401,8 @@ def filter_code(source, additional_imports=None,
                 remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
                 previous_line=previous_line)
-        elif line_number in marked_variable_line_numbers:
-            yield filter_unused_variable(line)
+        elif unused_vars:
+            yield filter_unused_variable(line, unused_vars)
         elif line_number in marked_key_line_numbers:
             yield filter_duplicate_key(line, line_messages[line_number],
                                        line_number, marked_key_line_numbers,
@@ -453,27 +457,64 @@ def filter_unused_import(line, unused_module, remove_all_unused_imports,
                 get_line_ending(line))
 
 
-def filter_unused_variable(line, previous_line=''):
+def _remove_one_assignment_target(unused_vars, line):
+    try:
+        parsed = ast.parse(line)
+    except SyntaxError:
+        return line
+
+    assignment = parsed.body[0]
+    if not isinstance(assignment, ast.Assign):
+        return line
+
+    targets = assignment.targets
+    for target in assignment.targets:
+        if not isinstance(target, ast.Name):
+            continue
+        name = target.id
+        if name not in unused_vars:
+            continue
+        offset = target.col_offset
+        return line[:offset] + re.sub(
+            r'\A\s*' + re.escape(name) + r'\s*=\s*',
+            '', line[offset:],
+            count=1,
+        )
+    return line
+
+
+def _fix(fn, value):
+    """
+    Apply fn to its output until it coverges
+    """
+    while True:
+        new_value = fn(value)
+        if new_value == value:
+            return new_value
+        value = new_value
+
+
+def filter_unused_variable(line, unused_vars):
     """Return line if used, otherwise return None."""
     if re.match(EXCEPT_REGEX, line):
-        return re.sub(r' as \w+:$', ':', line, count=1)
-    elif multiline_statement(line, previous_line):
-        return line
-    elif line.count('=') == 1:
-        split_line = line.split('=')
-        assert len(split_line) == 2
-        value = split_line[1].lstrip()
-        if ',' in split_line[0]:
-            return line
+        assert len(unused_vars) == 1
+        unused_e, = unused_vars
+        return line.replace(
+            ' as {}:'.format(unused_e),
+            ':',
+            1,
+        )
 
-        if is_literal_or_name(value):
-            # Rather than removing the line, replace with it "pass" to avoid
-            # a possible hanging block with no body.
-            value = 'pass' + get_line_ending(line)
+    indentation = get_indentation(line)
+    line = line[len(indentation):]
+    remove = functools.partial(_remove_one_assignment_target, unused_vars)
+    line = _fix(remove, line)
 
-        return get_indentation(line) + value
-    else:
-        return line
+    if is_literal_or_name(line):
+        # Rather than removing the line, replace with it "pass" to avoid
+        # a possible hanging block with no body.
+        return indentation + 'pass' + get_line_ending(line)
+    return indentation + line
 
 
 def filter_duplicate_key(line, message, line_number, marked_line_numbers,
