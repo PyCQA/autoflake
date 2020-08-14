@@ -69,17 +69,18 @@ except NameError:
 def standard_paths():
     """Yield paths to standard modules."""
     for is_plat_spec in [True, False]:
+
+        # Yield lib paths.
         path = distutils.sysconfig.get_python_lib(standard_lib=True,
                                                   plat_specific=is_plat_spec)
-
         for name in os.listdir(path):
             yield name
 
-        try:
-            for name in os.listdir(os.path.join(path, 'lib-dynload')):
+        # Yield lib-dynload paths.
+        dynload_path = os.path.join(path, 'lib-dynload')
+        if os.path.isdir(dynload_path):
+            for name in os.listdir(dynload_path):
                 yield name
-        except OSError:  # pragma: no cover
-            pass
 
 
 def standard_package_names():
@@ -88,7 +89,7 @@ def standard_package_names():
         if name.startswith('_') or '-' in name:
             continue
 
-        if '.' in name and name.rsplit('.')[-1] not in ['so', 'py', 'pyc']:
+        if '.' in name and not name.endswith(("so", "py", "pyc")):
             continue
 
         yield name.split('.')[0]
