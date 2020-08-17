@@ -103,9 +103,16 @@ def extract_attribute(target):
     item_path = []
     if isinstance(target, ast.Name):
         return target.id
+    if isinstance(target, ast.Subscript):
+        return extract_attribute(target.value)
     while isinstance(target.value, ast.Attribute):
-        item_path.append(target.attr)
-        target = target.value
+        try:
+            item_path.append(target.attr)
+            target = target.value
+        except Exception:
+            import pdb
+            pdb.set_trace()
+
     item_path.append(target.attr)
 
     if isinstance(target.value, ast.Name):
