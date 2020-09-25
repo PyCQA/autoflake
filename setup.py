@@ -40,6 +40,6 @@ with open('README.md') as readme:
         entry_points={
             'console_scripts': ['autoflake = autoflake:main'],
         },
-        install_requires=['pyflakes>=1.1.0'],
+        install_requires=['pyflakes>=1.1.0', 'toml>=0.10.2'],
         test_suite='test_autoflake',
     )

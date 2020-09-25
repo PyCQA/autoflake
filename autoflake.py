@@ -1035,6 +1035,125 @@ def find_files(filenames, recursive, exclude):
                 _LOGGER.debug('Skipped %s: matched to exclude pattern', name)
 
 
+def process_pyproject_toml(toml_file_path):
+    """Extract config mapping from pyproject.toml file."""
+    import toml
+
+    return toml.load(toml_file_path).get('tool', {}).get('autoflake', None)
+
+
+def process_setup_cfg(cfg_file_path):
+    """Extract config mapping from setup.cfg file."""
+    import configparser
+
+    reader = configparser.ConfigParser()
+    reader.read(cfg_file_path)
+    if not reader.has_section("autoflake"):
+        return None
+
+    return reader["autoflake"]
+
+
+if sys.version_info > (3, 5, 0):
+    _commonpath = os.path.commonpath
+else:
+    def _commonpath(paths):
+        if not paths:
+            raise ValueError("commonpath() arg is an empty sequence")
+        is_abs = os.path.isabs(paths[0])
+        if not all(is_abs is os.path.isabs(p) for p in paths[1:]):
+            raise ValueError("paths are mixed absolute and relative")
+        drive = os.path.splitdrive(paths[0])[0]
+        if not all(drive == os.path.splitdrive(p)[0] for p in paths[1:]):
+            raise ValueError("paths are on different drives")
+        common = os.path.commonprefix(paths)
+        len_ = len(common)
+        s = {os.path.sep, os.path.altsep}
+        if len_ and any(len(p) > len_ and p[len_] not in s for p in paths):
+            common = os.path.split(common)[0]
+        return common
+
+
+def merge_configuration_file(args):
+    """Merge configuration from a file into args."""
+    from six import string_types
+
+    # Configuration file parsers {filename: parser function}.
+    CONFIG_FILES = {
+        "pyproject.toml": process_pyproject_toml,
+        "setup.cfg": process_setup_cfg,
+    }
+    BOOL_TYPES = {
+        "1": True,
+        "yes": True,
+        "true": True,
+        "on": True,
+        "0": False,
+        "no": False,
+        "false": False,
+        "off": False,
+    }
+
+    # Traverse the file tree common to all files given as argument looking for
+    # a configuration file
+    config_path = _commonpath([os.path.abspath(file) for file in args.files])
+    config = None
+    while True:
+        for config_file, processor in CONFIG_FILES.items():
+            config_file_path = os.path.join(
+                os.path.join(config_path, config_file)
+            )
+            if os.path.isfile(config_file_path):
+                config = processor(config_file_path)
+                if config is not None:
+                    break
+        if config is not None:
+            break
+        config_path, tail = os.path.split(config_path)
+        if not tail:
+            break
+    if config:
+        # merge config
+        for name, value in config.items():
+            if name in {"imports", "exclude"}:
+                # comma separated list properties
+                if isinstance(value, list) and all(
+                        isinstance(val, string_types) for val in value
+                ):
+                    value = ",".join(str(val) for val in value)
+                if not isinstance(value, string_types):
+                    _LOGGER.error(
+                        "'%s' in the config file should be a comma separated"
+                        " string or list of strings",
+                        name
+                    )
+                    return False
+                current_value = getattr(args, name, None)
+                if current_value is not None:
+                    value = ",".join((value, current_value))
+                setattr(args, name, value)
+            elif name in {
+                "check", "expand_star_imports", "ignore_init_module_imports",
+                "in_place", "recursive", "remove_all_unused_imports",
+                "remove_duplicate_keys", "remove_unused_variables",
+            }:
+                # boolean properties
+                if isinstance(value, string_types):
+                    value = BOOL_TYPES.get(value, value)
+                if not isinstance(value, bool):
+                    _LOGGER.error(
+                        "'%s' in the config file should be a boolean", name
+                    )
+                    return False
+                if value:
+                    setattr(args, name, value)
+            else:
+                _LOGGER.error("'%s' is not a valid configuration option", name)
+                return False
+
+    return True
+
+
 def _main(argv, standard_out, standard_error, standard_input=None):
     """Return exit status.
 
@@ -1138,6 +1257,9 @@ def _main(argv, standard_out, standard_error, standard_input=None):
         except IndexError:  # Too much -v
             loglevel = loglevels[-1]
         _LOGGER.setLevel(loglevel)
+
+    if not merge_configuration_file(args):
+        return 1
 
     if args.remove_all_unused_imports and args.imports:
         _LOGGER.error('Using both --remove-all and --imports is redundant')

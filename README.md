@@ -123,6 +123,25 @@ optional arguments:
 ```
 
 
+## Configuration
+
+Configure default arguments using a `pyproject.toml` file:
+
+```toml
+[tool.autoflake]
+check = true
+imports = ["django", "requests", "urllib3"]
+```
+
+Or a `setup.cfg` file:
+
+```ini
+[autoflake]
+check=true
+imports=django,requests,urllib3
+```
+
+
 ## Tests
 
 To run the unit tests::
