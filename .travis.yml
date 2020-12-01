@@ -8,7 +8,6 @@ python:
     - "3.7"
     - "3.8"
     - "3.9"
-    - "nightly"
 
 env:
     - PYFLAKES_VERSION=pypi
