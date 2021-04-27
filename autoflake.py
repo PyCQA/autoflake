@@ -851,7 +851,7 @@ def fix_file(filename, args, standard_out):
                 filename)
             standard_out.write(''.join(diff))
     else:
-        if args.check:
+        if args.check and not args.quiet:
             standard_out.write('No issues detected!\n')
         else:
             _LOGGER.debug('Clean %s: nothing to fix', filename)
@@ -1024,6 +1024,8 @@ def _main(argv, standard_out, standard_error):
                         help='remove unused variables')
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
+    parser.add_argument('--quiet', action='store_true',
+                        help='Suppress output if there are no issues')
     parser.add_argument('-v', '--verbose', action='count', dest='verbosity',
                         default=0, help='print more verbose logs (you can '
                                         'repeat `-v` to make it more verbose)')
