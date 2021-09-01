@@ -15,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 import autoflake
 
@@ -1512,6 +1513,16 @@ import os
 
         self.assertIn('redundant', output_file.getvalue())
 
+    def test_in_place_and_stdout(self):
+        output_file = io.StringIO()
+        self.assertRaises(
+            SystemExit,
+            autoflake._main,
+            argv=['my_fake_program', '--in-place', '--stdout', __file__],
+            standard_out=output_file,
+            standard_error=output_file,
+        )
+
     def test_end_to_end(self):
         with temporary_file("""\
 import fake_fake, fake_foo, fake_bar, fake_zoo
@@ -1655,6 +1666,42 @@ print(x)
             self.assertIn(
                 'redundant',
                 process.communicate()[1].decode())
+
+    def test_end_to_end_from_stdin(self):
+        stdin_data = b"""\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os
+x = os.sep
+print(x)
+"""
+        process = subprocess.Popen(AUTOFLAKE_COMMAND +
+                                   ['--remove-all', '-'],
+                                   stdout=subprocess.PIPE,
+                                   stdin=subprocess.PIPE)
+        stdout, _ = process.communicate(stdin_data)
+        self.assertEqual("""\
+import os
+x = os.sep
+print(x)
+""", stdout.decode())
+
+    def test_end_to_end_from_stdin_with_in_place(self):
+        stdin_data = b"""\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os, sys
+x = os.sep
+print(x)
+"""
+        process = subprocess.Popen(AUTOFLAKE_COMMAND +
+                                   ['--remove-all', '--in-place', '-'],
+                                   stdout=subprocess.PIPE,
+                                   stdin=subprocess.PIPE)
+        stdout, _ = process.communicate(stdin_data)
+        self.assertEqual("""\
+import os
+x = os.sep
+print(x)
+""", stdout.decode())
 
 
 class MultilineFromImportTests(unittest.TestCase):

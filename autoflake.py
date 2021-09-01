@@ -812,8 +812,13 @@ def fix_file(filename, args, standard_out):
     """Run fix_code() on a file."""
     encoding = detect_encoding(filename)
     with open_with_encoding(filename, encoding=encoding) as input_file:
-        source = input_file.read()
+        return _fix_file(input_file, filename, args, args.write_to_stdout,
+                         standard_out, encoding=encoding)
 
+
+def _fix_file(input_file, filename, args, write_to_stdout,
+              standard_out, encoding=None):
+    source = input_file.read()
     original_source = source
 
     isInitFile = os.path.basename(filename) == '__init__.py'
@@ -839,7 +844,9 @@ def fix_file(filename, args, standard_out):
                 '{filename}: Unused imports/variables detected'.format(
                     filename=filename))
             sys.exit(1)
-        if args.in_place:
+        if write_to_stdout:
+            standard_out.write(filtered_source)
+        elif args.in_place:
             with open_with_encoding(filename, mode='w',
                                     encoding=encoding) as output_file:
                 output_file.write(filtered_source)
@@ -850,6 +857,8 @@ def fix_file(filename, args, standard_out):
                 io.StringIO(filtered_source).readlines(),
                 filename)
             standard_out.write(''.join(diff))
+    elif write_to_stdout:
+        standard_out.write(filtered_source)
     else:
         if args.check:
             standard_out.write('No issues detected!\n')
@@ -986,7 +995,7 @@ def find_files(filenames, recursive, exclude):
                 _LOGGER.debug('Skipped %s: matched to exclude pattern', name)
 
 
-def _main(argv, standard_out, standard_error):
+def _main(argv, standard_out, standard_error, standard_input=None):
     """Return exit status.
 
     0 means no error.
@@ -995,8 +1004,6 @@ def _main(argv, standard_out, standard_error):
     parser = argparse.ArgumentParser(description=__doc__, prog='autoflake')
     parser.add_argument('-c', '--check', action='store_true',
                         help='return error code if changes are needed')
-    parser.add_argument('-i', '--in-place', action='store_true',
-                        help='make changes to files instead of printing diffs')
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='drill down directories recursively')
     parser.add_argument('--exclude', metavar='globs',
@@ -1027,7 +1034,18 @@ def _main(argv, standard_out, standard_error):
     parser.add_argument('-v', '--verbose', action='count', dest='verbosity',
                         default=0, help='print more verbose logs (you can '
                                         'repeat `-v` to make it more verbose)')
+    parser.add_argument('--stdin-display-name', dest='stdin_display_name',
+                        default='stdin',
+                        help='the name used when processing input from stdin')
     parser.add_argument('files', nargs='+', help='files to format')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-i', '--in-place', action='store_true',
+                       help='make changes to files instead of printing diffs')
+    group.add_argument('-s', '--stdout', action='store_true',
+                       dest='write_to_stdout',
+                       help=('print changed text to stdout. defaults to true '
+                             'when formatting stdin, or to false otherwise'))
 
     args = parser.parse_args(argv[1:])
 
@@ -1049,16 +1067,21 @@ def _main(argv, standard_out, standard_error):
     if args.exclude:
         args.exclude = _split_comma_separated(args.exclude)
     else:
-        args.exclude = set([])
+        args.exclude = set()
 
     filenames = list(set(args.files))
     failure = False
     for name in find_files(filenames, args.recursive, args.exclude):
-        try:
-            fix_file(name, args=args, standard_out=standard_out)
-        except IOError as exception:
-            _LOGGER.error(unicode(exception))
-            failure = True
+        if name == '-':
+            _fix_file(standard_input, args.stdin_display_name,
+                      args=args, write_to_stdout=True,
+                      standard_out=standard_out)
+        else:
+            try:
+                fix_file(name, args=args, standard_out=standard_out)
+            except IOError as exception:
+                _LOGGER.error(unicode(exception))
+                failure = True
 
     return 1 if failure else 0
 
@@ -1075,7 +1098,8 @@ def main():
     try:
         return _main(sys.argv,
                      standard_out=sys.stdout,
-                     standard_error=sys.stderr)
+                     standard_error=sys.stderr,
+                     standard_input=sys.stdin)
     except KeyboardInterrupt:  # pragma: no cover
         return 2  # pragma: no cover
 
