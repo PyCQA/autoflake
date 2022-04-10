@@ -808,8 +808,10 @@ def fix_code(source, additional_imports=None, expand_star_imports=False,
     return filtered_source
 
 
-def fix_file(filename, args, standard_out):
+def fix_file(filename, args, standard_out=None):
     """Run fix_code() on a file."""
+    if standard_out is None:
+        standard_out = sys.stdout
     encoding = detect_encoding(filename)
     with open_with_encoding(filename, encoding=encoding) as input_file:
         source = input_file.read()
@@ -818,28 +820,28 @@ def fix_file(filename, args, standard_out):
 
     isInitFile = os.path.basename(filename) == '__init__.py'
 
-    if args.ignore_init_module_imports and isInitFile:
+    if args["ignore_init_module_imports"] and isInitFile:
         ignore_init_module_imports = True
     else:
         ignore_init_module_imports = False
 
     filtered_source = fix_code(
         source,
-        additional_imports=args.imports.split(',') if args.imports else None,
-        expand_star_imports=args.expand_star_imports,
-        remove_all_unused_imports=args.remove_all_unused_imports,
-        remove_duplicate_keys=args.remove_duplicate_keys,
-        remove_unused_variables=args.remove_unused_variables,
+        additional_imports=args["imports"].split(',') if args["imports"] else None,
+        expand_star_imports=args["expand_star_imports"],
+        remove_all_unused_imports=args["remove_all_unused_imports"],
+        remove_duplicate_keys=args["remove_duplicate_keys"],
+        remove_unused_variables=args["remove_unused_variables"],
         ignore_init_module_imports=ignore_init_module_imports,
     )
 
     if original_source != filtered_source:
-        if args.check:
+        if args["check"]:
             standard_out.write(
                 '{filename}: Unused imports/variables detected'.format(
                     filename=filename))
             sys.exit(1)
-        if args.in_place:
+        if args["in_place"]:
             with open_with_encoding(filename, mode='w',
                                     encoding=encoding) as output_file:
                 output_file.write(filtered_source)
@@ -851,7 +853,7 @@ def fix_file(filename, args, standard_out):
                 filename)
             standard_out.write(''.join(diff))
     else:
-        if args.check:
+        if args["check"]:
             standard_out.write('No issues detected!\n')
         else:
             _LOGGER.debug('Clean %s: nothing to fix', filename)
@@ -999,6 +1001,9 @@ def _main(argv, standard_out, standard_error):
                         help='make changes to files instead of printing diffs')
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='drill down directories recursively')
+    parser.add_argument('-j', '--jobs', type=int, metavar='n', default=1,
+                        help='number of parallel jobs; '
+                             'match CPU count if value is less than 1')
     parser.add_argument('--exclude', metavar='globs',
                         help='exclude file/directory names that match these '
                              'comma-separated globs')
@@ -1051,14 +1056,38 @@ def _main(argv, standard_out, standard_error):
     else:
         args.exclude = set([])
 
+    if args.jobs < 1:
+        # Do not import multiprocessing globally in case it is not supported
+        # on the platform.
+        import multiprocessing
+        args.jobs = multiprocessing.cpu_count()
+
     filenames = list(set(args.files))
     failure = False
-    for name in find_files(filenames, args.recursive, args.exclude):
-        try:
-            fix_file(name, args=args, standard_out=standard_out)
-        except IOError as exception:
-            _LOGGER.error(unicode(exception))
-            failure = True
+
+    # convert argparse namespace to a dict
+    args = vars(args)
+    if args["jobs"] == 1:
+        for name in find_files(filenames, args["recursive"], args["exclude"]):
+            try:
+                fix_file(name, args=args, standard_out=None)
+            except IOError as exception:
+                _LOGGER.error(unicode(exception))
+                failure = True
+    else:
+        import multiprocessing
+        with multiprocessing.Pool(args["jobs"]) as pool:
+            futs = []
+            for name in find_files(
+                    filenames, args["recursive"], args["exclude"]):
+                fut = pool.apply_async(fix_file, args=(name, args))
+                futs.append(fut)
+            for fut in futs:
+                try:
+                    fut.get()
+                except Exception as exception:
+                    _LOGGER.error(unicode(exception))
+                    failure = True
 
     return 1 if failure else 0
 
