@@ -1056,12 +1056,6 @@ def _main(argv, standard_out, standard_error):
     else:
         args.exclude = set([])
 
-    if args.jobs < 1:
-        # Do not import multiprocessing globally in case it is not supported
-        # on the platform.
-        import multiprocessing
-        args.jobs = multiprocessing.cpu_count()
-
     filenames = list(set(args.files))
     failure = False
 
