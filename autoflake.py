@@ -1001,9 +1001,9 @@ def _main(argv, standard_out, standard_error):
                         help='make changes to files instead of printing diffs')
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='drill down directories recursively')
-    parser.add_argument('-j', '--jobs', type=int, metavar='n', default=1,
+    parser.add_argument('-j', '--jobs', type=int, metavar='n', default=0,
                         help='number of parallel jobs; '
-                             'match CPU count if value is less than 1')
+                             'match CPU count if value is 0 (default: 0)')
     parser.add_argument('--exclude', metavar='globs',
                         help='exclude file/directory names that match these '
                              'comma-separated globs')
@@ -1067,8 +1067,9 @@ def _main(argv, standard_out, standard_error):
 
     # convert argparse namespace to a dict
     args = vars(args)
-    if args["jobs"] == 1:
-        for name in find_files(filenames, args["recursive"], args["exclude"]):
+    files = list(find_files(filenames, args["recursive"], args["exclude"]))
+    if args["jobs"] == 1 or len(files) == 1 or os.cpu_count() == 1:
+        for name in files:
             try:
                 fix_file(name, args=args, standard_out=standard_out)
             except IOError as exception:
@@ -1076,10 +1077,10 @@ def _main(argv, standard_out, standard_error):
                 failure = True
     else:
         import multiprocessing
+
         with multiprocessing.Pool(args["jobs"]) as pool:
             futs = []
-            for name in find_files(
-                    filenames, args["recursive"], args["exclude"]):
+            for name in files:
                 fut = pool.apply_async(fix_file, args=(name, args))
                 futs.append(fut)
             for fut in futs:
