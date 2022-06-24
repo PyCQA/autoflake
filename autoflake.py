@@ -1070,7 +1070,7 @@ def _main(argv, standard_out, standard_error):
     if args["jobs"] == 1:
         for name in find_files(filenames, args["recursive"], args["exclude"]):
             try:
-                fix_file(name, args=args, standard_out=None)
+                fix_file(name, args=args, standard_out=standard_out)
             except IOError as exception:
                 _LOGGER.error(unicode(exception))
                 failure = True
