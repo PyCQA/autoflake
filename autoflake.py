@@ -1072,7 +1072,7 @@ def _main(argv, standard_out, standard_error):
     else:
         import multiprocessing
 
-        with multiprocessing.Pool(args["jobs"]) as pool:
+        with multiprocessing.Pool(args["jobs"] or None) as pool:
             futs = []
             for name in files:
                 fut = pool.apply_async(fix_file, args=(name, args))
