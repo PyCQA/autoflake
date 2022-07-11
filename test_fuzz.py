@@ -6,10 +6,6 @@ This checks that autoflake never introduces incorrect syntax. This is
 done by doing a syntax check after the autoflake run. The number of
 Pyflakes warnings is also confirmed to always improve.
 """
-
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import shlex
 import subprocess
@@ -28,12 +24,6 @@ if sys.stdout.isatty():
 else:
     YELLOW = ''
     END = ''
-
-
-try:
-    unicode
-except NameError:
-    unicode = str
 
 
 def colored(text, color):
@@ -214,7 +204,7 @@ def check(args):
                 completed_filenames.update(name)
 
             if os.path.isdir(name):
-                for root, directories, children in os.walk(unicode(name)):
+                for root, directories, children in os.walk(str(name)):
                     filenames += [os.path.join(root, f) for f in children
                                   if f.endswith('.py') and
                                   not f.startswith('.')]

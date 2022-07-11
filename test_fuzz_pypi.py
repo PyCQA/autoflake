@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 
 """Fuzz test against the latest packages on PyPI."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import subprocess
 import sys
@@ -22,7 +17,7 @@ TMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
 def latest_packages(last_hours):
     """Return names of latest released packages on PyPI."""
     process = subprocess.Popen(
-        ['yolk', '--latest-releases={hours}'.format(hours=last_hours)],
+        ['yolk', f'--latest-releases={last_hours}'],
         stdout=subprocess.PIPE)
 
     for line in process.communicate()[0].decode('utf-8').split('\n'):
@@ -35,7 +30,7 @@ def download_package(name, output_directory):
 
     Raise CalledProcessError on failure.
     """
-    subprocess.check_call(['yolk', '--fetch-package={name}'.format(name=name)],
+    subprocess.check_call(['yolk', f'--fetch-package={name}'],
                           cwd=output_directory)
 
 
@@ -47,14 +42,14 @@ def extract_package(path, output_directory):
             tar.extractall(path=output_directory)
             tar.close()
             return True
-        except (tarfile.ReadError, IOError):
+        except (tarfile.ReadError, OSError):
             return False
     elif path.lower().endswith('.zip'):
         try:
             archive = zipfile.ZipFile(path)
             archive.extractall(path=output_directory)
             archive.close()
-        except (zipfile.BadZipfile, IOError):
+        except (zipfile.BadZipfile, OSError):
             return False
         return True
 

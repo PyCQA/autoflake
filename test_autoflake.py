@@ -1,10 +1,6 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """Test suite for autoflake."""
-
-from __future__ import unicode_literals
-
 import contextlib
 import functools
 import io
@@ -1953,7 +1949,7 @@ class MultilineFromImportTests(unittest.TestCase):
             '\n'
         )
 
-        self.unused = ['lib{}.x.y.z'.format(x) for x in (1, 3, 4)]
+        self.unused = [f'lib{x}.x.y.z' for x in (1, 3, 4)]
         self.assert_fix([
             'import \\\n',
             '    lib1.x.y.z \\',
@@ -2147,7 +2143,7 @@ def temporary_directory(directory='.', prefix='tmp.'):
         shutil.rmtree(temp_directory)
 
 
-class StubFile(object):
+class StubFile:
 
     """Fake file that ignores everything."""
 

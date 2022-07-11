@@ -1,13 +1,10 @@
 language: python
 
 python:
-    - "2.7"
-    - "3.4"
-    - "3.5"
-    - "3.6"
     - "3.7"
     - "3.8"
     - "3.9"
+    - "3.10"
 
 env:
     - PYFLAKES_VERSION=pypi
@@ -25,7 +22,7 @@ script:
     - pyflakes ./*.py
     - pip install pycodestyle pydocstyle
     - pycodestyle ./*.py
-    - if [ "$TRAVIS_PYTHON_VERSION" != "3.4" ]; then pydocstyle autoflake.py setup.py; fi
+    - pydocstyle autoflake.py setup.py
 
 after_success:
     - pip install --quiet coverage
