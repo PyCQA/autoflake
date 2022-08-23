@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 """Test suite for autoflake."""
-
-from __future__ import unicode_literals
-
 import contextlib
 import functools
 import io

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # Copyright (C) 2012-2019 Steven Myint
 #
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -20,16 +19,10 @@
 # CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 """Removes unused imports and unused variables as reported by pyflakes."""
-
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import ast
-import difflib
 import collections
-import distutils.sysconfig
+import difflib
 import fnmatch
 import io
 import logging
@@ -40,6 +33,7 @@ import string
 import sys
 import tokenize
 
+import distutils.sysconfig
 import pyflakes.api
 import pyflakes.messages
 import pyflakes.reporter
