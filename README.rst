@@ -179,10 +179,10 @@ Using pre-commit_ hooks
 Add the following to your `.pre-commit-config.yaml`
 
 .. code-block:: yaml
-    
+
     - repo: https://github.com/PyCQA/autoflake
       rev: v1.4
       hooks:
         - id: autoflake
-        
+
 .. _pre-commit: https://pre-commit.com
