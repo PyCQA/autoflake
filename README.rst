@@ -2,7 +2,7 @@
 autoflake
 =========
 
-.. image::https://github.com/PyCQA/autoflake/actions/workflows/main.yaml/badge.svg?branch=master
+.. image:: https://github.com/PyCQA/autoflake/actions/workflows/main.yaml/badge.svg?branch=master
     :target: https://github.com/PyCQA/autoflake/actions/workflows/main.yaml
     :alt: Build status
 
