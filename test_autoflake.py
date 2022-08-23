@@ -1200,7 +1200,6 @@ def func11():
 
         self.assertFalse(autoflake.is_literal_or_name('xyz.prop'))
         self.assertFalse(autoflake.is_literal_or_name(' '))
-        self.assertFalse(autoflake.is_literal_or_name(' 1'))
 
     def test_is_python_file(self):
         self.assertTrue(autoflake.is_python_file(
