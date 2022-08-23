@@ -171,3 +171,18 @@ To prevent that, without having to exclude the entire file, you can add a
     from .endpoints import role, token, user, utils  # noqa
 
 That line will instruct ``autoflake`` to let that specific line as is.
+
+
+Using pre-commit_ hooks
+=======================
+
+Add the following to your `.pre-commit-config.yaml`
+
+.. code-block:: yaml
+
+    - repo: https://github.com/PyCQA/autoflake
+      rev: v1.4
+      hooks:
+        - id: autoflake
+
+.. _pre-commit: https://pre-commit.com
