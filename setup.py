@@ -13,12 +13,13 @@ def version():
                 return ast.parse(line).body[0].value.s
 
 
-with open('README.rst') as readme:
+with open('README.md') as readme:
     setuptools.setup(
         name='autoflake',
         version=version(),
         description='Removes unused imports and unused variables',
         long_description=readme.read(),
+        long_description_content_type='text/markdown',
         license='Expat License',
         author='Steven Myint',
         url='https://github.com/myint/autoflake',

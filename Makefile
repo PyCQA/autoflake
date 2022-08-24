@@ -9,7 +9,7 @@ check:
 	pydocstyle autoflake.py setup.py
 	check-manifest
 	python setup.py --long-description | rstcheck -
-	scspell autoflake.py setup.py test_autoflake.py README.rst
+	scspell autoflake.py setup.py test_autoflake.py README.md
 
 coverage:
 	@coverage erase

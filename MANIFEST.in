@@ -1,6 +1,6 @@
 include AUTHORS.rst
 include LICENSE
-include README.rst
+include README.md
 include test_autoflake.py
 
 exclude .travis.yml
