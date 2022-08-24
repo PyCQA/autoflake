@@ -803,7 +803,9 @@ def _fix_file(input_file, filename, args, write_to_stdout, standard_out,
 
     filtered_source = fix_code(
         source,
-        additional_imports=args["imports"].split(',') if args["imports"] else None,
+        additional_imports=(
+            args["imports"].split(',') if args["imports"] else None
+        ),
         expand_star_imports=args["expand_star_imports"],
         remove_all_unused_imports=args["remove_all_unused_imports"],
         remove_duplicate_keys=args["remove_duplicate_keys"],
