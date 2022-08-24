@@ -1054,30 +1054,8 @@ def process_setup_cfg(cfg_file_path):
     return reader["autoflake"]
 
 
-if sys.version_info > (3, 5, 0):
-    _commonpath = os.path.commonpath
-else:
-    def _commonpath(paths):
-        if not paths:
-            raise ValueError("commonpath() arg is an empty sequence")
-        is_abs = os.path.isabs(paths[0])
-        if not all(is_abs is os.path.isabs(p) for p in paths[1:]):
-            raise ValueError("paths are mixed absolute and relative")
-        drive = os.path.splitdrive(paths[0])[0]
-        if not all(drive == os.path.splitdrive(p)[0] for p in paths[1:]):
-            raise ValueError("paths are on different drives")
-        common = os.path.commonprefix(paths)
-        len_ = len(common)
-        s = {os.path.sep, os.path.altsep}
-        if len_ and any(len(p) > len_ and p[len_] not in s for p in paths):
-            common = os.path.split(common)[0]
-        return common
-
-
 def merge_configuration_file(args):
     """Merge configuration from a file into args."""
-    from six import string_types
-
     # Configuration file parsers {filename: parser function}.
     CONFIG_FILES = {
         "pyproject.toml": process_pyproject_toml,
@@ -1096,7 +1074,7 @@ def merge_configuration_file(args):
 
     # Traverse the file tree common to all files given as argument looking for
     # a configuration file
-    config_path = _commonpath([os.path.abspath(file) for file in args.files])
+    config_path = os.path.commonpath([os.path.abspath(file) for file in args.files])
     config = None
     while True:
         for config_file, processor in CONFIG_FILES.items():
@@ -1118,10 +1096,10 @@ def merge_configuration_file(args):
             if name in {"imports", "exclude"}:
                 # comma separated list properties
                 if isinstance(value, list) and all(
-                        isinstance(val, string_types) for val in value
+                        isinstance(val, str) for val in value
                 ):
                     value = ",".join(str(val) for val in value)
-                if not isinstance(value, string_types):
+                if not isinstance(value, str):
                     _LOGGER.error(
                         "'%s' in the config file should be a comma separated"
                         " string or list of strings",
@@ -1138,7 +1116,7 @@ def merge_configuration_file(args):
                 "remove_duplicate_keys", "remove_unused_variables",
             }:
                 # boolean properties
-                if isinstance(value, string_types):
+                if isinstance(value, str):
                     value = BOOL_TYPES.get(value, value)
                 if not isinstance(value, bool):
                     _LOGGER.error(
