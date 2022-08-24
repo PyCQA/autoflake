@@ -865,8 +865,7 @@ def detect_encoding(filename, limit_byte_check=-1):
 def _detect_encoding(readline):
     """Return file encoding."""
     try:
-        from lib2to3.pgen2 import tokenize as lib2to3_tokenize
-        encoding = lib2to3_tokenize.detect_encoding(readline)[0]
+        encoding = tokenize.detect_encoding(readline)[0]
         return encoding
     except (LookupError, SyntaxError, UnicodeDecodeError):
         return 'latin-1'
