@@ -1047,10 +1047,7 @@ def _main(argv, standard_out, standard_error, standard_input=None):
         args.exclude = set()
 
     if args.jobs < 1:
-        # Do not import multiprocessing globally in case it is not supported
-        # on the platform.
-        import multiprocessing
-        args.jobs = multiprocessing.cpu_count()
+        args.jobs = os.cpu_count() or 1
 
     filenames = list(set(args.files))
     failure = False
@@ -1059,7 +1056,7 @@ def _main(argv, standard_out, standard_error, standard_input=None):
     # by multiprocessing
     args = vars(args)
     files = list(find_files(filenames, args["recursive"], args["exclude"]))
-    if args["jobs"] == 1 or len(files) == 1 or os.cpu_count() == 1 or \
+    if args["jobs"] == 1 or len(files) == 1 or args["jobs"] == 1 or \
             '-' in files or standard_out is not None:
         for name in files:
             if name == '-':
