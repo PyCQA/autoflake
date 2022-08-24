@@ -1054,28 +1054,28 @@ def _main(argv, standard_out, standard_error, standard_input=None):
 
     # convert argparse namespace to a dict so that it can be serialized
     # by multiprocessing
-    args = vars(args)
-    files = list(find_files(filenames, args["recursive"], args["exclude"]))
-    if args["jobs"] == 1 or len(files) == 1 or args["jobs"] == 1 or \
+    kargs = vars(args)
+    files = list(find_files(filenames, kargs["recursive"], kargs["exclude"]))
+    if kargs["jobs"] == 1 or len(files) == 1 or kargs["jobs"] == 1 or \
             '-' in files or standard_out is not None:
         for name in files:
             if name == '-':
-                _fix_file(standard_input, args["stdin_display_name"],
-                          args=args, write_to_stdout=True,
+                _fix_file(standard_input, kargs["stdin_display_name"],
+                          args=kargs, write_to_stdout=True,
                           standard_out=standard_out or sys.stdout)
             else:
                 try:
-                    fix_file(name, args=args, standard_out=standard_out)
+                    fix_file(name, args=kargs, standard_out=standard_out)
                 except OSError as exception:
                     _LOGGER.error(str(exception))
                     failure = True
     else:
         import multiprocessing
 
-        with multiprocessing.Pool(args["jobs"]) as pool:
+        with multiprocessing.Pool(kargs["jobs"]) as pool:
             futs = []
             for name in files:
-                fut = pool.apply_async(fix_file, args=(name, args))
+                fut = pool.apply_async(fix_file, args=(name, kargs))
                 futs.append(fut)
             for fut in futs:
                 try:
