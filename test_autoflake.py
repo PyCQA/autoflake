@@ -1404,6 +1404,19 @@ print(x)
                             standard_error=None)
             self.assertEqual('No issues detected!\n', output_file.getvalue())
 
+    def test_check_correct_file_with_quiet(self):
+        with temporary_file("""\
+import foo
+x = foo.bar
+print(x)
+""") as filename:
+            output_file = io.StringIO()
+            autoflake._main(argv=['my_fake_program', '--check', '--quiet',
+                                  filename],
+                            standard_out=output_file,
+                            standard_error=None)
+            self.assertEqual('', output_file.getvalue())
+
     def test_check_useless_pass(self):
         with temporary_file("""\
 import foo
