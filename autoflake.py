@@ -48,21 +48,9 @@ _LOGGER.propagate = False
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
 
 EXCEPT_REGEX = re.compile(r'^\s*except [\s,()\w]+ as \w+:$')
-PYTHON_SHEBANG_REGEX = re.compile(r'^#!.*\bpython[23]?\b\s*$')
+PYTHON_SHEBANG_REGEX = re.compile(r'^#!.*\bpython[3]?\b\s*$')
 
 MAX_PYTHON_FILE_DETECTION_BYTES = 1024
-
-try:
-    unicode
-except NameError:
-    unicode = str
-
-
-try:
-    RecursionError
-except NameError:
-    # Python before 3.5.
-    RecursionError = RuntimeError
 
 
 def standard_paths():
@@ -72,14 +60,12 @@ def standard_paths():
         # Yield lib paths.
         path = distutils.sysconfig.get_python_lib(standard_lib=True,
                                                   plat_specific=is_plat_spec)
-        for name in os.listdir(path):
-            yield name
+        yield from os.listdir(path)
 
         # Yield lib-dynload paths.
         dynload_path = os.path.join(path, 'lib-dynload')
         if os.path.isdir(dynload_path):
-            for name in os.listdir(dynload_path):
-                yield name
+            yield from os.listdir(dynload_path)
 
 
 def standard_package_names():
@@ -118,8 +104,8 @@ def unused_import_module_name(messages):
     for message in messages:
         if isinstance(message, pyflakes.messages.UnusedImport):
             module_name = re.search(pattern, str(message))
-            module_name = module_name.group()[1:-1]
             if module_name:
+                module_name = module_name.group()[1:-1]
                 yield (message.lineno, module_name)
 
 
@@ -184,15 +170,6 @@ def create_key_to_messages_dict(messages):
 
 def check(source):
     """Return messages from pyflakes."""
-    if sys.version_info[0] == 2 and isinstance(source, unicode):
-        # Convert back to original byte string encoding, otherwise pyflakes
-        # call to compile() will complain. See PEP 263. This only affects
-        # Python 2.
-        try:
-            source = source.encode('utf-8')
-        except UnicodeError:  # pragma: no cover
-            return []
-
     reporter = ListReporter()
     try:
         pyflakes.api.check(source, filename='<string>', reporter=reporter)
@@ -201,7 +178,7 @@ def check(source):
     return reporter.messages
 
 
-class StubFile(object):
+class StubFile:
     """Stub out file for pyflakes."""
 
     def write(self, *_):
@@ -267,7 +244,7 @@ def multiline_statement(line, previous_line=''):
         return True
 
 
-class PendingFix(object):
+class PendingFix:
     """Allows a rewrite operation to span multiple lines.
 
     In the main rewrite loop, every time a helper function returns a
@@ -835,8 +812,8 @@ def _fix_file(input_file, filename, args, write_to_stdout, standard_out,
     if original_source != filtered_source:
         if args.check:
             standard_out.write(
-                '{filename}: Unused imports/variables detected\n'.format(
-                    filename=filename))
+                f'{filename}: Unused imports/variables detected\n',
+            )
             sys.exit(1)
         if write_to_stdout:
             standard_out.write(filtered_source)
@@ -866,8 +843,8 @@ def open_with_encoding(filename, encoding, mode='r',
     if not encoding:
         encoding = detect_encoding(filename, limit_byte_check=limit_byte_check)
 
-    return io.open(filename, mode=mode, encoding=encoding,
-                   newline='')  # Preserve line endings
+    return open(filename, mode=mode, encoding=encoding,
+                newline='')  # Preserve line endings
 
 
 def detect_encoding(filename, limit_byte_check=-1):
@@ -934,7 +911,7 @@ def is_python_file(filename):
             if not text:
                 return False
             first_line = text.splitlines()[0]
-    except (IOError, IndexError):
+    except (OSError, IndexError):
         return False
 
     if not PYTHON_SHEBANG_REGEX.match(first_line):
@@ -1075,8 +1052,8 @@ def _main(argv, standard_out, standard_error, standard_input=None):
         else:
             try:
                 fix_file(name, args=args, standard_out=standard_out)
-            except IOError as exception:
-                _LOGGER.error(unicode(exception))
+            except OSError as exception:
+                _LOGGER.error(str(exception))
                 failure = True
 
     return 1 if failure else 0

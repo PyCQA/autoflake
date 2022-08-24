@@ -23,6 +23,7 @@ with open('README.md') as readme:
         license='Expat License',
         author='Steven Myint',
         url='https://github.com/myint/autoflake',
+        python_requires='>=3.7',
         classifiers=['Environment :: Console',
                      'Intended Audience :: Developers',
                      'License :: OSI Approved :: MIT License',
