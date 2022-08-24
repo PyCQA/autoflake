@@ -1,6 +1,11 @@
--   id: autoflake
-    name: autoflake
-    entry: autoflake
-    language: python
-    'types': [python]
-    require_serial: true
+- id: autoflake
+  name: autoflake
+  entry: autoflake
+  language: python
+  "types": [python]
+  require_serial: true
+  args:
+    - "--in-place"
+    - "--expand-star-imports"
+    - "--remove-duplicate-keys"
+    - "--remove-unused-variables"

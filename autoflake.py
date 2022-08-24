@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # Copyright (C) 2012-2019 Steven Myint
 #
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -20,16 +19,10 @@
 # CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 """Removes unused imports and unused variables as reported by pyflakes."""
-
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import ast
-import difflib
 import collections
-import distutils.sysconfig
+import difflib
 import fnmatch
 import io
 import logging
@@ -40,6 +33,7 @@ import string
 import sys
 import tokenize
 
+import distutils.sysconfig
 import pyflakes.api
 import pyflakes.messages
 import pyflakes.reporter
@@ -54,21 +48,9 @@ _LOGGER.propagate = False
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
 
 EXCEPT_REGEX = re.compile(r'^\s*except [\s,()\w]+ as \w+:$')
-PYTHON_SHEBANG_REGEX = re.compile(r'^#!.*\bpython[23]?\b\s*$')
+PYTHON_SHEBANG_REGEX = re.compile(r'^#!.*\bpython[3]?\b\s*$')
 
 MAX_PYTHON_FILE_DETECTION_BYTES = 1024
-
-try:
-    unicode
-except NameError:
-    unicode = str
-
-
-try:
-    RecursionError
-except NameError:
-    # Python before 3.5.
-    RecursionError = RuntimeError
 
 
 def standard_paths():
@@ -78,14 +60,12 @@ def standard_paths():
         # Yield lib paths.
         path = distutils.sysconfig.get_python_lib(standard_lib=True,
                                                   plat_specific=is_plat_spec)
-        for name in os.listdir(path):
-            yield name
+        yield from os.listdir(path)
 
         # Yield lib-dynload paths.
         dynload_path = os.path.join(path, 'lib-dynload')
         if os.path.isdir(dynload_path):
-            for name in os.listdir(dynload_path):
-                yield name
+            yield from os.listdir(dynload_path)
 
 
 def standard_package_names():
@@ -124,8 +104,8 @@ def unused_import_module_name(messages):
     for message in messages:
         if isinstance(message, pyflakes.messages.UnusedImport):
             module_name = re.search(pattern, str(message))
-            module_name = module_name.group()[1:-1]
             if module_name:
+                module_name = module_name.group()[1:-1]
                 yield (message.lineno, module_name)
 
 
@@ -190,15 +170,6 @@ def create_key_to_messages_dict(messages):
 
 def check(source):
     """Return messages from pyflakes."""
-    if sys.version_info[0] == 2 and isinstance(source, unicode):
-        # Convert back to original byte string encoding, otherwise pyflakes
-        # call to compile() will complain. See PEP 263. This only affects
-        # Python 2.
-        try:
-            source = source.encode('utf-8')
-        except UnicodeError:  # pragma: no cover
-            return []
-
     reporter = ListReporter()
     try:
         pyflakes.api.check(source, filename='<string>', reporter=reporter)
@@ -207,7 +178,7 @@ def check(source):
     return reporter.messages
 
 
-class StubFile(object):
+class StubFile:
     """Stub out file for pyflakes."""
 
     def write(self, *_):
@@ -273,7 +244,7 @@ def multiline_statement(line, previous_line=''):
         return True
 
 
-class PendingFix(object):
+class PendingFix:
     """Allows a rewrite operation to span multiple lines.
 
     In the main rewrite loop, every time a helper function returns a
@@ -814,8 +785,13 @@ def fix_file(filename, args, standard_out=None):
         standard_out = sys.stdout
     encoding = detect_encoding(filename)
     with open_with_encoding(filename, encoding=encoding) as input_file:
-        source = input_file.read()
+        return _fix_file(input_file, filename, args, args["write_to_stdout"],
+                         standard_out, encoding=encoding)
 
+
+def _fix_file(input_file, filename, args, write_to_stdout, standard_out,
+              encoding=None):
+    source = input_file.read()
     original_source = source
 
     isInitFile = os.path.basename(filename) == '__init__.py'
@@ -838,10 +814,12 @@ def fix_file(filename, args, standard_out=None):
     if original_source != filtered_source:
         if args["check"]:
             standard_out.write(
-                '{filename}: Unused imports/variables detected'.format(
-                    filename=filename))
+                f'{filename}: Unused imports/variables detected\n',
+            )
             sys.exit(1)
-        if args["in_place"]:
+        if write_to_stdout:
+            standard_out.write(filtered_source)
+        elif args["in_place"]:
             with open_with_encoding(filename, mode='w',
                                     encoding=encoding) as output_file:
                 output_file.write(filtered_source)
@@ -852,8 +830,10 @@ def fix_file(filename, args, standard_out=None):
                 io.StringIO(filtered_source).readlines(),
                 filename)
             standard_out.write(''.join(diff))
+    elif write_to_stdout:
+        standard_out.write(filtered_source)
     else:
-        if args["check"]:
+        if args["check"] and not args["quiet"]:
             standard_out.write('No issues detected!\n')
         else:
             _LOGGER.debug('Clean %s: nothing to fix', filename)
@@ -865,8 +845,8 @@ def open_with_encoding(filename, encoding, mode='r',
     if not encoding:
         encoding = detect_encoding(filename, limit_byte_check=limit_byte_check)
 
-    return io.open(filename, mode=mode, encoding=encoding,
-                   newline='')  # Preserve line endings
+    return open(filename, mode=mode, encoding=encoding,
+                newline='')  # Preserve line endings
 
 
 def detect_encoding(filename, limit_byte_check=-1):
@@ -887,8 +867,7 @@ def detect_encoding(filename, limit_byte_check=-1):
 def _detect_encoding(readline):
     """Return file encoding."""
     try:
-        from lib2to3.pgen2 import tokenize as lib2to3_tokenize
-        encoding = lib2to3_tokenize.detect_encoding(readline)[0]
+        encoding = tokenize.detect_encoding(readline)[0]
         return encoding
     except (LookupError, SyntaxError, UnicodeDecodeError):
         return 'latin-1'
@@ -916,7 +895,7 @@ def get_diff_text(old, new, filename):
 
 def _split_comma_separated(string):
     """Return a set of strings."""
-    return set(text.strip() for text in string.split(',') if text.strip())
+    return {text.strip() for text in string.split(',') if text.strip()}
 
 
 def is_python_file(filename):
@@ -933,7 +912,7 @@ def is_python_file(filename):
             if not text:
                 return False
             first_line = text.splitlines()[0]
-    except (IOError, IndexError):
+    except (OSError, IndexError):
         return False
 
     if not PYTHON_SHEBANG_REGEX.match(first_line):
@@ -988,7 +967,7 @@ def find_files(filenames, recursive, exclude):
                 _LOGGER.debug('Skipped %s: matched to exclude pattern', name)
 
 
-def _main(argv, standard_out, standard_error):
+def _main(argv, standard_out, standard_error, standard_input=None):
     """Return exit status.
 
     0 means no error.
@@ -997,8 +976,6 @@ def _main(argv, standard_out, standard_error):
     parser = argparse.ArgumentParser(description=__doc__, prog='autoflake')
     parser.add_argument('-c', '--check', action='store_true',
                         help='return error code if changes are needed')
-    parser.add_argument('-i', '--in-place', action='store_true',
-                        help='make changes to files instead of printing diffs')
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='drill down directories recursively')
     parser.add_argument('-j', '--jobs', type=int, metavar='n', default=0,
@@ -1029,10 +1006,23 @@ def _main(argv, standard_out, standard_error):
                         help='remove unused variables')
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + __version__)
+    parser.add_argument('--quiet', action='store_true',
+                        help='Suppress output if there are no issues')
     parser.add_argument('-v', '--verbose', action='count', dest='verbosity',
                         default=0, help='print more verbose logs (you can '
                                         'repeat `-v` to make it more verbose)')
+    parser.add_argument('--stdin-display-name', dest='stdin_display_name',
+                        default='stdin',
+                        help='the name used when processing input from stdin')
     parser.add_argument('files', nargs='+', help='files to format')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-i', '--in-place', action='store_true',
+                       help='make changes to files instead of printing diffs')
+    group.add_argument('-s', '--stdout', action='store_true',
+                       dest='write_to_stdout',
+                       help=('print changed text to stdout. defaults to true '
+                             'when formatting stdin, or to false otherwise'))
 
     args = parser.parse_args(argv[1:])
 
@@ -1054,25 +1044,38 @@ def _main(argv, standard_out, standard_error):
     if args.exclude:
         args.exclude = _split_comma_separated(args.exclude)
     else:
-        args.exclude = set([])
+        args.exclude = set()
+
+    if args.jobs < 1:
+        # Do not import multiprocessing globally in case it is not supported
+        # on the platform.
+        import multiprocessing
+        args.jobs = multiprocessing.cpu_count()
 
     filenames = list(set(args.files))
     failure = False
 
-    # convert argparse namespace to a dict
+    # convert argparse namespace to a dict so that it can be serialized
+    # by multiprocessing
     args = vars(args)
     files = list(find_files(filenames, args["recursive"], args["exclude"]))
-    if args["jobs"] == 1 or len(files) == 1 or os.cpu_count() == 1:
+    if args["jobs"] == 1 or len(files) == 1 or os.cpu_count() == 1 or \
+            '-' in files or standard_out is not None:
         for name in files:
-            try:
-                fix_file(name, args=args, standard_out=standard_out)
-            except IOError as exception:
-                _LOGGER.error(unicode(exception))
-                failure = True
+            if name == '-':
+                _fix_file(standard_input, args["stdin_display_name"],
+                          args=args, write_to_stdout=True,
+                          standard_out=standard_out or sys.stdout)
+            else:
+                try:
+                    fix_file(name, args=args, standard_out=standard_out)
+                except OSError as exception:
+                    _LOGGER.error(str(exception))
+                    failure = True
     else:
         import multiprocessing
 
-        with multiprocessing.Pool(args["jobs"] or None) as pool:
+        with multiprocessing.Pool(args["jobs"]) as pool:
             futs = []
             for name in files:
                 fut = pool.apply_async(fix_file, args=(name, args))
@@ -1080,8 +1083,8 @@ def _main(argv, standard_out, standard_error):
             for fut in futs:
                 try:
                     fut.get()
-                except Exception as exception:
-                    _LOGGER.error(unicode(exception))
+                except OSError as exception:
+                    _LOGGER.error(str(exception))
                     failure = True
 
     return 1 if failure else 0
@@ -1098,8 +1101,9 @@ def main():
 
     try:
         return _main(sys.argv,
-                     standard_out=sys.stdout,
-                     standard_error=sys.stderr)
+                     standard_out=None,
+                     standard_error=sys.stderr,
+                     standard_input=sys.stdin)
     except KeyboardInterrupt:  # pragma: no cover
         return 2  # pragma: no cover
 

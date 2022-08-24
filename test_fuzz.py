@@ -1,15 +1,10 @@
 #!/usr/bin/env python
-
 """Test that autoflake performs correctly on arbitrary Python files.
 
 This checks that autoflake never introduces incorrect syntax. This is
 done by doing a syntax check after the autoflake run. The number of
 Pyflakes warnings is also confirmed to always improve.
 """
-
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import shlex
 import subprocess
@@ -28,12 +23,6 @@ if sys.stdout.isatty():
 else:
     YELLOW = ''
     END = ''
-
-
-try:
-    unicode
-except NameError:
-    unicode = str
 
 
 def colored(text, color):
@@ -111,7 +100,7 @@ def run(filename, command, verbose=False, options=None):
             if file_diff and after_count > before_count:
                 sys.stderr.write('autoflake made ' + filename + ' worse\n')
                 return False
-        except IOError as exception:
+        except OSError as exception:
             sys.stderr.write(str(exception) + '\n')
 
     return True
@@ -214,7 +203,7 @@ def check(args):
                 completed_filenames.update(name)
 
             if os.path.isdir(name):
-                for root, directories, children in os.walk(unicode(name)):
+                for root, directories, children in os.walk(name):
                     filenames += [os.path.join(root, f) for f in children
                                   if f.endswith('.py') and
                                   not f.startswith('.')]

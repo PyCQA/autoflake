@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-# coding: utf-8
-
 """Test suite for autoflake."""
-
-from __future__ import unicode_literals
-
 import contextlib
 import functools
 import io
@@ -1200,7 +1195,6 @@ def func11():
 
         self.assertFalse(autoflake.is_literal_or_name('xyz.prop'))
         self.assertFalse(autoflake.is_literal_or_name(' '))
-        self.assertFalse(autoflake.is_literal_or_name(' 1'))
 
     def test_is_python_file(self):
         self.assertTrue(autoflake.is_python_file(
@@ -1409,6 +1403,19 @@ print(x)
                             standard_error=None)
             self.assertEqual('No issues detected!\n', output_file.getvalue())
 
+    def test_check_correct_file_with_quiet(self):
+        with temporary_file("""\
+import foo
+x = foo.bar
+print(x)
+""") as filename:
+            output_file = io.StringIO()
+            autoflake._main(argv=['my_fake_program', '--check', '--quiet',
+                                  filename],
+                            standard_out=output_file,
+                            standard_error=None)
+            self.assertEqual('', output_file.getvalue())
+
     def test_check_useless_pass(self):
         with temporary_file("""\
 import foo
@@ -1511,6 +1518,16 @@ import os
                         standard_error=output_file)
 
         self.assertIn('redundant', output_file.getvalue())
+
+    def test_in_place_and_stdout(self):
+        output_file = io.StringIO()
+        self.assertRaises(
+            SystemExit,
+            autoflake._main,
+            argv=['my_fake_program', '--in-place', '--stdout', __file__],
+            standard_out=output_file,
+            standard_error=output_file,
+        )
 
     def test_end_to_end(self):
         with temporary_file("""\
@@ -1655,6 +1672,42 @@ print(x)
             self.assertIn(
                 'redundant',
                 process.communicate()[1].decode())
+
+    def test_end_to_end_from_stdin(self):
+        stdin_data = b"""\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os
+x = os.sep
+print(x)
+"""
+        process = subprocess.Popen(AUTOFLAKE_COMMAND +
+                                   ['--remove-all', '-'],
+                                   stdout=subprocess.PIPE,
+                                   stdin=subprocess.PIPE)
+        stdout, _ = process.communicate(stdin_data)
+        self.assertEqual("""\
+import os
+x = os.sep
+print(x)
+""", stdout.decode())
+
+    def test_end_to_end_from_stdin_with_in_place(self):
+        stdin_data = b"""\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os, sys
+x = os.sep
+print(x)
+"""
+        process = subprocess.Popen(AUTOFLAKE_COMMAND +
+                                   ['--remove-all', '--in-place', '-'],
+                                   stdout=subprocess.PIPE,
+                                   stdin=subprocess.PIPE)
+        stdout, _ = process.communicate(stdin_data)
+        self.assertEqual("""\
+import os
+x = os.sep
+print(x)
+""", stdout.decode())
 
 
 class MultilineFromImportTests(unittest.TestCase):
@@ -1953,7 +2006,7 @@ class MultilineFromImportTests(unittest.TestCase):
             '\n'
         )
 
-        self.unused = ['lib{}.x.y.z'.format(x) for x in (1, 3, 4)]
+        self.unused = [f'lib{x}.x.y.z' for x in (1, 3, 4)]
         self.assert_fix([
             'import \\\n',
             '    lib1.x.y.z \\',
@@ -2147,7 +2200,7 @@ def temporary_directory(directory='.', prefix='tmp.'):
         shutil.rmtree(temp_directory)
 
 
-class StubFile(object):
+class StubFile:
 
     """Fake file that ignores everything."""
 
