@@ -1922,7 +1922,7 @@ print(x)
 +import os
  x = os.sep
  print(x)
-""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]),
+""", '\n'.join(process.communicate()[0].decode().split(os.linesep)[3:]),
             )
 
     def test_end_to_end_with_remove_all_unused_imports(self):
@@ -1947,7 +1947,7 @@ print(x)
 +import os
  x = os.sep
  print(x)
-""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]),
+""", '\n'.join(process.communicate()[0].decode().split(os.linesep)[3:]),
             )
 
     def test_end_to_end_with_remove_duplicate_keys_multiple_lines(self):
@@ -1984,7 +1984,7 @@ print(a)
      'c': 'hello2',
      'b': 'hiya',
  }
-""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]),
+""", '\n'.join(process.communicate()[0].decode().split(os.linesep)[3:]),
             )
 
     def test_end_to_end_with_remove_duplicate_keys_and_other_errors(self):
@@ -2025,7 +2025,7 @@ print(a)
      'c': 'hello2',
      'b': 'hiya',
  }
-""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]),
+""", '\n'.join(process.communicate()[0].decode().split(os.linesep)[3:]),
             )
 
     def test_end_to_end_with_remove_duplicate_keys_tuple(self):
@@ -2053,7 +2053,7 @@ print(a)
    (0,1): 3,
  }
  print(a)
-""", '\n'.join(process.communicate()[0].decode().split('\n')[3:]),
+""", '\n'.join(process.communicate()[0].decode().split(os.linesep)[3:]),
             )
 
     def test_end_to_end_with_error(self):
@@ -2096,7 +2096,7 @@ print(x)
 import os
 x = os.sep
 print(x)
-""", stdout.decode(),
+""", '\n'.join(stdout.decode().split(os.linesep)),
         )
 
     def test_end_to_end_from_stdin_with_in_place(self):
@@ -2118,7 +2118,7 @@ print(x)
 import os
 x = os.sep
 print(x)
-""", stdout.decode(),
+""", '\n'.join(stdout.decode().split(os.linesep)),
         )
 
 
