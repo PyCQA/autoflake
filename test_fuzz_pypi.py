@@ -9,15 +9,18 @@ import zipfile
 import test_fuzz
 
 
-TMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                       'pypi_tmp')
+TMP_DIR = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)),
+    'pypi_tmp',
+)
 
 
 def latest_packages(last_hours):
     """Return names of latest released packages on PyPI."""
     process = subprocess.Popen(
         ['yolk', f'--latest-releases={last_hours}'],
-        stdout=subprocess.PIPE)
+        stdout=subprocess.PIPE,
+    )
 
     for line in process.communicate()[0].decode('utf-8').split('\n'):
         if line:
@@ -29,8 +32,10 @@ def download_package(name, output_directory):
 
     Raise CalledProcessError on failure.
     """
-    subprocess.check_call(['yolk', f'--fetch-package={name}'],
-                          cwd=output_directory)
+    subprocess.check_call(
+        ['yolk', f'--fetch-package={name}'],
+        cwd=output_directory,
+    )
 
 
 def extract_package(path, output_directory):
@@ -80,9 +85,11 @@ def main():
             while not names:
                 # Continually populate if user did not specify a package
                 # explicitly.
-                names = [p for p in latest_packages(last_hours)
-                         if p not in checked_packages and
-                         p not in skipped_packages]
+                names = [
+                    p for p in latest_packages(last_hours)
+                    if p not in checked_packages and
+                    p not in skipped_packages
+                ]
 
                 if not names:
                     last_hours *= 2
@@ -101,7 +108,8 @@ def main():
         try:
             download_package(
                 package_name,
-                output_directory=package_tmp_dir)
+                output_directory=package_tmp_dir,
+            )
         except subprocess.CalledProcessError:
             print('yolk fetch failed', file=sys.stderr)
             continue
@@ -110,7 +118,8 @@ def main():
             try:
                 if not extract_package(
                         os.path.join(package_tmp_dir, download_name),
-                        output_directory=package_tmp_dir):
+                        output_directory=package_tmp_dir,
+                ):
                     print('Could not extract package', file=sys.stderr)
                     continue
             except UnicodeDecodeError:
@@ -124,8 +133,10 @@ def main():
                 return 1
 
     if checked_packages:
-        print('\nTested packages:\n    ' + '\n    '.join(checked_packages),
-              file=sys.stderr)
+        print(
+            '\nTested packages:\n    ' + '\n    '.join(checked_packages),
+            file=sys.stderr,
+        )
 
 
 if __name__ == '__main__':

@@ -58,8 +58,10 @@ def standard_paths():
     for is_plat_spec in [True, False]:
 
         # Yield lib paths.
-        path = distutils.sysconfig.get_python_lib(standard_lib=True,
-                                                  plat_specific=is_plat_spec)
+        path = distutils.sysconfig.get_python_lib(
+            standard_lib=True,
+            plat_specific=is_plat_spec,
+        )
         yield from os.listdir(path)
 
         # Yield lib-dynload paths.
@@ -74,7 +76,7 @@ def standard_package_names():
         if name.startswith('_') or '-' in name:
             continue
 
-        if '.' in name and not name.endswith(("so", "py", "pyc")):
+        if '.' in name and not name.endswith(('so', 'py', 'pyc')):
             continue
 
         yield name.split('.')[0]
@@ -83,12 +85,16 @@ def standard_package_names():
 IMPORTS_WITH_SIDE_EFFECTS = {'antigravity', 'rlcompleter', 'this'}
 
 # In case they are built into CPython.
-BINARY_IMPORTS = {'datetime', 'grp', 'io', 'json', 'math', 'multiprocessing',
-                  'parser', 'pwd', 'string', 'operator', 'os', 'sys', 'time'}
+BINARY_IMPORTS = {
+    'datetime', 'grp', 'io', 'json', 'math', 'multiprocessing',
+    'parser', 'pwd', 'string', 'operator', 'os', 'sys', 'time',
+}
 
-SAFE_IMPORTS = (frozenset(standard_package_names()) -
-                IMPORTS_WITH_SIDE_EFFECTS |
-                BINARY_IMPORTS)
+SAFE_IMPORTS = (
+    frozenset(standard_package_names()) -
+    IMPORTS_WITH_SIDE_EFFECTS |
+    BINARY_IMPORTS
+)
 
 
 def unused_import_line_numbers(messages):
@@ -136,7 +142,8 @@ def duplicate_key_line_numbers(messages, source):
     """Yield line numbers of duplicate keys."""
     messages = [
         message for message in messages
-        if isinstance(message, pyflakes.messages.MultiValueRepeatedKeyLiteral)]
+        if isinstance(message, pyflakes.messages.MultiValueRepeatedKeyLiteral)
+    ]
 
     if messages:
         # Filter out complex cases. We don't want to bother trying to parse
@@ -262,7 +269,7 @@ class PendingFix:
         Return self to keep processing the following lines or a string
         with the final result of all the lines processed at once.
         """
-        raise NotImplementedError("Abstract method needs to be overwritten")
+        raise NotImplementedError('Abstract method needs to be overwritten')
 
 
 def _valid_char_in_line(char, line):
@@ -313,12 +320,15 @@ class FilterMultilineImport(PendingFix):
     INDENTATION_RE = re.compile(r'^\s*')
     BASE_RE = re.compile(r'\bfrom\s+([^ ]+)')
     SEGMENT_RE = re.compile(
-        r'([^,\s]+(?:[\s\\]+as[\s\\]+[^,\s]+)?[,\s\\)]*)', re.M)
+        r'([^,\s]+(?:[\s\\]+as[\s\\]+[^,\s]+)?[,\s\\)]*)', re.M,
+    )
     # ^ module + comma + following space (including new line and continuation)
     IDENTIFIER_RE = re.compile(r'[^,\s]+')
 
-    def __init__(self, line, unused_module=(), remove_all_unused_imports=False,
-                 safe_to_remove=SAFE_IMPORTS, previous_line=''):
+    def __init__(
+        self, line, unused_module=(), remove_all_unused_imports=False,
+        safe_to_remove=SAFE_IMPORTS, previous_line='',
+    ):
         """Receive the same parameters as ``filter_unused_import``."""
         self.remove = unused_module
         self.parenthesized = '(' in line
@@ -376,7 +386,7 @@ class FilterMultilineImport(PendingFix):
             # just replace the module identifiers inside the first N-1 segments
             # + the last segment
             templates = list(zip(modules, segments))
-            templates = templates[:len(keep)-1] + templates[-1:]
+            templates = templates[:len(keep) - 1] + templates[-1:]
             # It is important to keep the last segment, since it might contain
             # important chars like `)`
             fixed = ''.join(
@@ -426,10 +436,14 @@ def filter_from_import(line, unused_module):
     Return line without unused import modules, or `pass` if all of the
     module in import is unused.
     """
-    (indentation, imports) = re.split(pattern=r'\bimport\b',
-                                      string=line, maxsplit=1)
-    base_module = re.search(pattern=r'\bfrom\s+([^ ]+)',
-                            string=indentation).group(1)
+    (indentation, imports) = re.split(
+        pattern=r'\bimport\b',
+        string=line, maxsplit=1,
+    )
+    base_module = re.search(
+        pattern=r'\bfrom\s+([^ ]+)',
+        string=indentation,
+    ).group(1)
 
     imports = re.split(pattern=r'\s*,\s*', string=imports.strip())
     filtered_imports = _filter_imports(imports, base_module, unused_module)
@@ -443,7 +457,8 @@ def filter_from_import(line, unused_module):
     return (
         indentation +
         ', '.join(sorted(filtered_imports)) +
-        get_line_ending(line))
+        get_line_ending(line)
+    )
 
 
 def break_up_import(line):
@@ -459,23 +474,28 @@ def break_up_import(line):
     if not newline:
         return line
 
-    (indentation, imports) = re.split(pattern=r'\bimport\b',
-                                      string=line, maxsplit=1)
+    (indentation, imports) = re.split(
+        pattern=r'\bimport\b',
+        string=line, maxsplit=1,
+    )
 
     indentation += 'import '
     assert newline
 
-    return ''.join([indentation + i.strip() + newline
-                    for i in sorted(imports.split(','))])
+    return ''.join([
+        indentation + i.strip() + newline
+        for i in sorted(imports.split(','))
+    ])
 
 
-def filter_code(source, additional_imports=None,
-                expand_star_imports=False,
-                remove_all_unused_imports=False,
-                remove_duplicate_keys=False,
-                remove_unused_variables=False,
-                ignore_init_module_imports=False,
-                ):
+def filter_code(
+    source, additional_imports=None,
+    expand_star_imports=False,
+    remove_all_unused_imports=False,
+    remove_duplicate_keys=False,
+    remove_unused_variables=False,
+    ignore_init_module_imports=False,
+):
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
@@ -488,7 +508,8 @@ def filter_code(source, additional_imports=None,
         marked_import_line_numbers = frozenset()
     else:
         marked_import_line_numbers = frozenset(
-            unused_import_line_numbers(messages))
+            unused_import_line_numbers(messages),
+        )
     marked_unused_module = collections.defaultdict(lambda: [])
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
@@ -499,7 +520,8 @@ def filter_code(source, additional_imports=None,
         re.search(r'\bdel\b', source)
     ):
         marked_star_import_line_numbers = frozenset(
-            star_import_used_line_numbers(messages))
+            star_import_used_line_numbers(messages),
+        )
         if len(marked_star_import_line_numbers) > 1:
             # Auto expanding only possible for single star import
             marked_star_import_line_numbers = frozenset()
@@ -515,13 +537,15 @@ def filter_code(source, additional_imports=None,
 
     if remove_unused_variables:
         marked_variable_line_numbers = frozenset(
-            unused_variable_line_numbers(messages))
+            unused_variable_line_numbers(messages),
+        )
     else:
         marked_variable_line_numbers = frozenset()
 
     if remove_duplicate_keys:
         marked_key_line_numbers = frozenset(
-            duplicate_key_line_numbers(messages, source))
+            duplicate_key_line_numbers(messages, source),
+        )
     else:
         marked_key_line_numbers = frozenset()
 
@@ -541,13 +565,16 @@ def filter_code(source, additional_imports=None,
                 unused_module=marked_unused_module[line_number],
                 remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
-                previous_line=previous_line)
+                previous_line=previous_line,
+            )
         elif line_number in marked_variable_line_numbers:
             result = filter_unused_variable(line)
         elif line_number in marked_key_line_numbers:
-            result = filter_duplicate_key(line, line_messages[line_number],
-                                          line_number, marked_key_line_numbers,
-                                          source)
+            result = filter_duplicate_key(
+                line, line_messages[line_number],
+                line_number, marked_key_line_numbers,
+                source,
+            )
         elif line_number in marked_star_import_line_numbers:
             result = filter_star_import(line, undefined_names)
         else:
@@ -573,17 +600,21 @@ def filter_star_import(line, marked_star_import_undefined_name):
     return re.sub(r'\*', ', '.join(undefined_name), line)
 
 
-def filter_unused_import(line, unused_module, remove_all_unused_imports,
-                         imports, previous_line=''):
+def filter_unused_import(
+    line, unused_module, remove_all_unused_imports,
+    imports, previous_line='',
+):
     """Return line if used, otherwise return None."""
     # Ignore doctests.
     if line.lstrip().startswith('>'):
         return line
 
     if multiline_import(line, previous_line):
-        filt = FilterMultilineImport(line, unused_module,
-                                     remove_all_unused_imports,
-                                     imports, previous_line)
+        filt = FilterMultilineImport(
+            line, unused_module,
+            remove_all_unused_imports,
+            imports, previous_line,
+        )
         return filt()
 
     is_from_import = line.lstrip().startswith('from')
@@ -603,9 +634,11 @@ def filter_unused_import(line, unused_module, remove_all_unused_imports,
         # only line inside a block. For example,
         # "if True:\n    import os". In such cases, if the import is
         # removed, the block will be left hanging with no body.
-        return (get_indentation(line) +
-                'pass' +
-                get_line_ending(line))
+        return (
+            get_indentation(line) +
+            'pass' +
+            get_line_ending(line)
+        )
 
 
 def filter_unused_variable(line, previous_line=''):
@@ -631,8 +664,10 @@ def filter_unused_variable(line, previous_line=''):
         return line
 
 
-def filter_duplicate_key(line, message, line_number, marked_line_numbers,
-                         source, previous_line=''):
+def filter_duplicate_key(
+    line, message, line_number, marked_line_numbers,
+    source, previous_line='',
+):
     """Return '' if first occurrence of the key otherwise return `line`."""
     if marked_line_numbers and line_number == sorted(marked_line_numbers)[0]:
         return ''
@@ -696,10 +731,12 @@ def useless_pass_line_numbers(source):
         is_pass = (token_type == tokenize.NAME and line.strip() == 'pass')
 
         # Leading "pass".
-        if (start_row - 1 == last_pass_row and
-                get_indentation(line) == last_pass_indentation and
-                token_type in ATOMS and
-                not is_pass):
+        if (
+            start_row - 1 == last_pass_row and
+            get_indentation(line) == last_pass_indentation and
+            token_type in ATOMS and
+            not is_pass
+        ):
             yield start_row - 1
 
         if is_pass:
@@ -707,9 +744,11 @@ def useless_pass_line_numbers(source):
             last_pass_indentation = get_indentation(line)
 
         # Trailing "pass".
-        if (is_pass and
-                previous_token_type != tokenize.INDENT and
-                not previous_line.rstrip().endswith('\\')):
+        if (
+            is_pass and
+            previous_token_type != tokenize.INDENT and
+            not previous_line.rstrip().endswith('\\')
+        ):
             yield start_row
 
         previous_token_type = token_type
@@ -747,9 +786,11 @@ def get_line_ending(line):
         return line[non_whitespace_index:]
 
 
-def fix_code(source, additional_imports=None, expand_star_imports=False,
-             remove_all_unused_imports=False, remove_duplicate_keys=False,
-             remove_unused_variables=False, ignore_init_module_imports=False):
+def fix_code(
+    source, additional_imports=None, expand_star_imports=False,
+    remove_all_unused_imports=False, remove_duplicate_keys=False,
+    remove_unused_variables=False, ignore_init_module_imports=False,
+):
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -761,16 +802,20 @@ def fix_code(source, additional_imports=None, expand_star_imports=False,
     filtered_source = None
     while True:
         filtered_source = ''.join(
-            filter_useless_pass(''.join(
-                filter_code(
-                    source,
-                    additional_imports=additional_imports,
-                    expand_star_imports=expand_star_imports,
-                    remove_all_unused_imports=remove_all_unused_imports,
-                    remove_duplicate_keys=remove_duplicate_keys,
-                    remove_unused_variables=remove_unused_variables,
-                    ignore_init_module_imports=ignore_init_module_imports,
-                ))))
+            filter_useless_pass(
+                ''.join(
+                    filter_code(
+                        source,
+                        additional_imports=additional_imports,
+                        expand_star_imports=expand_star_imports,
+                        remove_all_unused_imports=remove_all_unused_imports,
+                        remove_duplicate_keys=remove_duplicate_keys,
+                        remove_unused_variables=remove_unused_variables,
+                        ignore_init_module_imports=ignore_init_module_imports,
+                    ),
+                ),
+            ),
+        )
 
         if filtered_source == source:
             break
@@ -785,18 +830,22 @@ def fix_file(filename, args, standard_out=None):
         standard_out = sys.stdout
     encoding = detect_encoding(filename)
     with open_with_encoding(filename, encoding=encoding) as input_file:
-        return _fix_file(input_file, filename, args, args["write_to_stdout"],
-                         standard_out, encoding=encoding)
+        return _fix_file(
+            input_file, filename, args, args['write_to_stdout'],
+            standard_out, encoding=encoding,
+        )
 
 
-def _fix_file(input_file, filename, args, write_to_stdout, standard_out,
-              encoding=None):
+def _fix_file(
+    input_file, filename, args, write_to_stdout, standard_out,
+    encoding=None,
+):
     source = input_file.read()
     original_source = source
 
     isInitFile = os.path.basename(filename) == '__init__.py'
 
-    if args["ignore_init_module_imports"] and isInitFile:
+    if args['ignore_init_module_imports'] and isInitFile:
         ignore_init_module_imports = True
     else:
         ignore_init_module_imports = False
@@ -804,51 +853,58 @@ def _fix_file(input_file, filename, args, write_to_stdout, standard_out,
     filtered_source = fix_code(
         source,
         additional_imports=(
-            args["imports"].split(',') if args["imports"] else None
+            args['imports'].split(',') if args['imports'] else None
         ),
-        expand_star_imports=args["expand_star_imports"],
-        remove_all_unused_imports=args["remove_all_unused_imports"],
-        remove_duplicate_keys=args["remove_duplicate_keys"],
-        remove_unused_variables=args["remove_unused_variables"],
+        expand_star_imports=args['expand_star_imports'],
+        remove_all_unused_imports=args['remove_all_unused_imports'],
+        remove_duplicate_keys=args['remove_duplicate_keys'],
+        remove_unused_variables=args['remove_unused_variables'],
         ignore_init_module_imports=ignore_init_module_imports,
     )
 
     if original_source != filtered_source:
-        if args["check"]:
+        if args['check']:
             standard_out.write(
                 f'{filename}: Unused imports/variables detected\n',
             )
             sys.exit(1)
         if write_to_stdout:
             standard_out.write(filtered_source)
-        elif args["in_place"]:
-            with open_with_encoding(filename, mode='w',
-                                    encoding=encoding) as output_file:
+        elif args['in_place']:
+            with open_with_encoding(
+                filename, mode='w',
+                encoding=encoding,
+            ) as output_file:
                 output_file.write(filtered_source)
             _LOGGER.info('Fixed %s', filename)
         else:
             diff = get_diff_text(
                 io.StringIO(original_source).readlines(),
                 io.StringIO(filtered_source).readlines(),
-                filename)
+                filename,
+            )
             standard_out.write(''.join(diff))
     elif write_to_stdout:
         standard_out.write(filtered_source)
     else:
-        if args["check"] and not args["quiet"]:
+        if args['check'] and not args['quiet']:
             standard_out.write('No issues detected!\n')
         else:
             _LOGGER.debug('Clean %s: nothing to fix', filename)
 
 
-def open_with_encoding(filename, encoding, mode='r',
-                       limit_byte_check=-1):
+def open_with_encoding(
+    filename, encoding, mode='r',
+    limit_byte_check=-1,
+):
     """Return opened file with a specific encoding."""
     if not encoding:
         encoding = detect_encoding(filename, limit_byte_check=limit_byte_check)
 
-    return open(filename, mode=mode, encoding=encoding,
-                newline='')  # Preserve line endings
+    return open(
+        filename, mode=mode, encoding=encoding,
+        newline='',
+    )  # Preserve line endings
 
 
 def detect_encoding(filename, limit_byte_check=-1):
@@ -882,7 +938,8 @@ def get_diff_text(old, new, filename):
         old, new,
         'original/' + filename,
         'fixed/' + filename,
-        lineterm=newline)
+        lineterm=newline,
+    )
 
     text = ''
     for line in diff:
@@ -909,7 +966,8 @@ def is_python_file(filename):
         with open_with_encoding(
                 filename,
                 None,
-                limit_byte_check=MAX_PYTHON_FILE_DETECTION_BYTES) as f:
+                limit_byte_check=MAX_PYTHON_FILE_DETECTION_BYTES,
+        ) as f:
             text = f.read(MAX_PYTHON_FILE_DETECTION_BYTES)
             if not text:
                 return False
@@ -956,12 +1014,20 @@ def find_files(filenames, recursive, exclude):
         name = filenames.pop(0)
         if recursive and os.path.isdir(name):
             for root, directories, children in os.walk(name):
-                filenames += [os.path.join(root, f) for f in children
-                              if match_file(os.path.join(root, f),
-                                            exclude)]
-                directories[:] = [d for d in directories
-                                  if match_file(os.path.join(root, d),
-                                                exclude)]
+                filenames += [
+                    os.path.join(root, f) for f in children
+                    if match_file(
+                        os.path.join(root, f),
+                        exclude,
+                    )
+                ]
+                directories[:] = [
+                    d for d in directories
+                    if match_file(
+                        os.path.join(root, d),
+                        exclude,
+                    )
+                ]
         else:
             if not is_exclude_file(name, exclude):
                 yield name
@@ -976,55 +1042,89 @@ def _main(argv, standard_out, standard_error, standard_input=None):
     """
     import argparse
     parser = argparse.ArgumentParser(description=__doc__, prog='autoflake')
-    parser.add_argument('-c', '--check', action='store_true',
-                        help='return error code if changes are needed')
-    parser.add_argument('-r', '--recursive', action='store_true',
-                        help='drill down directories recursively')
-    parser.add_argument('-j', '--jobs', type=int, metavar='n', default=0,
-                        help='number of parallel jobs; '
-                             'match CPU count if value is 0 (default: 0)')
-    parser.add_argument('--exclude', metavar='globs',
-                        help='exclude file/directory names that match these '
-                             'comma-separated globs')
-    parser.add_argument('--imports',
-                        help='by default, only unused standard library '
-                             'imports are removed; specify a comma-separated '
-                             'list of additional modules/packages')
-    parser.add_argument('--expand-star-imports', action='store_true',
-                        help='expand wildcard star imports with undefined '
-                             'names; this only triggers if there is only '
-                             'one star import in the file; this is skipped if '
-                             'there are any uses of `__all__` or `del` in the '
-                             'file')
-    parser.add_argument('--remove-all-unused-imports', action='store_true',
-                        help='remove all unused imports (not just those from '
-                             'the standard library)')
-    parser.add_argument('--ignore-init-module-imports', action='store_true',
-                        help='exclude __init__.py when removing unused '
-                             'imports')
-    parser.add_argument('--remove-duplicate-keys', action='store_true',
-                        help='remove all duplicate keys in objects')
-    parser.add_argument('--remove-unused-variables', action='store_true',
-                        help='remove unused variables')
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s ' + __version__)
-    parser.add_argument('--quiet', action='store_true',
-                        help='Suppress output if there are no issues')
-    parser.add_argument('-v', '--verbose', action='count', dest='verbosity',
-                        default=0, help='print more verbose logs (you can '
-                                        'repeat `-v` to make it more verbose)')
-    parser.add_argument('--stdin-display-name', dest='stdin_display_name',
-                        default='stdin',
-                        help='the name used when processing input from stdin')
+    parser.add_argument(
+        '-c', '--check', action='store_true',
+        help='return error code if changes are needed',
+    )
+    parser.add_argument(
+        '-r', '--recursive', action='store_true',
+        help='drill down directories recursively',
+    )
+    parser.add_argument(
+        '-j', '--jobs', type=int, metavar='n', default=0,
+        help='number of parallel jobs; '
+             'match CPU count if value is 0 (default: 0)',
+    )
+    parser.add_argument(
+        '--exclude', metavar='globs',
+        help='exclude file/directory names that match these '
+             'comma-separated globs',
+    )
+    parser.add_argument(
+        '--imports',
+        help='by default, only unused standard library '
+             'imports are removed; specify a comma-separated '
+             'list of additional modules/packages',
+    )
+    parser.add_argument(
+        '--expand-star-imports', action='store_true',
+        help='expand wildcard star imports with undefined '
+             'names; this only triggers if there is only '
+             'one star import in the file; this is skipped if '
+             'there are any uses of `__all__` or `del` in the '
+             'file',
+    )
+    parser.add_argument(
+        '--remove-all-unused-imports', action='store_true',
+        help='remove all unused imports (not just those from '
+             'the standard library)',
+    )
+    parser.add_argument(
+        '--ignore-init-module-imports', action='store_true',
+        help='exclude __init__.py when removing unused '
+             'imports',
+    )
+    parser.add_argument(
+        '--remove-duplicate-keys', action='store_true',
+        help='remove all duplicate keys in objects',
+    )
+    parser.add_argument(
+        '--remove-unused-variables', action='store_true',
+        help='remove unused variables',
+    )
+    parser.add_argument(
+        '--version', action='version',
+        version='%(prog)s ' + __version__,
+    )
+    parser.add_argument(
+        '--quiet', action='store_true',
+        help='Suppress output if there are no issues',
+    )
+    parser.add_argument(
+        '-v', '--verbose', action='count', dest='verbosity',
+        default=0, help='print more verbose logs (you can '
+                        'repeat `-v` to make it more verbose)',
+    )
+    parser.add_argument(
+        '--stdin-display-name', dest='stdin_display_name',
+        default='stdin',
+        help='the name used when processing input from stdin',
+    )
     parser.add_argument('files', nargs='+', help='files to format')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-i', '--in-place', action='store_true',
-                       help='make changes to files instead of printing diffs')
-    group.add_argument('-s', '--stdout', action='store_true',
-                       dest='write_to_stdout',
-                       help=('print changed text to stdout. defaults to true '
-                             'when formatting stdin, or to false otherwise'))
+    group.add_argument(
+        '-i', '--in-place', action='store_true',
+        help='make changes to files instead of printing diffs',
+    )
+    group.add_argument(
+        '-s', '--stdout', action='store_true',
+        dest='write_to_stdout',
+        help=(
+            'print changed text to stdout. defaults to true '
+            'when formatting stdin, or to false otherwise'
+        ),
+    )
 
     args = parser.parse_args(argv[1:])
 
@@ -1057,14 +1157,16 @@ def _main(argv, standard_out, standard_error, standard_input=None):
     # convert argparse namespace to a dict so that it can be serialized
     # by multiprocessing
     args = vars(args)
-    files = list(find_files(filenames, args["recursive"], args["exclude"]))
-    if args["jobs"] == 1 or len(files) == 1 or args["jobs"] == 1 or \
+    files = list(find_files(filenames, args['recursive'], args['exclude']))
+    if args['jobs'] == 1 or len(files) == 1 or args['jobs'] == 1 or \
             '-' in files or standard_out is not None:
         for name in files:
             if name == '-':
-                _fix_file(standard_input, args["stdin_display_name"],
-                          args=args, write_to_stdout=True,
-                          standard_out=standard_out or sys.stdout)
+                _fix_file(
+                    standard_input, args['stdin_display_name'],
+                    args=args, write_to_stdout=True,
+                    standard_out=standard_out or sys.stdout,
+                )
             else:
                 try:
                     fix_file(name, args=args, standard_out=standard_out)
@@ -1074,7 +1176,7 @@ def _main(argv, standard_out, standard_error, standard_input=None):
     else:
         import multiprocessing
 
-        with multiprocessing.Pool(args["jobs"]) as pool:
+        with multiprocessing.Pool(args['jobs']) as pool:
             futs = []
             for name in files:
                 fut = pool.apply_async(fix_file, args=(name, args))
@@ -1099,10 +1201,12 @@ def main():
         pass
 
     try:
-        return _main(sys.argv,
-                     standard_out=None,
-                     standard_error=sys.stderr,
-                     standard_input=sys.stdin)
+        return _main(
+            sys.argv,
+            standard_out=None,
+            standard_error=sys.stderr,
+            standard_input=sys.stdin,
+        )
     except KeyboardInterrupt:  # pragma: no cover
         return 2  # pragma: no cover
 
