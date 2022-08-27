@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from argparse import Namespace
 
 import autoflake
 
@@ -2622,6 +2623,325 @@ class MultilineFromImportTests(unittest.TestCase):
             '    lib1, \\\n'
             '    lib3\n',
             remove_all=False,
+        )
+
+
+class ConfigFileTest(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix='autoflake.')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+        self.tmpdir = None
+
+    def effective_path(self, path, is_file=True):
+        path = os.path.normpath(path)
+        if os.path.isabs(path):
+            raise ValueError('Should not create an absolute test path')
+        effective_path = os.path.sep.join([self.tmpdir, path])
+        if not effective_path.startswith(
+                f'{self.tmpdir}{os.path.sep}',
+        ) and (effective_path != self.tmpdir or is_file):
+            raise ValueError('Should create a path within the tmp dir only')
+        return effective_path
+
+    def create_dir(self, path):
+        effective_path = self.effective_path(path, False)
+        if sys.version_info >= (3, 2, 0):
+            os.makedirs(effective_path, exist_ok=True)
+        else:
+            if os.path.exists(effective_path):
+                return
+            try:
+                os.mkdir(effective_path)
+            except OSError:
+                parent = os.path.split(path)[0]
+                if not parent:
+                    raise
+                self.create_dir(parent)
+                os.mkdir(effective_path)
+
+    def create_file(self, path, contents=''):
+        effective_path = self.effective_path(path)
+        self.create_dir(os.path.split(path)[0])
+        with open(effective_path, 'wt') as f:
+            f.write(contents)
+
+    def assert_namespace(self, namespace, expected_props):
+        keys = (prop for prop in dir(namespace) if not prop.startswith('_'))
+        actual_props = {key: getattr(namespace, key) for key in keys}
+        assert actual_props == expected_props
+
+    def test_no_config_file(self):
+        self.create_file('test_me.py')
+        original_args = {'files': [self.effective_path('test_me.py')]}
+        args = Namespace(**original_args)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(args, original_args)
+
+    def test_non_nested_pyproject_toml_empty(self):
+        self.create_file('test_me.py')
+        self.create_file('pyproject.toml', "[tool.other]\nprop=\"value\"\n")
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(args, {'files': files})
+
+    def test_non_nested_pyproject_toml_non_empty(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'pyproject.toml',
+            '[tool.autoflake]\nexpand-star-imports=true\n',
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'expand_star_imports': True},
+        )
+
+    def test_non_nested_setup_cfg_non_empty(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'setup.cfg',
+            '[other]\nexpand-star-imports = yes\n',
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files},
+        )
+
+    def test_non_nested_setup_cfg_empty(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'setup.cfg',
+            '[autoflake]\nexpand-star-imports = yes\n',
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'expand_star_imports': True},
+        )
+
+    def test_nested_file(self):
+        self.create_file('nested/file/test_me.py')
+        self.create_file(
+            'pyproject.toml',
+            '[tool.autoflake]\nexpand-star-imports=true\n',
+        )
+        files = [self.effective_path('nested/file/test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'expand_star_imports': True},
+        )
+
+    def test_common_path_nested_file_do_not_load(self):
+        self.create_file('nested/file/test_me.py')
+        self.create_file('nested/other/test_me.py')
+        self.create_file(
+            'nested/file/pyproject.toml',
+            '[tool.autoflake]\nexpand-star-imports=true\n',
+        )
+        files = [
+            self.effective_path('nested/file/test_me.py'),
+            self.effective_path('nested/other/test_me.py'),
+        ]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files},
+        )
+
+    def test_common_path_nested_file_do_load(self):
+        self.create_file('nested/file/test_me.py')
+        self.create_file('nested/other/test_me.py')
+        self.create_file(
+            'nested/pyproject.toml',
+            '[tool.autoflake]\nexpand-star-imports=true\n',
+        )
+        files = [
+            self.effective_path('nested/file/test_me.py'),
+            self.effective_path('nested/other/test_me.py'),
+        ]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'expand_star_imports': True},
+        )
+
+    def test_common_path_instead_of_common_prefix(self):
+        """Using common prefix would result in a failure."""
+        self.create_file('nested/file-foo/test_me.py')
+        self.create_file('nested/file-bar/test_me.py')
+        self.create_file(
+            'nested/file/pyproject.toml',
+            '[tool.autoflake]\nexpand-star-imports=true\n',
+        )
+        files = [
+            self.effective_path('nested/file-foo/test_me.py'),
+            self.effective_path('nested/file-bar/test_me.py'),
+        ]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files},
+        )
+
+    def test_continue_search_if_no_config_found(self):
+        self.create_file('nested/test_me.py')
+        self.create_file(
+            'nested/pyproject.toml',
+            "[tool.other]\nprop = \"value\"\n",
+        )
+        self.create_file(
+            'pyproject.toml',
+            '[tool.autoflake]\nexpand-star-imports = true\n',
+        )
+        files = [self.effective_path('nested/test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'expand_star_imports': True},
+        )
+
+    def test_stop_search_if_config_found(self):
+        self.create_file('nested/test_me.py')
+        self.create_file(
+            'nested/pyproject.toml',
+            '[tool.autoflake]\n',
+        )
+        self.create_file(
+            'pyproject.toml',
+            '[tool.autoflake]\nexpand-star-imports = true\n',
+        )
+        files = [self.effective_path('nested/test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files},
+        )
+
+    def test_dont_load_false(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'setup.cfg',
+            '[autoflake]\nexpand-star-imports = no\n',
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files},
+        )
+
+    def test_list_value_pyproject_toml(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'pyproject.toml',
+            "[tool.autoflake]\nimports=[\"my_lib\", \"other_lib\"]\n",
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'imports': 'my_lib,other_lib'},
+        )
+
+    def test_list_value_comma_sep_string_pyproject_toml(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'pyproject.toml',
+            "[tool.autoflake]\nimports=\"my_lib,other_lib\"\n",
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'imports': 'my_lib,other_lib'},
+        )
+
+    def test_list_value_setup_cfg(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'setup.cfg',
+            '[autoflake]\nimports=my_lib,other_lib\n',
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'imports': 'my_lib,other_lib'},
+        )
+
+    def test_unknown_property(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'pyproject.toml',
+            '[tool.autoflake]\nunknown_prop=true\n',
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert not autoflake.merge_configuration_file(args)
+
+    def test_non_bool_value_for_bool_property(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'pyproject.toml',
+            "[tool.autoflake]\nexpand-star-imports=\"invalid\"\n",
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert not autoflake.merge_configuration_file(args)
+
+    def test_non_bool_value_for_bool_property_in_setup_cfg(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'setup.cfg',
+            '[autoflake]\nexpand-star-imports=ok\n',
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert not autoflake.merge_configuration_file(args)
+
+    def test_non_list_value_for_list_property(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'pyproject.toml',
+            '[tool.autoflake]\nexclude=true\n',
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files)
+        assert not autoflake.merge_configuration_file(args)
+
+    def test_merge_with_cli_set_list_property(self):
+        self.create_file('test_me.py')
+        self.create_file(
+            'pyproject.toml',
+            "[tool.autoflake]\nimports=[\"my_lib\"]\n",
+        )
+        files = [self.effective_path('test_me.py')]
+        args = Namespace(files=files, imports='other_lib')
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {'files': files, 'imports': 'my_lib,other_lib'},
         )
 
 

@@ -1035,6 +1035,106 @@ def find_files(filenames, recursive, exclude):
                 _LOGGER.debug('Skipped %s: matched to exclude pattern', name)
 
 
+def process_pyproject_toml(toml_file_path):
+    """Extract config mapping from pyproject.toml file."""
+    import toml
+
+    return toml.load(toml_file_path).get('tool', {}).get('autoflake', None)
+
+
+def process_setup_cfg(cfg_file_path):
+    """Extract config mapping from setup.cfg file."""
+    import configparser
+
+    reader = configparser.ConfigParser()
+    reader.read(cfg_file_path)
+    if not reader.has_section('autoflake'):
+        return None
+
+    return reader['autoflake']
+
+
+def merge_configuration_file(args):
+    """Merge configuration from a file into args."""
+    # Configuration file parsers {filename: parser function}.
+    CONFIG_FILES = {
+        'pyproject.toml': process_pyproject_toml,
+        'setup.cfg': process_setup_cfg,
+    }
+    BOOL_TYPES = {
+        '1': True,
+        'yes': True,
+        'true': True,
+        'on': True,
+        '0': False,
+        'no': False,
+        'false': False,
+        'off': False,
+    }
+
+    # Traverse the file tree common to all files given as argument looking for
+    # a configuration file
+    config_path = os.path.commonpath([
+        os.path.abspath(file)
+        for file in args.files
+    ])
+    config = None
+    while True:
+        for config_file, processor in CONFIG_FILES.items():
+            config_file_path = os.path.join(
+                os.path.join(config_path, config_file),
+            )
+            if os.path.isfile(config_file_path):
+                config = processor(config_file_path)
+                if config is not None:
+                    break
+        if config is not None:
+            break
+        config_path, tail = os.path.split(config_path)
+        if not tail:
+            break
+    if config:
+        # merge config
+        for name, value in config.items():
+            if name in {'imports', 'exclude'}:
+                # comma separated list properties
+                if isinstance(value, list) and all(
+                        isinstance(val, str) for val in value
+                ):
+                    value = ','.join(str(val) for val in value)
+                if not isinstance(value, str):
+                    _LOGGER.error(
+                        "'%s' in the config file should be a comma separated"
+                        ' string or list of strings',
+                        name,
+                    )
+                    return False
+                current_value = getattr(args, name, None)
+                if current_value is not None:
+                    value = ','.join((value, current_value))
+                setattr(args, name, value)
+            elif name in {
+                'check', 'expand-star-imports', 'ignore-init-module-imports',
+                'in-place', 'recursive', 'remove-all-unused-imports',
+                'remove-duplicate-keys', 'remove-unused-variables',
+            }:
+                # boolean properties
+                if isinstance(value, str):
+                    value = BOOL_TYPES.get(value, value)
+                if not isinstance(value, bool):
+                    _LOGGER.error(
+                        "'%s' in the config file should be a boolean", name,
+                    )
+                    return False
+                if value:
+                    setattr(args, name.replace('-', '_'), value)
+            else:
+                _LOGGER.error("'%s' is not a valid configuration option", name)
+                return False
+
+    return True
+
+
 def _main(argv, standard_out, standard_error, standard_input=None):
     """Return exit status.
 
@@ -1138,6 +1238,9 @@ def _main(argv, standard_out, standard_error, standard_input=None):
         except IndexError:  # Too much -v
             loglevel = loglevels[-1]
         _LOGGER.setLevel(loglevel)
+
+    if not merge_configuration_file(args):
+        return 1
 
     if args.remove_all_unused_imports and args.imports:
         _LOGGER.error('Using both --remove-all and --imports is redundant')
