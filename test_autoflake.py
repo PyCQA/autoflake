@@ -2628,7 +2628,7 @@ class MultilineFromImportTests(unittest.TestCase):
 
 class ConfigFileTest(unittest.TestCase):
     def __init__(self, methodName):
-        super(ConfigFileTest, self).__init__(methodName)
+        super().__init__(methodName)
         self.tmpdir = None
 
     def setUp(self):
@@ -2644,7 +2644,7 @@ class ConfigFileTest(unittest.TestCase):
             raise ValueError("Should not create an absolute test path")
         effective_path = os.path.sep.join([self.tmpdir, path])
         if not effective_path.startswith(
-                "{}{}".format(self.tmpdir, os.path.sep)
+                f"{self.tmpdir}{os.path.sep}"
         ) and (effective_path != self.tmpdir or is_file):
             raise ValueError("Should create a path within the tmp dir only")
         return effective_path
