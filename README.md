@@ -84,10 +84,8 @@ To remove unused variables, use the ``--remove-unused-variables`` option.
 Below is the full listing of options:
 
 ```
-usage: autoflake [-h] [-i] [-r] [--exclude globs] [--imports IMPORTS]
-                 [--expand-star-imports] [--remove-all-unused-imports]
-                 [--remove-duplicate-keys] [--remove-unused-variables]
-                 [--version]
+usage: autoflake [-h] [-c] [-r] [-j n] [--exclude globs] [--imports IMPORTS] [--expand-star-imports] [--remove-all-unused-imports] [--ignore-init-module-imports] [--remove-duplicate-keys]
+                 [--remove-unused-variables] [--version] [--quiet] [-v] [--stdin-display-name STDIN_DISPLAY_NAME] [-i | -s]
                  files [files ...]
 
 Removes unused imports and unused variables as reported by pyflakes.
@@ -95,24 +93,17 @@ Removes unused imports and unused variables as reported by pyflakes.
 positional arguments:
   files                 files to format
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c, --check           return error code if changes are needed
-  -i, --in-place        make changes to files instead of printing diffs
   -r, --recursive       drill down directories recursively
-  --exclude globs       exclude file/directory names that match these comma-
-                        separated globs
-  --imports IMPORTS     by default, only unused standard library imports are
-                        removed; specify a comma-separated list of additional
-                        modules/packages
+  -j n, --jobs n        number of parallel jobs; match CPU count if value is 0 (default: 0)
+  --exclude globs       exclude file/directory names that match these comma-separated globs
+  --imports IMPORTS     by default, only unused standard library imports are removed; specify a comma-separated list of additional modules/packages
   --expand-star-imports
-                        expand wildcard star imports with undefined names;
-                        this only triggers if there is only one star import in
-                        the file; this is skipped if there are any uses of
-                        `__all__` or `del` in the file
+                        expand wildcard star imports with undefined names; this only triggers if there is only one star import in the file; this is skipped if there are any uses of `__all__` or `del` in the file
   --remove-all-unused-imports
-                        remove all unused imports (not just those from the
-                        standard library)
+                        remove all unused imports (not just those from the standard library)
   --ignore-init-module-imports
                         exclude __init__.py when removing unused imports
   --remove-duplicate-keys
@@ -120,6 +111,12 @@ optional arguments:
   --remove-unused-variables
                         remove unused variables
   --version             show program's version number and exit
+  --quiet               Suppress output if there are no issues
+  -v, --verbose         print more verbose logs (you can repeat `-v` to make it more verbose)
+  --stdin-display-name STDIN_DISPLAY_NAME
+                        the name used when processing input from stdin
+  -i, --in-place        make changes to files instead of printing diffs
+  -s, --stdout          print changed text to stdout. defaults to true when formatting stdin, or to false otherwise
 ```
 
 
@@ -196,7 +193,7 @@ Add the following to your `.pre-commit-config.yaml`
 
 ```yaml
 -   repo: https://github.com/PyCQA/autoflake
-    rev: v1.4
+    rev: v1.5.0
     hooks:
     -   id: autoflake
 ```
