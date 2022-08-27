@@ -1048,28 +1048,28 @@ def process_setup_cfg(cfg_file_path):
 
     reader = configparser.ConfigParser()
     reader.read(cfg_file_path)
-    if not reader.has_section("autoflake"):
+    if not reader.has_section('autoflake'):
         return None
 
-    return reader["autoflake"]
+    return reader['autoflake']
 
 
 def merge_configuration_file(args):
     """Merge configuration from a file into args."""
     # Configuration file parsers {filename: parser function}.
     CONFIG_FILES = {
-        "pyproject.toml": process_pyproject_toml,
-        "setup.cfg": process_setup_cfg,
+        'pyproject.toml': process_pyproject_toml,
+        'setup.cfg': process_setup_cfg,
     }
     BOOL_TYPES = {
-        "1": True,
-        "yes": True,
-        "true": True,
-        "on": True,
-        "0": False,
-        "no": False,
-        "false": False,
-        "off": False,
+        '1': True,
+        'yes': True,
+        'true': True,
+        'on': True,
+        '0': False,
+        'no': False,
+        'false': False,
+        'off': False,
     }
 
     # Traverse the file tree common to all files given as argument looking for
@@ -1096,27 +1096,27 @@ def merge_configuration_file(args):
     if config:
         # merge config
         for name, value in config.items():
-            if name in {"imports", "exclude"}:
+            if name in {'imports', 'exclude'}:
                 # comma separated list properties
                 if isinstance(value, list) and all(
                         isinstance(val, str) for val in value
                 ):
-                    value = ",".join(str(val) for val in value)
+                    value = ','.join(str(val) for val in value)
                 if not isinstance(value, str):
                     _LOGGER.error(
                         "'%s' in the config file should be a comma separated"
-                        " string or list of strings",
+                        ' string or list of strings',
                         name,
                     )
                     return False
                 current_value = getattr(args, name, None)
                 if current_value is not None:
-                    value = ",".join((value, current_value))
+                    value = ','.join((value, current_value))
                 setattr(args, name, value)
             elif name in {
-                "check", "expand-star-imports", "ignore-init-module-imports",
-                "in-place", "recursive", "remove-all-unused-imports",
-                "remove-duplicate-keys", "remove-unused-variables",
+                'check', 'expand-star-imports', 'ignore-init-module-imports',
+                'in-place', 'recursive', 'remove-all-unused-imports',
+                'remove-duplicate-keys', 'remove-unused-variables',
             }:
                 # boolean properties
                 if isinstance(value, str):
@@ -1127,7 +1127,7 @@ def merge_configuration_file(args):
                     )
                     return False
                 if value:
-                    setattr(args, name.replace("-", "_"), value)
+                    setattr(args, name.replace('-', '_'), value)
             else:
                 _LOGGER.error("'%s' is not a valid configuration option", name)
                 return False
