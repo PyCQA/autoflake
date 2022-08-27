@@ -1074,13 +1074,15 @@ def merge_configuration_file(args):
 
     # Traverse the file tree common to all files given as argument looking for
     # a configuration file
-    config_path = os.path.commonpath([os.path.abspath(file)
-                                      for file in args.files])
+    config_path = os.path.commonpath([
+        os.path.abspath(file)
+        for file in args.files
+    ])
     config = None
     while True:
         for config_file, processor in CONFIG_FILES.items():
             config_file_path = os.path.join(
-                os.path.join(config_path, config_file)
+                os.path.join(config_path, config_file),
             )
             if os.path.isfile(config_file_path):
                 config = processor(config_file_path)
@@ -1104,7 +1106,7 @@ def merge_configuration_file(args):
                     _LOGGER.error(
                         "'%s' in the config file should be a comma separated"
                         " string or list of strings",
-                        name
+                        name,
                     )
                     return False
                 current_value = getattr(args, name, None)
@@ -1112,20 +1114,20 @@ def merge_configuration_file(args):
                     value = ",".join((value, current_value))
                 setattr(args, name, value)
             elif name in {
-                "check", "expand_star_imports", "ignore_init_module_imports",
-                "in_place", "recursive", "remove_all_unused_imports",
-                "remove_duplicate_keys", "remove_unused_variables",
+                "check", "expand-star-imports", "ignore-init-module-imports",
+                "in-place", "recursive", "remove-all-unused-imports",
+                "remove-duplicate-keys", "remove-unused-variables",
             }:
                 # boolean properties
                 if isinstance(value, str):
                     value = BOOL_TYPES.get(value, value)
                 if not isinstance(value, bool):
                     _LOGGER.error(
-                        "'%s' in the config file should be a boolean", name
+                        "'%s' in the config file should be a boolean", name,
                     )
                     return False
                 if value:
-                    setattr(args, name, value)
+                    setattr(args, name.replace("-", "_"), value)
             else:
                 _LOGGER.error("'%s' is not a valid configuration option", name)
                 return False

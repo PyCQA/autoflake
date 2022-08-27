@@ -2627,10 +2627,6 @@ class MultilineFromImportTests(unittest.TestCase):
 
 
 class ConfigFileTest(unittest.TestCase):
-    def __init__(self, methodName):
-        super().__init__(methodName)
-        self.tmpdir = None
-
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp(prefix="autoflake.")
 
@@ -2644,7 +2640,7 @@ class ConfigFileTest(unittest.TestCase):
             raise ValueError("Should not create an absolute test path")
         effective_path = os.path.sep.join([self.tmpdir, path])
         if not effective_path.startswith(
-                f"{self.tmpdir}{os.path.sep}"
+                f"{self.tmpdir}{os.path.sep}",
         ) and (effective_path != self.tmpdir or is_file):
             raise ValueError("Should create a path within the tmp dir only")
         return effective_path
@@ -2695,7 +2691,7 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("test_me.py")
         self.create_file(
             "pyproject.toml",
-            "[tool.autoflake]\nexpand_star_imports=true\n",
+            "[tool.autoflake]\nexpand-star-imports=true\n",
         )
         files = [self.effective_path("test_me.py")]
         args = Namespace(files=files)
@@ -2709,7 +2705,7 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("test_me.py")
         self.create_file(
             "setup.cfg",
-            "[other]\nexpand_star_imports = yes\n",
+            "[other]\nexpand-star-imports = yes\n",
         )
         files = [self.effective_path("test_me.py")]
         args = Namespace(files=files)
@@ -2723,7 +2719,7 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("test_me.py")
         self.create_file(
             "setup.cfg",
-            "[autoflake]\nexpand_star_imports = yes\n",
+            "[autoflake]\nexpand-star-imports = yes\n",
         )
         files = [self.effective_path("test_me.py")]
         args = Namespace(files=files)
@@ -2737,7 +2733,7 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("nested/file/test_me.py")
         self.create_file(
             "pyproject.toml",
-            "[tool.autoflake]\nexpand_star_imports=true\n",
+            "[tool.autoflake]\nexpand-star-imports=true\n",
         )
         files = [self.effective_path("nested/file/test_me.py")]
         args = Namespace(files=files)
@@ -2752,11 +2748,11 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("nested/other/test_me.py")
         self.create_file(
             "nested/file/pyproject.toml",
-            "[tool.autoflake]\nexpand_star_imports=true\n",
+            "[tool.autoflake]\nexpand-star-imports=true\n",
         )
         files = [
             self.effective_path("nested/file/test_me.py"),
-            self.effective_path("nested/other/test_me.py")
+            self.effective_path("nested/other/test_me.py"),
         ]
         args = Namespace(files=files)
         assert autoflake.merge_configuration_file(args)
@@ -2770,11 +2766,11 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("nested/other/test_me.py")
         self.create_file(
             "nested/pyproject.toml",
-            "[tool.autoflake]\nexpand_star_imports=true\n",
+            "[tool.autoflake]\nexpand-star-imports=true\n",
         )
         files = [
             self.effective_path("nested/file/test_me.py"),
-            self.effective_path("nested/other/test_me.py")
+            self.effective_path("nested/other/test_me.py"),
         ]
         args = Namespace(files=files)
         assert autoflake.merge_configuration_file(args)
@@ -2789,11 +2785,11 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("nested/file-bar/test_me.py")
         self.create_file(
             "nested/file/pyproject.toml",
-            "[tool.autoflake]\nexpand_star_imports=true\n",
+            "[tool.autoflake]\nexpand-star-imports=true\n",
         )
         files = [
             self.effective_path("nested/file-foo/test_me.py"),
-            self.effective_path("nested/file-bar/test_me.py")
+            self.effective_path("nested/file-bar/test_me.py"),
         ]
         args = Namespace(files=files)
         assert autoflake.merge_configuration_file(args)
@@ -2810,7 +2806,7 @@ class ConfigFileTest(unittest.TestCase):
         )
         self.create_file(
             "pyproject.toml",
-            "[tool.autoflake]\nexpand_star_imports = true\n",
+            "[tool.autoflake]\nexpand-star-imports = true\n",
         )
         files = [self.effective_path("nested/test_me.py")]
         args = Namespace(files=files)
@@ -2828,7 +2824,7 @@ class ConfigFileTest(unittest.TestCase):
         )
         self.create_file(
             "pyproject.toml",
-            "[tool.autoflake]\nexpand_star_imports = true\n",
+            "[tool.autoflake]\nexpand-star-imports = true\n",
         )
         files = [self.effective_path("nested/test_me.py")]
         args = Namespace(files=files)
@@ -2842,7 +2838,7 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("test_me.py")
         self.create_file(
             "setup.cfg",
-            "[autoflake]\nexpand_star_imports = no\n",
+            "[autoflake]\nexpand-star-imports = no\n",
         )
         files = [self.effective_path("test_me.py")]
         args = Namespace(files=files)
@@ -2908,7 +2904,7 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("test_me.py")
         self.create_file(
             "pyproject.toml",
-            "[tool.autoflake]\nexpand_star_imports=\"invalid\"\n",
+            "[tool.autoflake]\nexpand-star-imports=\"invalid\"\n",
         )
         files = [self.effective_path("test_me.py")]
         args = Namespace(files=files)
@@ -2918,7 +2914,7 @@ class ConfigFileTest(unittest.TestCase):
         self.create_file("test_me.py")
         self.create_file(
             "setup.cfg",
-            "[autoflake]\nexpand_star_imports=ok\n",
+            "[autoflake]\nexpand-star-imports=ok\n",
         )
         files = [self.effective_path("test_me.py")]
         args = Namespace(files=files)
