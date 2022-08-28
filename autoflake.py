@@ -494,6 +494,7 @@ def filter_code(
     remove_all_unused_imports=False,
     remove_duplicate_keys=False,
     remove_unused_variables=False,
+    remove_rhs_for_unused_variables=False,
     ignore_init_module_imports=False,
 ):
     """Yield code with unused imports removed."""
@@ -568,7 +569,9 @@ def filter_code(
                 previous_line=previous_line,
             )
         elif line_number in marked_variable_line_numbers:
-            result = filter_unused_variable(line)
+            result = filter_unused_variable(
+                line, drop_rhs=remove_rhs_for_unused_variables,
+            )
         elif line_number in marked_key_line_numbers:
             result = filter_duplicate_key(
                 line, line_messages[line_number],
@@ -641,7 +644,7 @@ def filter_unused_import(
         )
 
 
-def filter_unused_variable(line, previous_line=''):
+def filter_unused_variable(line, previous_line='', drop_rhs=False):
     """Return line if used, otherwise return None."""
     if re.match(EXCEPT_REGEX, line):
         return re.sub(r' as \w+:$', ':', line, count=1)
@@ -658,7 +661,11 @@ def filter_unused_variable(line, previous_line=''):
             # Rather than removing the line, replace with it "pass" to avoid
             # a possible hanging block with no body.
             value = 'pass' + get_line_ending(line)
+            if drop_rhs:
+                return get_indentation(line) + value
 
+        if drop_rhs:
+            return ''
         return get_indentation(line) + value
     else:
         return line
@@ -789,7 +796,8 @@ def get_line_ending(line):
 def fix_code(
     source, additional_imports=None, expand_star_imports=False,
     remove_all_unused_imports=False, remove_duplicate_keys=False,
-    remove_unused_variables=False, ignore_init_module_imports=False,
+    remove_unused_variables=False, remove_rhs_for_unused_variables=False,
+    ignore_init_module_imports=False,
 ):
     """Return code with all filtering run on it."""
     if not source:
@@ -811,6 +819,9 @@ def fix_code(
                         remove_all_unused_imports=remove_all_unused_imports,
                         remove_duplicate_keys=remove_duplicate_keys,
                         remove_unused_variables=remove_unused_variables,
+                        remove_rhs_for_unused_variables=(
+                            remove_rhs_for_unused_variables
+                        ),
                         ignore_init_module_imports=ignore_init_module_imports,
                     ),
                 ),
@@ -859,6 +870,9 @@ def _fix_file(
         remove_all_unused_imports=args['remove_all_unused_imports'],
         remove_duplicate_keys=args['remove_duplicate_keys'],
         remove_unused_variables=args['remove_unused_variables'],
+        remove_rhs_for_unused_variables=(
+            args['remove_rhs_for_unused_variables']
+        ),
         ignore_init_module_imports=ignore_init_module_imports,
     )
 
@@ -1117,6 +1131,7 @@ def merge_configuration_file(args):
                 'check', 'expand-star-imports', 'ignore-init-module-imports',
                 'in-place', 'recursive', 'remove-all-unused-imports',
                 'remove-duplicate-keys', 'remove-unused-variables',
+                'remove-rhs-for-unused-variables',
             }:
                 # boolean properties
                 if isinstance(value, str):
@@ -1193,6 +1208,11 @@ def _main(argv, standard_out, standard_error, standard_input=None):
         help='remove unused variables',
     )
     parser.add_argument(
+        '--remove-rhs-for-unused-variables', action='store_true',
+        help='remove RHS of statements when removing unused '
+             'variables (unsafe)',
+    )
+    parser.add_argument(
         '--version', action='version',
         version='%(prog)s ' + __version__,
     )
@@ -1244,6 +1264,15 @@ def _main(argv, standard_out, standard_error, standard_input=None):
 
     if args.remove_all_unused_imports and args.imports:
         _LOGGER.error('Using both --remove-all and --imports is redundant')
+        return 1
+
+    if args.remove_rhs_for_unused_variables and not (
+        args.remove_unused_variables
+    ):
+        _LOGGER.error(
+            'Using --remove-rhs-for-unused-variables only makes sense when '
+            'used with --remove-unused-variables',
+        )
         return 1
 
     if args.exclude:

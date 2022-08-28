@@ -14,3 +14,4 @@ Contributors
 - James Curtin (https://github.com/jamescurtin)
 - Sargun Dhillon (https://github.com/sargun)
 - Anton Ogorodnikov (https://github.com/arxell)
+- das-intensity (https://github.com/das-intensity)

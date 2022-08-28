@@ -197,6 +197,80 @@ class UnitTests(unittest.TestCase):
             ),
         )
 
+    def test_filter_unused_variable_drop_rhs(self):
+        self.assertEqual(
+            '', autoflake.filter_unused_variable(
+                'x = foo()', drop_rhs=True,
+            ),
+        )
+
+        self.assertEqual(
+            '', autoflake.filter_unused_variable(
+                '    x = foo()', drop_rhs=True,
+            ),
+        )
+
+    def test_filter_unused_variable_with_literal_or_name_drop_rhs(self):
+        self.assertEqual(
+            'pass',
+            autoflake.filter_unused_variable('x = 1', drop_rhs=True),
+        )
+
+        self.assertEqual(
+            'pass',
+            autoflake.filter_unused_variable('x = y', drop_rhs=True),
+        )
+
+        self.assertEqual(
+            'pass',
+            autoflake.filter_unused_variable('x = {}', drop_rhs=True),
+        )
+
+    def test_filter_unused_variable_with_basic_data_structures_drop_rhs(self):
+        self.assertEqual(
+            'pass',
+            autoflake.filter_unused_variable('x = dict()', drop_rhs=True),
+        )
+
+        self.assertEqual(
+            'pass',
+            autoflake.filter_unused_variable('x = list()', drop_rhs=True),
+        )
+
+        self.assertEqual(
+            'pass',
+            autoflake.filter_unused_variable('x = set()', drop_rhs=True),
+        )
+
+    def test_filter_unused_variable_should_ignore_multiline_drop_rhs(self):
+        self.assertEqual(
+            'x = foo()\\',
+            autoflake.filter_unused_variable('x = foo()\\', drop_rhs=True),
+        )
+
+    def test_filter_unused_variable_should_multiple_assignments_drop_rhs(self):
+        self.assertEqual(
+            'x = y = foo()',
+            autoflake.filter_unused_variable('x = y = foo()', drop_rhs=True),
+        )
+
+    def test_filter_unused_variable_with_exception_drop_rhs(self):
+        self.assertEqual(
+            'except Exception:',
+            autoflake.filter_unused_variable(
+                'except Exception as exception:',
+                drop_rhs=True,
+            ),
+        )
+
+        self.assertEqual(
+            'except (ImportError, ValueError):',
+            autoflake.filter_unused_variable(
+                'except (ImportError, ValueError) as foo:',
+                drop_rhs=True,
+            ),
+        )
+
     def test_filter_code(self):
         self.assertEqual(
             """\
@@ -895,6 +969,25 @@ def main():
             ),
         )
 
+    def test_fix_code_with_unused_variables_drop_rhs(self):
+        self.assertEqual(
+            """\
+def main():
+    y = 11
+    print(y)
+""",
+            autoflake.fix_code(
+                """\
+def main():
+    x = 10
+    y = 11
+    print(y)
+""",
+                remove_unused_variables=True,
+                remove_rhs_for_unused_variables=True,
+            ),
+        )
+
     def test_fix_code_with_unused_variables_should_skip_nonlocal(self):
         """pyflakes does not handle nonlocal correctly."""
         code = """\
@@ -910,6 +1003,27 @@ def bar():
             autoflake.fix_code(
                 code,
                 remove_unused_variables=True,
+            ),
+        )
+
+    def test_fix_code_with_unused_variables_should_skip_nonlocal_drop_rhs(
+            self,
+    ):
+        """pyflakes does not handle nonlocal correctly."""
+        code = """\
+def bar():
+    x = 1
+
+    def foo():
+        nonlocal x
+        x = 2
+"""
+        self.assertEqual(
+            code,
+            autoflake.fix_code(
+                code,
+                remove_unused_variables=True,
+                remove_rhs_for_unused_variables=True,
             ),
         )
 
@@ -936,6 +1050,23 @@ def main():
             ),
         )
 
+    def test_fix_code_with_comma_on_right_drop_rhs(self):
+        """pyflakes does not handle nonlocal correctly."""
+        self.assertEqual(
+            """\
+def main():
+    pass
+""",
+            autoflake.fix_code(
+                """\
+def main():
+    x = (1, 2, 3)
+""",
+                remove_unused_variables=True,
+                remove_rhs_for_unused_variables=True,
+            ),
+        )
+
     def test_fix_code_with_unused_variables_should_skip_multiple(self):
         code = """\
 def main():
@@ -947,6 +1078,23 @@ def main():
             autoflake.fix_code(
                 code,
                 remove_unused_variables=True,
+            ),
+        )
+
+    def test_fix_code_with_unused_variables_should_skip_multiple_drop_rhs(
+            self,
+    ):
+        code = """\
+def main():
+    (x, y, z) = (1, 2, 3)
+    print(z)
+"""
+        self.assertEqual(
+            code,
+            autoflake.fix_code(
+                code,
+                remove_unused_variables=True,
+                remove_rhs_for_unused_variables=True,
             ),
         )
 

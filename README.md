@@ -110,6 +110,8 @@ options:
                         remove all duplicate keys in objects
   --remove-unused-variables
                         remove unused variables
+  --remove-rhs-for-unused-variables
+                        remove RHS of statements when removing unused variables (unsafe)
   --version             show program's version number and exit
   --quiet               Suppress output if there are no issues
   -v, --verbose         print more verbose logs (you can repeat `-v` to make it more verbose)
