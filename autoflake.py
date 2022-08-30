@@ -31,9 +31,9 @@ import re
 import signal
 import string
 import sys
+import sysconfig
 import tokenize
 
-import distutils.sysconfig
 import pyflakes.api
 import pyflakes.messages
 import pyflakes.reporter
@@ -55,19 +55,18 @@ MAX_PYTHON_FILE_DETECTION_BYTES = 1024
 
 def standard_paths():
     """Yield paths to standard modules."""
-    for is_plat_spec in [True, False]:
-
+    paths = sysconfig.get_paths()
+    path_names = ['stdlib', 'platstdlib']
+    for path_name in path_names:
         # Yield lib paths.
-        path = distutils.sysconfig.get_python_lib(
-            standard_lib=True,
-            plat_specific=is_plat_spec,
-        )
-        yield from os.listdir(path)
+        if path_name in paths:
+            path = paths[path_name]
+            yield from os.listdir(path)
 
-        # Yield lib-dynload paths.
-        dynload_path = os.path.join(path, 'lib-dynload')
-        if os.path.isdir(dynload_path):
-            yield from os.listdir(dynload_path)
+            # Yield lib-dynload paths.
+            dynload_path = os.path.join(path, 'lib-dynload')
+            if os.path.isdir(dynload_path):
+                yield from os.listdir(dynload_path)
 
 
 def standard_package_names():
