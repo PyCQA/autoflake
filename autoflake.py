@@ -39,7 +39,7 @@ import pyflakes.messages
 import pyflakes.reporter
 
 
-__version__ = '1.5.1'
+__version__ = '1.5.2'
 
 
 _LOGGER = logging.getLogger('autoflake')
