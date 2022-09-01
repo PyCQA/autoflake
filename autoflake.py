@@ -878,7 +878,7 @@ def _fix_file(
     if original_source != filtered_source:
         if args['check']:
             standard_out.write(
-                f'{filename}: Unused imports/variables detected\n',
+                f'{filename}: Unused imports/variables detected{os.linesep}',
             )
             return 1
         if write_to_stdout:
@@ -901,7 +901,7 @@ def _fix_file(
         standard_out.write(filtered_source)
     else:
         if args['check'] and not args['quiet']:
-            standard_out.write('No issues detected!\n')
+            standard_out.write(f'No issues detected!{os.linesep}')
         else:
             _LOGGER.debug('Clean %s: nothing to fix', filename)
 

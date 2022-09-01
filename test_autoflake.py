@@ -1864,7 +1864,10 @@ except ImportError:
                 standard_out=output_file,
                 standard_error=None,
             )
-            self.assertEqual('No issues detected!\n', output_file.getvalue())
+            self.assertEqual(
+                f'No issues detected!{os.linesep}',
+                output_file.getvalue(),
+            )
 
     def test_check_correct_file(self):
         with temporary_file("""\
@@ -1878,7 +1881,10 @@ print(x)
                 standard_out=output_file,
                 standard_error=None,
             )
-            self.assertEqual('No issues detected!\n', output_file.getvalue())
+            self.assertEqual(
+                f'No issues detected!{os.linesep}',
+                output_file.getvalue(),
+            )
 
     def test_check_correct_file_with_quiet(self):
         with temporary_file("""\
