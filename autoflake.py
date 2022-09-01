@@ -834,7 +834,7 @@ def fix_code(
     return filtered_source
 
 
-def fix_file(filename, args, standard_out=None):
+def fix_file(filename, args, standard_out=None) -> int:
     """Run fix_code() on a file."""
     if standard_out is None:
         standard_out = sys.stdout
@@ -849,7 +849,7 @@ def fix_file(filename, args, standard_out=None):
 def _fix_file(
     input_file, filename, args, write_to_stdout, standard_out,
     encoding=None,
-):
+) -> int:
     source = input_file.read()
     original_source = source
 
@@ -880,7 +880,7 @@ def _fix_file(
             standard_out.write(
                 f'{filename}: Unused imports/variables detected\n',
             )
-            sys.exit(1)
+            return 1
         if write_to_stdout:
             standard_out.write(filtered_source)
         elif args['in_place']:
@@ -904,6 +904,8 @@ def _fix_file(
             standard_out.write('No issues detected!\n')
         else:
             _LOGGER.debug('Clean %s: nothing to fix', filename)
+
+    return 0
 
 
 def open_with_encoding(
@@ -1149,7 +1151,7 @@ def merge_configuration_file(args):
     return True
 
 
-def _main(argv, standard_out, standard_error, standard_input=None):
+def _main(argv, standard_out, standard_error, standard_input=None) -> int:
     """Return exit status.
 
     0 means no error.
@@ -1283,27 +1285,31 @@ def _main(argv, standard_out, standard_error, standard_input=None):
         args.jobs = os.cpu_count() or 1
 
     filenames = list(set(args.files))
-    failure = False
 
     # convert argparse namespace to a dict so that it can be serialized
     # by multiprocessing
     args = vars(args)
+    exit_status = 0
     files = list(find_files(filenames, args['recursive'], args['exclude']))
     if args['jobs'] == 1 or len(files) == 1 or args['jobs'] == 1 or \
             '-' in files or standard_out is not None:
         for name in files:
             if name == '-':
-                _fix_file(
+                exit_status |= _fix_file(
                     standard_input, args['stdin_display_name'],
                     args=args, write_to_stdout=True,
                     standard_out=standard_out or sys.stdout,
                 )
             else:
                 try:
-                    fix_file(name, args=args, standard_out=standard_out)
+                    exit_status |= fix_file(
+                        name,
+                        args=args,
+                        standard_out=standard_out,
+                    )
                 except OSError as exception:
                     _LOGGER.error(str(exception))
-                    failure = True
+                    exit_status |= 1
     else:
         import multiprocessing
 
@@ -1314,12 +1320,12 @@ def _main(argv, standard_out, standard_error, standard_input=None):
                 futs.append(fut)
             for fut in futs:
                 try:
-                    fut.get()
+                    exit_status |= fut.get()
                 except OSError as exception:
                     _LOGGER.error(str(exception))
-                    failure = True
+                    exit_status |= 1
 
-    return 1 if failure else 0
+    return exit_status
 
 
 def main():
