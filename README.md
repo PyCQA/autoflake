@@ -1,6 +1,6 @@
 # autoflake
 
-[![Build Status](https://github.com/PyCQA/autoflake/actions/workflows/main.yaml/badge.svg?branch=master)](https://github.com/PyCQA/autoflake/actions/workflows/main.yaml)
+[![Build Status](https://github.com/PyCQA/autoflake/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/PyCQA/autoflake/actions/workflows/main.yaml)
 
 ## Introduction
 
