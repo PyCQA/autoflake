@@ -18,25 +18,13 @@ import autoflake
 ROOT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
 
-if (
-    'AUTOFLAKE_COVERAGE' in os.environ and
-    int(os.environ['AUTOFLAKE_COVERAGE'])
-):
-    AUTOFLAKE_COMMAND = [
-        'coverage', 'run', '--branch', '--parallel',
-        '--omit=*/distutils/*,*/site-packages/*',
-        os.path.join(ROOT_DIRECTORY, 'autoflake.py'),
-    ]
-else:
-    # We need to specify the executable to make sure the correct Python
-    # interpreter gets used.
-    AUTOFLAKE_COMMAND = [
-        sys.executable,
-        os.path.join(
-            ROOT_DIRECTORY,
-            'autoflake.py',
-        ),
-    ]  # pragma: no cover
+AUTOFLAKE_COMMAND = [
+    sys.executable,
+    os.path.join(
+        ROOT_DIRECTORY,
+        'autoflake.py',
+    ),
+]
 
 
 class UnitTests(unittest.TestCase):
@@ -1925,16 +1913,33 @@ except ImportError:
     import sys
 """) as filename:
             output_file = io.StringIO()
-            with self.assertRaises(SystemExit) as cm:
-                autoflake._main(
-                    argv=['my_fake_program', '--check', filename],
+            exit_status = autoflake._main(
+                argv=['my_fake_program', '--check', filename],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual(exit_status, 1)
+            self.assertEqual(
+                f'{filename}: Unused imports/variables detected\n',
+                output_file.getvalue(),
+            )
+
+    def test_check_with_multiple_files(self):
+        with temporary_file('import sys') as file1:
+            with temporary_file('import sys') as file2:
+                output_file = io.StringIO()
+                exit_status = autoflake._main(
+                    argv=['my_fake_program', '--check', file1, file2],
                     standard_out=output_file,
                     standard_error=None,
                 )
-                self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(exit_status, 1)
                 self.assertEqual(
-                    'Unused imports/variables detected.',
-                    output_file.getvalue(),
+                    {
+                        f'{file1}: Unused imports/variables detected',
+                        f'{file2}: Unused imports/variables detected',
+                    },
+                    set(output_file.getvalue().strip().split(os.linesep)),
                 )
 
     def test_in_place_with_empty_file(self):
