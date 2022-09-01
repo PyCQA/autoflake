@@ -1926,7 +1926,7 @@ except ImportError:
             )
             self.assertEqual(exit_status, 1)
             self.assertEqual(
-                f'{filename}: Unused imports/variables detected\n',
+                f'{filename}: Unused imports/variables detected{os.linesep}',
                 output_file.getvalue(),
             )
 
