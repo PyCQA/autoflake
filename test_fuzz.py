@@ -16,15 +16,15 @@ import autoflake
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 AUTOFLAKE_BIN = "'{}' '{}'".format(
     sys.executable,
-    os.path.join(ROOT_PATH, 'autoflake.py'),
+    os.path.join(ROOT_PATH, "autoflake.py"),
 )
 
 if sys.stdout.isatty():
-    YELLOW = '\x1b[33m'
-    END = '\x1b[0m'
+    YELLOW = "\x1b[33m"
+    END = "\x1b[0m"
 else:
-    YELLOW = ''
-    END = ''
+    YELLOW = ""
+    END = ""
 
 
 def colored(text, color):
@@ -35,8 +35,8 @@ def colored(text, color):
 def pyflakes_count(filename):
     """Return pyflakes error count."""
     with autoflake.open_with_encoding(
-            filename,
-            encoding=autoflake.detect_encoding(filename),
+        filename,
+        encoding=autoflake.detect_encoding(filename),
     ) as f:
         return len(list(autoflake.check(f.read())))
 
@@ -44,8 +44,8 @@ def pyflakes_count(filename):
 def readlines(filename):
     """Return contents of file as a list of lines."""
     with autoflake.open_with_encoding(
-            filename,
-            encoding=autoflake.detect_encoding(filename),
+        filename,
+        encoding=autoflake.detect_encoding(filename),
     ) as f:
         return f.readlines()
 
@@ -53,7 +53,8 @@ def readlines(filename):
 def diff(before, after):
     """Return diff of two files."""
     import difflib
-    return ''.join(
+
+    return "".join(
         difflib.unified_diff(
             readlines(before),
             readlines(after),
@@ -72,20 +73,20 @@ def run(filename, command, verbose=False, options=None):
         options = []
 
     import test_autoflake
+
     with test_autoflake.temporary_directory() as temp_directory:
         temp_filename = os.path.join(
             temp_directory,
             os.path.basename(filename),
         )
         import shutil
+
         shutil.copyfile(filename, temp_filename)
 
         if 0 != subprocess.call(
-            shlex.split(command) +
-            ['--in-place', temp_filename] +
-            options,
+            shlex.split(command) + ["--in-place", temp_filename] + options,
         ):
-            sys.stderr.write('autoflake crashed on ' + filename + '\n')
+            sys.stderr.write("autoflake crashed on " + filename + "\n")
             return False
 
         try:
@@ -97,12 +98,13 @@ def run(filename, command, verbose=False, options=None):
                 try:
                     check_syntax(temp_filename, raise_error=True)
                 except (
-                    SyntaxError, TypeError,
-                    UnicodeDecodeError, ValueError,
+                    SyntaxError,
+                    TypeError,
+                    UnicodeDecodeError,
+                    ValueError,
                 ) as exception:
                     sys.stderr.write(
-                        'autoflake broke ' + filename + '\n' +
-                        str(exception) + '\n',
+                        "autoflake broke " + filename + "\n" + str(exception) + "\n",
                     )
                     return False
 
@@ -110,13 +112,13 @@ def run(filename, command, verbose=False, options=None):
             after_count = pyflakes_count(temp_filename)
 
             if verbose:
-                print('(before, after):', (before_count, after_count))
+                print("(before, after):", (before_count, after_count))
 
             if file_diff and after_count > before_count:
-                sys.stderr.write('autoflake made ' + filename + ' worse\n')
+                sys.stderr.write("autoflake made " + filename + " worse\n")
                 return False
         except OSError as exception:
-            sys.stderr.write(str(exception) + '\n')
+            sys.stderr.write(str(exception) + "\n")
 
     return True
 
@@ -124,11 +126,11 @@ def run(filename, command, verbose=False, options=None):
 def check_syntax(filename, raise_error=False):
     """Return True if syntax is okay."""
     with autoflake.open_with_encoding(
-            filename,
-            encoding=autoflake.detect_encoding(filename),
+        filename,
+        encoding=autoflake.detect_encoding(filename),
     ) as input_file:
         try:
-            compile(input_file.read(), '<string>', 'exec', dont_inherit=True)
+            compile(input_file.read(), "<string>", "exec", dont_inherit=True)
             return True
         except (SyntaxError, TypeError, UnicodeDecodeError, ValueError):
             if raise_error:
@@ -140,48 +142,52 @@ def check_syntax(filename, raise_error=False):
 def process_args():
     """Return processed arguments (options and positional arguments)."""
     import argparse
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--command', default=AUTOFLAKE_BIN,
-        help='autoflake command (default: %(default)s)',
+        "--command",
+        default=AUTOFLAKE_BIN,
+        help="autoflake command (default: %(default)s)",
     )
 
     parser.add_argument(
-        '--expand-star-imports', action='store_true',
-        help='expand wildcard star imports with undefined '
-             'names',
+        "--expand-star-imports",
+        action="store_true",
+        help="expand wildcard star imports with undefined " "names",
     )
 
     parser.add_argument(
-        '--imports',
+        "--imports",
         help='pass to the autoflake "--imports" option',
     )
 
     parser.add_argument(
-        '--remove-all-unused-imports', action='store_true',
-        help='pass "--remove-all-unused-imports" option to '
-             'autoflake',
+        "--remove-all-unused-imports",
+        action="store_true",
+        help='pass "--remove-all-unused-imports" option to ' "autoflake",
     )
 
     parser.add_argument(
-        '--remove-duplicate-keys', action='store_true',
-        help='pass "--remove-duplicate-keys" option to '
-             'autoflake',
+        "--remove-duplicate-keys",
+        action="store_true",
+        help='pass "--remove-duplicate-keys" option to ' "autoflake",
     )
 
     parser.add_argument(
-        '--remove-unused-variables', action='store_true',
-        help='pass "--remove-unused-variables" option to '
-             'autoflake',
+        "--remove-unused-variables",
+        action="store_true",
+        help='pass "--remove-unused-variables" option to ' "autoflake",
     )
 
     parser.add_argument(
-        '-v', '--verbose', action='store_true',
-        help='print verbose messages',
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="print verbose messages",
     )
 
-    parser.add_argument('files', nargs='*', help='files to test against')
+    parser.add_argument("files", nargs="*", help="files to test against")
 
     return parser.parse_args()
 
@@ -194,26 +200,23 @@ def check(args):
     if args.files:
         dir_paths = args.files
     else:
-        dir_paths = [
-            path for path in sys.path
-            if os.path.isdir(path)
-        ]
+        dir_paths = [path for path in sys.path if os.path.isdir(path)]
 
     options = []
     if args.expand_star_imports:
-        options.append('--expand-star-imports')
+        options.append("--expand-star-imports")
 
     if args.imports:
-        options.append('--imports=' + args.imports)
+        options.append("--imports=" + args.imports)
 
     if args.remove_all_unused_imports:
-        options.append('--remove-all-unused-imports')
+        options.append("--remove-all-unused-imports")
 
     if args.remove_duplicate_keys:
-        options.append('--remove-duplicate-keys')
+        options.append("--remove-duplicate-keys")
 
     if args.remove_unused_variables:
-        options.append('--remove-unused-variables')
+        options.append("--remove-unused-variables")
 
     filenames = dir_paths
     completed_filenames = set()
@@ -228,7 +231,7 @@ def check(args):
             if name in completed_filenames:
                 sys.stderr.write(
                     colored(
-                        '--->  Skipping previously tested ' + name + '\n',
+                        "--->  Skipping previously tested " + name + "\n",
                         YELLOW,
                     ),
                 )
@@ -239,18 +242,15 @@ def check(args):
             if os.path.isdir(name):
                 for root, directories, children in os.walk(name):
                     filenames += [
-                        os.path.join(root, f) for f in children
-                        if f.endswith('.py') and
-                        not f.startswith('.')
+                        os.path.join(root, f)
+                        for f in children
+                        if f.endswith(".py") and not f.startswith(".")
                     ]
 
-                    directories[:] = [
-                        d for d in directories
-                        if not d.startswith('.')
-                    ]
+                    directories[:] = [d for d in directories if not d.startswith(".")]
             else:
-                verbose_message = '--->  Testing with ' + name
-                sys.stderr.write(colored(verbose_message + '\n', YELLOW))
+                verbose_message = "--->  Testing with " + name
+                sys.stderr.write(colored(verbose_message + "\n", YELLOW))
 
                 if not run(
                     os.path.join(name),
@@ -272,7 +272,7 @@ def main():
     return 0 if check(process_args()) else 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         sys.exit(main())
     except KeyboardInterrupt:
