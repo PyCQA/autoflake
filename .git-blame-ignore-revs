@@ -1,2 +1,5 @@
 # added add-trailing-comma, double-quote-string-fixer and autopep8 to pre-commit config
 2cd0e24017857bed3d9848bdfbfeac2dbd0d776d
+
+# adopted black
+1ec059a945b05df24ed6742cd00f4938e15e5c81
