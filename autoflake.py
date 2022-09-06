@@ -1089,9 +1089,13 @@ def find_files(filenames, recursive, exclude):
 
 def process_pyproject_toml(toml_file_path):
     """Extract config mapping from pyproject.toml file."""
-    import toml
+    try:
+        import tomllib
+    except ModuleNotFoundError:
+        import tomli as tomllib
 
-    return toml.load(toml_file_path).get("tool", {}).get("autoflake", None)
+    with open(toml_file_path, "rb") as f:
+        return tomllib.load(f).get("tool", {}).get("autoflake", None)
 
 
 def process_setup_cfg(cfg_file_path):
