@@ -33,8 +33,10 @@ jobs:
 
       - run: pip install .
 
+      - run: pip install pytest
+
       - name: run tests
-        run: python setup.py test
+        run: pytest
 
   lint:
     name: pre-commit
