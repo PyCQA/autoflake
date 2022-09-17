@@ -16,11 +16,11 @@ jobs:
         with:
           python-version: 3.x
 
-      - run: pip install twine wheel
+      - run: pip install build twine wheel
 
       - run: pip install -e .
 
-      - run: python setup.py sdist bdist_wheel
+      - run: python -m build --wheel --sdist
 
       - run: twine upload --skip-existing dist/*
         env:
