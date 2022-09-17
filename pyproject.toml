@@ -32,7 +32,6 @@ autoflake = "autoflake:main"
 
 [tool.setuptools]
 py-modules = ["autoflake"]
-# test-suite = "test_autoflake"  # Deprecated since setuptools v41.5.0
 license-files = ["LICENSE"]
 include-package-data = false
 
