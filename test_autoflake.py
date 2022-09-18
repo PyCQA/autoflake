@@ -1412,6 +1412,72 @@ print(a)
             ),
         )
 
+    def test_fix_code_keeps_pass_statements(self):
+        code = """\
+    if True:
+        pass
+    else:
+        def foo():
+            \"\"\" A docstring. \"\"\"
+            pass
+        def bar():
+            # abc
+            pass
+        def blah():
+            123
+            pass
+            pass  # Nope.
+            pass
+    """
+
+        self.assertEqual(
+            code,
+            "".join(
+                autoflake.fix_code(
+                    code,
+                    ignore_pass_statements=True,
+                ),
+            ),
+        )
+
+    def test_fix_code_keeps_passes_after_docstrings(self):
+        actual = autoflake.fix_code(
+            """\
+    if True:
+        pass
+    else:
+        def foo():
+            \"\"\" A docstring. \"\"\"
+            pass
+        def bar():
+            # abc
+            pass
+        def blah():
+            123
+            pass
+            pass  # Nope.
+            pass
+    """,
+            ignore_pass_after_docstring=True,
+        )
+
+        expected = """\
+    if True:
+        pass
+    else:
+        def foo():
+            \"\"\" A docstring. \"\"\"
+            pass
+        def bar():
+            # abc
+            pass
+        def blah():
+            123
+            pass  # Nope.
+    """
+
+        self.assertEqual(actual, expected)
+
     def test_useless_pass_line_numbers(self):
         self.assertEqual(
             [1],
@@ -1457,6 +1523,37 @@ else:
                 ),
             ),
         )
+
+    def test_useless_pass_line_numbers_after_docstring(self):
+        actual_pass_line_numbers = list(
+            autoflake.useless_pass_line_numbers(
+                """\
+    @abc.abstractmethod
+    def some_abstract_method():
+        \"\"\"Some docstring.\"\"\"
+        pass
+    """,
+            ),
+        )
+
+        expected_pass_line_numbers = [4]
+        self.assertEqual(expected_pass_line_numbers, actual_pass_line_numbers)
+
+    def test_useless_pass_line_numbers_keep_pass_after_docstring(self):
+        actual_pass_line_numbers = list(
+            autoflake.useless_pass_line_numbers(
+                """\
+    @abc.abstractmethod
+    def some_abstract_method():
+        \"\"\"Some docstring.\"\"\"
+        pass
+    """,
+                ignore_pass_after_docstring=True,
+            ),
+        )
+
+        expected_pass_line_numbers = []
+        self.assertEqual(expected_pass_line_numbers, actual_pass_line_numbers)
 
     def test_filter_useless_pass(self):
         self.assertEqual(
@@ -1545,7 +1642,54 @@ else:
             ),
         )
 
-    def test_filter_useless_pass_with_try(self):
+    def test_filter_useless_pass_keep_pass_after_docstring(self):
+        source = """\
+    def foo():
+        \"\"\" This is not a useless 'pass'. \"\"\"
+        pass
+
+    @abc.abstractmethod
+    def bar():
+        \"\"\"
+            Also this is not a useless 'pass'.
+        \"\"\"
+        pass
+    """
+        self.assertEqual(
+            source,
+            "".join(
+                autoflake.filter_useless_pass(
+                    source,
+                    ignore_pass_after_docstring=True,
+                ),
+            ),
+        )
+
+    def test_filter_useless_pass_keeps_pass_statements(self):
+        source = """\
+    if True:
+        pass
+        pass
+        pass
+        pass
+    else:
+        pass
+        True
+        x = 1
+        pass
+    """
+
+        self.assertEqual(
+            source,
+            "".join(
+                autoflake.filter_useless_pass(
+                    source,
+                    ignore_pass_statements=True,
+                ),
+            ),
+        )
+
+    def test_filter_useless_paspasss_with_try(self):
         self.assertEqual(
             """\
 import os

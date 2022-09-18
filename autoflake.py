@@ -743,7 +743,10 @@ def is_literal_or_name(value):
     return re.match(r"^\w+\s*$", value)
 
 
-def useless_pass_line_numbers(source):
+def useless_pass_line_numbers(
+    source,
+    ignore_pass_after_docstring=False,
+):
     """Yield line numbers of unneeded "pass" statements."""
     sio = io.StringIO(source)
     previous_token_type = None
@@ -770,24 +773,45 @@ def useless_pass_line_numbers(source):
             last_pass_row = start_row
             last_pass_indentation = get_indentation(line)
 
-        # Trailing "pass".
-        if (
-            is_pass
-            and previous_token_type != tokenize.INDENT
-            and not previous_line.rstrip().endswith("\\")
-        ):
-            yield start_row
+            is_trailing_pass = (
+                previous_token_type != tokenize.INDENT
+                and not previous_line.rstrip().endswith("\\")
+            )
+
+            is_pass_after_docstring = (
+                previous_token_type == tokenize.NEWLINE
+                and previous_line.rstrip().endswith('"""')
+            )
+
+            # Trailing "pass".
+            if is_trailing_pass:
+                if is_pass_after_docstring and ignore_pass_after_docstring:
+                    continue
+                else:
+                    yield start_row
 
         previous_token_type = token_type
         previous_line = line
 
 
-def filter_useless_pass(source):
+def filter_useless_pass(
+    source,
+    ignore_pass_statements=False,
+    ignore_pass_after_docstring=False,
+):
     """Yield code with useless "pass" lines removed."""
-    try:
-        marked_lines = frozenset(useless_pass_line_numbers(source))
-    except (SyntaxError, tokenize.TokenError):
+    if ignore_pass_statements:
         marked_lines = frozenset()
+    else:
+        try:
+            marked_lines = frozenset(
+                useless_pass_line_numbers(
+                    source,
+                    ignore_pass_after_docstring,
+                ),
+            )
+        except (SyntaxError, tokenize.TokenError):
+            marked_lines = frozenset()
 
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
@@ -822,6 +846,8 @@ def fix_code(
     remove_unused_variables=False,
     remove_rhs_for_unused_variables=False,
     ignore_init_module_imports=False,
+    ignore_pass_statements=False,
+    ignore_pass_after_docstring=False,
 ):
     """Return code with all filtering run on it."""
     if not source:
@@ -849,6 +875,8 @@ def fix_code(
                         ignore_init_module_imports=ignore_init_module_imports,
                     ),
                 ),
+                ignore_pass_statements=ignore_pass_statements,
+                ignore_pass_after_docstring=ignore_pass_after_docstring,
             ),
         )
 
@@ -902,6 +930,8 @@ def _fix_file(
         remove_unused_variables=args["remove_unused_variables"],
         remove_rhs_for_unused_variables=(args["remove_rhs_for_unused_variables"]),
         ignore_init_module_imports=ignore_init_module_imports,
+        ignore_pass_statements=args["ignore_pass_statements"],
+        ignore_pass_after_docstring=args["ignore_pass_after_docstring"],
     )
 
     if original_source != filtered_source:
@@ -1267,6 +1297,16 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         "--remove-rhs-for-unused-variables",
         action="store_true",
         help="remove RHS of statements when removing unused " "variables (unsafe)",
+    )
+    parser.add_argument(
+        "--ignore-pass-statements",
+        action="store_true",
+        help="ignore all pass statements",
+    )
+    parser.add_argument(
+        "--ignore-pass-after-docstring",
+        action="store_true",
+        help='ignore pass statements after a newline ending on \'"""\'',
     )
     parser.add_argument(
         "--version",
