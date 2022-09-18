@@ -12,7 +12,7 @@ the standard library. (Other modules may have side effects that make them
 unsafe to remove automatically.) Removal of unused variables is also disabled
 by default.
 
-autoflake also removes useless ``pass`` statements.
+autoflake also removes useless ``pass`` statements by default.
 
 ## Example
 
@@ -106,6 +106,10 @@ options:
                         remove all unused imports (not just those from the standard library)
   --ignore-init-module-imports
                         exclude __init__.py when removing unused imports
+  --ignore-pass-statements
+                        keep all `pass` statements
+  --ignore-pass-after-docstring
+                        keep `pass` statements after a new line ending on """
   --remove-duplicate-keys
                         remove all duplicate keys in objects
   --remove-unused-variables
