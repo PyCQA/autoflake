@@ -1200,12 +1200,14 @@ def merge_configuration_file(args):
                 "check",
                 "expand-star-imports",
                 "ignore-init-module-imports",
+                "ignore-pass-after-docstring",
+                "ignore-pass-statements",
                 "in-place",
                 "recursive",
                 "remove-all-unused-imports",
                 "remove-duplicate-keys",
-                "remove-unused-variables",
                 "remove-rhs-for-unused-variables",
+                "remove-unused-variables",
             }:
                 # boolean properties
                 if isinstance(value, str):
