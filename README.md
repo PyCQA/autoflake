@@ -121,6 +121,8 @@ options:
   -v, --verbose         print more verbose logs (you can repeat `-v` to make it more verbose)
   --stdin-display-name STDIN_DISPLAY_NAME
                         the name used when processing input from stdin
+  --config-file CONFIG_FILE
+                        Explicitly set the config file instead of auto determining based on file location
   -i, --in-place        make changes to files instead of printing diffs
   -s, --stdout          print changed text to stdout. defaults to true when formatting stdin, or to false otherwise
 ```
