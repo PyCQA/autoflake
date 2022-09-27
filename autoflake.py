@@ -961,7 +961,7 @@ def _fix_file(
         standard_out.write(filtered_source)
     else:
         if args["check"] and not args["quiet"]:
-            standard_out.write(f"No issues detected!{os.linesep}")
+            standard_out.write(f"{filename}: No issues detected!{os.linesep}")
         else:
             _LOGGER.debug("Clean %s: nothing to fix", filename)
 
