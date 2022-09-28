@@ -2081,7 +2081,7 @@ except ImportError:
                 standard_error=None,
             )
             self.assertEqual(
-                f"No issues detected!{os.linesep}",
+                f"{filename}: No issues detected!{os.linesep}",
                 output_file.getvalue(),
             )
 
@@ -2100,7 +2100,7 @@ print(x)
                 standard_error=None,
             )
             self.assertEqual(
-                f"No issues detected!{os.linesep}",
+                f"{filename}: No issues detected!{os.linesep}",
                 output_file.getvalue(),
             )
 
