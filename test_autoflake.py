@@ -3202,14 +3202,11 @@ class ConfigFileTest(unittest.TestCase):
             args,
             {"files": files},
         )
-    
+
     def test_config_option(self):
         with temporary_file(
-            suffix='.ini',
-            contents=(
-                "[autoflake]\n"
-                "check = True\n"
-            )
+            suffix=".ini",
+            contents=("[autoflake]\n" "check = True\n"),
         ) as temp_config:
             self.create_file("test_me.py")
             files = [self.effective_path("test_me.py")]
@@ -3221,11 +3218,9 @@ class ConfigFileTest(unittest.TestCase):
                 {
                     "config_file": temp_config,
                     "check": True,
-                    "files": files
-                }
+                    "files": files,
+                },
             )
-
-        
 
     def test_dont_load_false(self):
         self.create_file("test_me.py")
