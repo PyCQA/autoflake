@@ -1354,7 +1354,7 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
     )
 
     parser.add_argument(
-        "--config-file",
+        "--config",
         dest="config_file",
         default=None,
         help=(
