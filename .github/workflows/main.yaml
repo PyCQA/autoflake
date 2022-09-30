@@ -52,7 +52,7 @@ jobs:
         run: pip install pre-commit
 
       - name: pre-commit cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.9
         with:
           path: ~/.cache/pre-commit
           key: "${{ hashFiles('.pre-commit-config.yaml') }}"
