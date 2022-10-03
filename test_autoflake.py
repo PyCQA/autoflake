@@ -2172,6 +2172,103 @@ except ImportError:
                     set(output_file.getvalue().strip().split(os.linesep)),
                 )
 
+    def test_check_diff_with_empty_file(self):
+        line = ""
+
+        with temporary_file(line) as filename:
+            output_file = io.StringIO()
+            autoflake._main(
+                argv=["my_fake_program", "--check-diff", filename],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual(
+                f"{filename}: No issues detected!{os.linesep}",
+                output_file.getvalue(),
+            )
+
+    def test_check_diff_correct_file(self):
+        with temporary_file(
+            """\
+import foo
+x = foo.bar
+print(x)
+""",
+        ) as filename:
+            output_file = io.StringIO()
+            autoflake._main(
+                argv=["my_fake_program", "--check", filename],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual(
+                f"{filename}: No issues detected!{os.linesep}",
+                output_file.getvalue(),
+            )
+
+    def test_check_diff_correct_file_with_quiet(self):
+        with temporary_file(
+            """\
+import foo
+x = foo.bar
+print(x)
+""",
+        ) as filename:
+            output_file = io.StringIO()
+            autoflake._main(
+                argv=[
+                    "my_fake_program",
+                    "--check-diff",
+                    "--quiet",
+                    filename,
+                ],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual("", output_file.getvalue())
+
+    def test_check_diff_useless_pass(self):
+        with temporary_file(
+            """\
+import foo
+x = foo
+import subprocess
+x()
+
+try:
+    pass
+    import os
+except ImportError:
+    pass
+    import os
+    import sys
+""",
+        ) as filename:
+            output_file = io.StringIO()
+            exit_status = autoflake._main(
+                argv=["my_fake_program", "--check-diff", filename],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual(exit_status, 1)
+            self.assertEqual(
+                    """\
+ import foo
+ x = foo
+-import subprocess
+ x()
+ 
+ try:
+     pass
+-    import os
+ except ImportError:
+     pass
+-    import os
+-    import sys
+""",
+                    "\n".join(output_file.getvalue().split("\n")[3:]),
+                )
+
     def test_in_place_with_empty_file(self):
         line = ""
 
