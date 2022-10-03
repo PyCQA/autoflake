@@ -1181,7 +1181,7 @@ def merge_configuration_file(args):
         "off": False,
     }
 
-    if getattr(args, "config_file", None):
+    if args.config_file:
         config_file = pathlib.Path(args.config_file).resolve()
         config = process_config_file(config_file)
 
