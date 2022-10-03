@@ -2252,12 +2252,12 @@ except ImportError:
             )
             self.assertEqual(exit_status, 1)
             self.assertEqual(
-                    """\
+                """\
  import foo
  x = foo
 -import subprocess
  x()
- 
+
  try:
      pass
 -    import os
@@ -2266,8 +2266,8 @@ except ImportError:
 -    import os
 -    import sys
 """,
-                    "\n".join(output_file.getvalue().split("\n")[3:]),
-                )
+                "\n".join(output_file.getvalue().split("\n")[3:]),
+            )
 
     def test_in_place_with_empty_file(self):
         line = ""

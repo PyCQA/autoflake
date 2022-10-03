@@ -1398,7 +1398,7 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
     if args.check and args.check_diff:
         _LOGGER.error(
             "Using both --check and --check-diff is invalid, use --check "
-            "for less verbose output and --check-diff for diff output"
+            "for less verbose output and --check-diff for diff output",
         )
 
     if args.exclude:
