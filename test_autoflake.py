@@ -3203,6 +3203,25 @@ class ConfigFileTest(unittest.TestCase):
             {"files": files},
         )
 
+    def test_config_option(self):
+        with temporary_file(
+            suffix=".ini",
+            contents=("[autoflake]\n" "check = True\n"),
+        ) as temp_config:
+            self.create_file("test_me.py")
+            files = [self.effective_path("test_me.py")]
+
+            args = Namespace(config_file=temp_config, files=files)
+            assert autoflake.merge_configuration_file(args)
+            self.assert_namespace(
+                args,
+                {
+                    "config_file": temp_config,
+                    "check": True,
+                    "files": files,
+                },
+            )
+
     def test_dont_load_false(self):
         self.create_file("test_me.py")
         self.create_file(

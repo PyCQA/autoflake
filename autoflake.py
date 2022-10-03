@@ -27,6 +27,7 @@ import fnmatch
 import io
 import logging
 import os
+import pathlib
 import re
 import signal
 import string
@@ -1128,36 +1129,24 @@ def process_pyproject_toml(toml_file_path):
         return tomllib.load(f).get("tool", {}).get("autoflake", None)
 
 
-def process_setup_cfg(cfg_file_path):
-    """Extract config mapping from setup.cfg file."""
+def process_config_file(config_file_path):
+    """Extract config mapping from config file."""
     import configparser
 
     reader = configparser.ConfigParser()
-    reader.read(cfg_file_path)
+    reader.read(config_file_path)
     if not reader.has_section("autoflake"):
         return None
 
     return reader["autoflake"]
 
 
-def merge_configuration_file(args):
-    """Merge configuration from a file into args."""
+def find_and_process_config(args):
     # Configuration file parsers {filename: parser function}.
     CONFIG_FILES = {
         "pyproject.toml": process_pyproject_toml,
-        "setup.cfg": process_setup_cfg,
+        "setup.cfg": process_config_file,
     }
-    BOOL_TYPES = {
-        "1": True,
-        "yes": True,
-        "true": True,
-        "on": True,
-        "0": False,
-        "no": False,
-        "false": False,
-        "off": False,
-    }
-
     # Traverse the file tree common to all files given as argument looking for
     # a configuration file
     config_path = os.path.commonpath([os.path.abspath(file) for file in args.files])
@@ -1176,6 +1165,35 @@ def merge_configuration_file(args):
         config_path, tail = os.path.split(config_path)
         if not tail:
             break
+    return config
+
+
+def merge_configuration_file(args):
+    """Merge configuration from a file into args."""
+    BOOL_TYPES = {
+        "1": True,
+        "yes": True,
+        "true": True,
+        "on": True,
+        "0": False,
+        "no": False,
+        "false": False,
+        "off": False,
+    }
+
+    if getattr(args, "config_file", None):
+        config_file = pathlib.Path(args.config_file).resolve()
+        config = process_config_file(config_file)
+
+        if not config:
+            _LOGGER.error(
+                "can't parse config file '%s'",
+                config_file,
+            )
+            return False
+    else:
+        config = find_and_process_config(args)
+
     if config:
         # merge config
         for name, value in config.items():
@@ -1211,7 +1229,7 @@ def merge_configuration_file(args):
             }:
                 # boolean properties
                 if isinstance(value, str):
-                    value = BOOL_TYPES.get(value, value)
+                    value = BOOL_TYPES.get(value.lower(), value)
                 if not isinstance(value, bool):
                     _LOGGER.error(
                         "'%s' in the config file should be a boolean",
@@ -1334,6 +1352,17 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         default="stdin",
         help="the name used when processing input from stdin",
     )
+
+    parser.add_argument(
+        "--config",
+        dest="config_file",
+        default=None,
+        help=(
+            "Explicitly set the config file "
+            "instead of auto determining based on file location"
+        ),
+    )
+
     parser.add_argument("files", nargs="+", help="files to format")
 
     group = parser.add_mutually_exclusive_group()
