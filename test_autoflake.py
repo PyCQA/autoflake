@@ -2234,7 +2234,6 @@ import foo
 x = foo
 import subprocess
 x()
-
 try:
     pass
     import os
@@ -2257,7 +2256,6 @@ except ImportError:
  x = foo
 -import subprocess
  x()
-
  try:
      pass
 -    import os
