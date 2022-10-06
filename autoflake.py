@@ -1224,6 +1224,7 @@ def merge_configuration_file(args):
                 setattr(args, name, value)
             elif name in {
                 "check",
+                "check_diff",
                 "expand-star-imports",
                 "ignore-init-module-imports",
                 "ignore-pass-after-docstring",
