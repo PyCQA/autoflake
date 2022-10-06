@@ -941,6 +941,14 @@ def _fix_file(
                 f"{filename}: Unused imports/variables detected{os.linesep}",
             )
             return 1
+        if args["check_diff"]:
+            diff = get_diff_text(
+                io.StringIO(original_source).readlines(),
+                io.StringIO(filtered_source).readlines(),
+                filename,
+            )
+            standard_out.write("".join(diff))
+            return 1
         if write_to_stdout:
             standard_out.write(filtered_source)
         elif args["in_place"]:
@@ -961,7 +969,7 @@ def _fix_file(
     elif write_to_stdout:
         standard_out.write(filtered_source)
     else:
-        if args["check"] and not args["quiet"]:
+        if (args["check"] or args["check_diff"]) and not args["quiet"]:
             standard_out.write(f"{filename}: No issues detected!{os.linesep}")
         else:
             _LOGGER.debug("Clean %s: nothing to fix", filename)
@@ -1253,11 +1261,18 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__, prog="autoflake")
-    parser.add_argument(
+    check_group = parser.add_mutually_exclusive_group()
+    check_group.add_argument(
         "-c",
         "--check",
         action="store_true",
         help="return error code if changes are needed",
+    )
+    check_group.add_argument(
+        "-cd",
+        "--check-diff",
+        action="store_true",
+        help="return error code if changes are needed, also display file diffs",
     )
     parser.add_argument(
         "-r",
