@@ -1396,12 +1396,6 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         )
         return 1
 
-    # if args.check and args.check_diff:
-    #     _LOGGER.error(
-    #         "Using both --check and --check-diff is invalid, use --check "
-    #         "for less verbose output and --check-diff for diff output",
-    #     )
-
     if args.exclude:
         args.exclude = _split_comma_separated(args.exclude)
     else:
