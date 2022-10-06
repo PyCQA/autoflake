@@ -2197,7 +2197,7 @@ print(x)
         ) as filename:
             output_file = io.StringIO()
             autoflake._main(
-                argv=["my_fake_program", "--check", filename],
+                argv=["my_fake_program", "--check-diff", filename],
                 standard_out=output_file,
                 standard_error=None,
             )
