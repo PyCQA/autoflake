@@ -3430,6 +3430,30 @@ class ConfigFileTest(unittest.TestCase):
             {"files": files, "imports": "my_lib,other_lib", "config_file": None},
         )
 
+    def test_merge_doesnt_override_existing_attributes(self):
+        self.create_file("test_me.py")
+        self.create_file(
+            "pyproject.toml",
+            "[tool.autoflake]\ncheck = false\n",
+        )
+        files = [self.effective_path("test_me.py")]
+        args = Namespace(
+            files=files,
+            imports="other_lib",
+            config_file=None,
+            check=True,
+        )
+        assert autoflake.merge_configuration_file(args)
+        self.assert_namespace(
+            args,
+            {
+                "files": files,
+                "imports": "other_lib",
+                "config_file": None,
+                "check": True,
+            },
+        )
+
 
 @contextlib.contextmanager
 def temporary_file(contents, directory=".", suffix=".py", prefix=""):

@@ -1245,8 +1245,9 @@ def merge_configuration_file(args):
                         name,
                     )
                     return False
-                if value:
-                    setattr(args, name.replace("-", "_"), value)
+                arg = name.replace("-", "_")
+                if value and not hasattr(args, arg):
+                    setattr(args, arg, value)
             else:
                 _LOGGER.error("'%s' is not a valid configuration option", name)
                 return False
