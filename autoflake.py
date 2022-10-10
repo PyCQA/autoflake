@@ -924,7 +924,7 @@ def _fix_file(
 
     filtered_source = fix_code(
         source,
-        additional_imports=(args["imports"].split(",") if args["imports"] else None),
+        additional_imports=args.get("imports", "").split(","),
         expand_star_imports=args["expand_star_imports"],
         remove_all_unused_imports=args["remove_all_unused_imports"],
         remove_duplicate_keys=args["remove_duplicate_keys"],
@@ -1157,7 +1157,7 @@ def find_and_process_config(args):
     }
     # Traverse the file tree common to all files given as argument looking for
     # a configuration file
-    config_path = os.path.commonpath([os.path.abspath(file) for file in args.files])
+    config_path = os.path.commonpath([os.path.abspath(file) for file in args["files"]])
     config = None
     while True:
         for config_file, processor in CONFIG_FILES.items():
@@ -1176,7 +1176,7 @@ def find_and_process_config(args):
     return config
 
 
-def merge_configuration_file(args):
+def merge_configuration_file(flag_args):
     """Merge configuration from a file into args."""
     BOOL_TYPES = {
         "1": True,
@@ -1189,8 +1189,8 @@ def merge_configuration_file(args):
         "off": False,
     }
 
-    if args.config_file:
-        config_file = pathlib.Path(args.config_file).resolve()
+    if "config_file" in flag_args:
+        config_file = pathlib.Path(flag_args["config_file"]).resolve()
         config = process_config_file(config_file)
 
         if not config:
@@ -1198,15 +1198,41 @@ def merge_configuration_file(args):
                 "can't parse config file '%s'",
                 config_file,
             )
-            return False
+            return flag_args, False
     else:
-        config = find_and_process_config(args)
+        config = find_and_process_config(flag_args)
 
-    if config:
-        # merge config
+    BOOL_FLAGS = {
+        "check",
+        "check_diff",
+        "expand_star_imports",
+        "ignore_init_module_imports",
+        "ignore_pass_after_docstring",
+        "ignore_pass_statements",
+        "in_place",
+        "recursive",
+        "remove_all_unused_imports",
+        "remove_duplicate_keys",
+        "remove_rhs_for_unused_variables",
+        "remove_unused_variables",
+    }
+
+    config_args = {}
+    if config is not None:
         for name, value in config.items():
-            if name in {"imports", "exclude"}:
-                # comma separated list properties
+            arg = name.replace("-", "_")
+            if arg in BOOL_FLAGS:
+                # boolean properties
+                if isinstance(value, str):
+                    value = BOOL_TYPES.get(value.lower(), value)
+                if not isinstance(value, bool):
+                    _LOGGER.error(
+                        "'%s' in the config file should be a boolean",
+                        name,
+                    )
+                    return flag_args, False
+                config_args[arg] = value
+            else:
                 if isinstance(value, list) and all(
                     isinstance(val, str) for val in value
                 ):
@@ -1217,42 +1243,31 @@ def merge_configuration_file(args):
                         " string or list of strings",
                         name,
                     )
-                    return False
-                current_value = getattr(args, name, None)
-                if current_value is not None:
-                    value = ",".join((value, current_value))
-                setattr(args, name, value)
-            elif name in {
-                "check",
-                "check_diff",
-                "expand-star-imports",
-                "ignore-init-module-imports",
-                "ignore-pass-after-docstring",
-                "ignore-pass-statements",
-                "in-place",
-                "recursive",
-                "remove-all-unused-imports",
-                "remove-duplicate-keys",
-                "remove-rhs-for-unused-variables",
-                "remove-unused-variables",
-            }:
-                # boolean properties
-                if isinstance(value, str):
-                    value = BOOL_TYPES.get(value.lower(), value)
-                if not isinstance(value, bool):
-                    _LOGGER.error(
-                        "'%s' in the config file should be a boolean",
-                        name,
-                    )
-                    return False
-                arg = name.replace("-", "_")
-                if value and not hasattr(args, arg):
-                    setattr(args, arg, value)
-            else:
-                _LOGGER.error("'%s' is not a valid configuration option", name)
-                return False
+                    return flag_args, False
 
-    return True
+                config_args[arg] = value
+
+    # merge args that can be merged
+    merged_args = {}
+    mergeable_keys = {"imports", "exclude"}
+    for key in mergeable_keys:
+        values = (
+            v for v in (config_args.get(key), flag_args.get(key)) if v is not None
+        )
+        value = ",".join(values)
+        if value != "":
+            merged_args[key] = value
+
+    output = collections.defaultdict(lambda: False)
+    output.update(
+        {
+            **config_args,
+            **flag_args,
+            **merged_args,
+        },
+    )
+
+    return output, True
 
 
 def _main(argv, standard_out, standard_error, standard_input=None) -> int:
@@ -1262,7 +1277,11 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
     """
     import argparse
 
-    parser = argparse.ArgumentParser(description=__doc__, prog="autoflake")
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        prog="autoflake",
+        argument_default=argparse.SUPPRESS,
+    )
     check_group = parser.add_mutually_exclusive_group()
     check_group.add_argument(
         "-c",
@@ -1276,6 +1295,20 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         action="store_true",
         help="return error code if changes are needed, also display file diffs",
     )
+
+    imports_group = parser.add_mutually_exclusive_group()
+    imports_group.add_argument(
+        "--imports",
+        help="by default, only unused standard library "
+        "imports are removed; specify a comma-separated "
+        "list of additional modules/packages",
+    )
+    imports_group.add_argument(
+        "--remove-all-unused-imports",
+        action="store_true",
+        help="remove all unused imports (not just those from " "the standard library)",
+    )
+
     parser.add_argument(
         "-r",
         "--recursive",
@@ -1296,12 +1329,6 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         help="exclude file/directory names that match these " "comma-separated globs",
     )
     parser.add_argument(
-        "--imports",
-        help="by default, only unused standard library "
-        "imports are removed; specify a comma-separated "
-        "list of additional modules/packages",
-    )
-    parser.add_argument(
         "--expand-star-imports",
         action="store_true",
         help="expand wildcard star imports with undefined "
@@ -1309,11 +1336,6 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         "one star import in the file; this is skipped if "
         "there are any uses of `__all__` or `del` in the "
         "file",
-    )
-    parser.add_argument(
-        "--remove-all-unused-imports",
-        action="store_true",
-        help="remove all unused imports (not just those from " "the standard library)",
     )
     parser.add_argument(
         "--ignore-init-module-imports",
@@ -1373,7 +1395,6 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
     parser.add_argument(
         "--config",
         dest="config_file",
-        default=None,
         help=(
             "Explicitly set the config file "
             "instead of auto determining based on file location"
@@ -1382,14 +1403,14 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
 
     parser.add_argument("files", nargs="+", help="files to format")
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument(
         "-i",
         "--in-place",
         action="store_true",
         help="make changes to files instead of printing diffs",
     )
-    group.add_argument(
+    output_group.add_argument(
         "-s",
         "--stdout",
         action="store_true",
@@ -1401,6 +1422,7 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
     )
 
     args = parser.parse_args(argv[1:])
+    args = vars(args)
 
     if standard_error is None:
         _LOGGER.addHandler(logging.NullHandler())
@@ -1408,38 +1430,36 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         _LOGGER.addHandler(logging.StreamHandler(standard_error))
         loglevels = [logging.WARNING, logging.INFO, logging.DEBUG]
         try:
-            loglevel = loglevels[args.verbosity]
+            loglevel = loglevels[args["verbosity"]]
         except IndexError:  # Too much -v
             loglevel = loglevels[-1]
         _LOGGER.setLevel(loglevel)
 
-    if not merge_configuration_file(args):
+    args, success = merge_configuration_file(args)
+    if not success:
         return 1
 
-    if args.remove_all_unused_imports and args.imports:
-        _LOGGER.error("Using both --remove-all and --imports is redundant")
-        return 1
-
-    if args.remove_rhs_for_unused_variables and not (args.remove_unused_variables):
+    if args["remove_rhs_for_unused_variables"] and not (
+        args["remove_unused_variables"]
+    ):
         _LOGGER.error(
             "Using --remove-rhs-for-unused-variables only makes sense when "
             "used with --remove-unused-variables",
         )
         return 1
 
-    if args.exclude:
-        args.exclude = _split_comma_separated(args.exclude)
+    if "exclude" in args:
+        args["exclude"] = _split_comma_separated(args["exclude"])
     else:
-        args.exclude = set()
+        args["exclude"] = set()
 
-    if args.jobs < 1:
-        args.jobs = os.cpu_count() or 1
+    if args["jobs"] < 1:
+        args["jobs"] = os.cpu_count() or 1
 
-    filenames = list(set(args.files))
+    filenames = list(set(args["files"]))
 
     # convert argparse namespace to a dict so that it can be serialized
     # by multiprocessing
-    args = vars(args)
     exit_status = 0
     files = list(find_files(filenames, args["recursive"], args["exclude"]))
     if (
