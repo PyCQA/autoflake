@@ -1210,11 +1210,13 @@ def merge_configuration_file(flag_args):
         "ignore_pass_after_docstring",
         "ignore_pass_statements",
         "in_place",
+        "quiet",
         "recursive",
         "remove_all_unused_imports",
         "remove_duplicate_keys",
         "remove_rhs_for_unused_variables",
         "remove_unused_variables",
+        "write_to_stdout",
     }
 
     config_args = {}
@@ -1258,16 +1260,13 @@ def merge_configuration_file(flag_args):
         if value != "":
             merged_args[key] = value
 
-    output = collections.defaultdict(lambda: False)
-    output.update(
-        {
-            **config_args,
-            **flag_args,
-            **merged_args,
-        },
-    )
-
-    return output, True
+    default_args = {arg: False for arg in BOOL_FLAGS}
+    return {
+        **default_args,
+        **config_args,
+        **flag_args,
+        **merged_args,
+    }, True
 
 
 def _main(argv, standard_out, standard_error, standard_input=None) -> int:

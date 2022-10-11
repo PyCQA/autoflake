@@ -2397,6 +2397,37 @@ print(x)
                 "\n".join(process.communicate()[0].decode().split(os.linesep)[3:]),
             )
 
+    def test_end_to_end_multiple_files(self):
+        with temporary_file(
+            """\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os
+x = os.sep
+print(x)
+""",
+        ) as filename1:
+            with temporary_file(
+                """\
+import os
+x = os.sep
+print(x)
+""",
+            ) as filename2:
+                process = subprocess.Popen(
+                    AUTOFLAKE_COMMAND
+                    + [
+                        "--imports=fake_foo,fake_bar",
+                        "--check",
+                        "--jobs=2",
+                        filename1,
+                        filename2,
+                    ],
+                    stdout=subprocess.PIPE,
+                )
+
+                status_code = process.wait()
+                self.assertEqual(1, status_code)
+
     def test_end_to_end_with_remove_all_unused_imports(self):
         with temporary_file(
             """\
@@ -3116,6 +3147,25 @@ class ConfigFileTest(unittest.TestCase):
         with open(effective_path, "w") as f:
             f.write(contents)
 
+    def with_defaults(self, **kwargs):
+        return {
+            "check": False,
+            "check_diff": False,
+            "expand_star_imports": False,
+            "ignore_init_module_imports": False,
+            "ignore_pass_after_docstring": False,
+            "ignore_pass_statements": False,
+            "in_place": False,
+            "quiet": False,
+            "recursive": False,
+            "remove_all_unused_imports": False,
+            "remove_duplicate_keys": False,
+            "remove_rhs_for_unused_variables": False,
+            "remove_unused_variables": False,
+            "write_to_stdout": False,
+            **kwargs,
+        }
+
     def test_no_config_file(self):
         self.create_file("test_me.py")
         original_args = {
@@ -3123,7 +3173,7 @@ class ConfigFileTest(unittest.TestCase):
         }
         args, success = autoflake.merge_configuration_file(original_args)
         assert success is True
-        assert args == original_args
+        assert args == self.with_defaults(**original_args)
 
     def test_non_nested_pyproject_toml_empty(self):
         self.create_file("test_me.py")
@@ -3132,7 +3182,7 @@ class ConfigFileTest(unittest.TestCase):
         original_args = {"files": files}
         args, success = autoflake.merge_configuration_file(original_args)
         assert success is True
-        assert args == original_args
+        assert args == self.with_defaults(**original_args)
 
     def test_non_nested_pyproject_toml_non_empty(self):
         self.create_file("test_me.py")
@@ -3143,10 +3193,10 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "expand_star_imports": True,
-        }
+        assert args == self.with_defaults(
+            files=files,
+            expand_star_imports=True,
+        )
 
     def test_non_nested_setup_cfg_non_empty(self):
         self.create_file("test_me.py")
@@ -3157,7 +3207,7 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {"files": files}
+        assert args == self.with_defaults(files=files)
 
     def test_non_nested_setup_cfg_empty(self):
         self.create_file("test_me.py")
@@ -3168,10 +3218,10 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "expand_star_imports": True,
-        }
+        assert args == self.with_defaults(
+            files=files,
+            expand_star_imports=True,
+        )
 
     def test_nested_file(self):
         self.create_file("nested/file/test_me.py")
@@ -3182,10 +3232,10 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("nested/file/test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "expand_star_imports": True,
-        }
+        assert args == self.with_defaults(
+            files=files,
+            expand_star_imports=True,
+        )
 
     def test_common_path_nested_file_do_not_load(self):
         self.create_file("nested/file/test_me.py")
@@ -3200,9 +3250,7 @@ class ConfigFileTest(unittest.TestCase):
         ]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-        }
+        assert args == self.with_defaults(files=files)
 
     def test_common_path_nested_file_do_load(self):
         self.create_file("nested/file/test_me.py")
@@ -3217,10 +3265,10 @@ class ConfigFileTest(unittest.TestCase):
         ]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "expand_star_imports": True,
-        }
+        assert args == self.with_defaults(
+            files=files,
+            expand_star_imports=True,
+        )
 
     def test_common_path_instead_of_common_prefix(self):
         """Using common prefix would result in a failure."""
@@ -3236,7 +3284,7 @@ class ConfigFileTest(unittest.TestCase):
         ]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {"files": files}
+        assert args == self.with_defaults(files=files)
 
     def test_continue_search_if_no_config_found(self):
         self.create_file("nested/test_me.py")
@@ -3251,10 +3299,10 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("nested/test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "expand_star_imports": True,
-        }
+        assert args == self.with_defaults(
+            files=files,
+            expand_star_imports=True,
+        )
 
     def test_stop_search_if_config_found(self):
         self.create_file("nested/test_me.py")
@@ -3269,7 +3317,7 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("nested/test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {"files": files}
+        assert args == self.with_defaults(files=files)
 
     def test_config_option(self):
         with temporary_file(
@@ -3286,11 +3334,11 @@ class ConfigFileTest(unittest.TestCase):
                 },
             )
             assert success is True
-            assert args == {
-                "files": files,
-                "config_file": temp_config,
-                "check": True,
-            }
+            assert args == self.with_defaults(
+                files=files,
+                config_file=temp_config,
+                check=True,
+            )
 
     def test_load_false(self):
         self.create_file("test_me.py")
@@ -3302,10 +3350,10 @@ class ConfigFileTest(unittest.TestCase):
 
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "expand_star_imports": False,
-        }
+        assert args == self.with_defaults(
+            files=files,
+            expand_star_imports=False,
+        )
 
     def test_list_value_pyproject_toml(self):
         self.create_file("test_me.py")
@@ -3316,10 +3364,10 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "imports": "my_lib,other_lib",
-        }
+        assert args == self.with_defaults(
+            files=files,
+            imports="my_lib,other_lib",
+        )
 
     def test_list_value_comma_sep_string_pyproject_toml(self):
         self.create_file("test_me.py")
@@ -3330,10 +3378,10 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "imports": "my_lib,other_lib",
-        }
+        assert args == self.with_defaults(
+            files=files,
+            imports="my_lib,other_lib",
+        )
 
     def test_list_value_setup_cfg(self):
         self.create_file("test_me.py")
@@ -3344,10 +3392,10 @@ class ConfigFileTest(unittest.TestCase):
         files = [self.effective_path("test_me.py")]
         args, success = autoflake.merge_configuration_file({"files": files})
         assert success is True
-        assert args == {
-            "files": files,
-            "imports": "my_lib,other_lib",
-        }
+        assert args == self.with_defaults(
+            files=files,
+            imports="my_lib,other_lib",
+        )
 
     def test_non_bool_value_for_bool_property(self):
         self.create_file("test_me.py")
@@ -3390,10 +3438,10 @@ class ConfigFileTest(unittest.TestCase):
             {"files": files, "imports": "other_lib"},
         )
         assert success is True
-        assert args == {
-            "files": files,
-            "imports": "my_lib,other_lib",
-        }
+        assert args == self.with_defaults(
+            files=files,
+            imports="my_lib,other_lib",
+        )
 
     def test_merge_prioritizes_flags(self):
         self.create_file("test_me.py")
@@ -3409,11 +3457,11 @@ class ConfigFileTest(unittest.TestCase):
         }
         args, success = autoflake.merge_configuration_file(flag_args)
         assert success is True
-        assert args == {
-            "files": files,
-            "imports": "other_lib",
-            "check": True,
-        }
+        assert args == self.with_defaults(
+            files=files,
+            imports="other_lib",
+            check=True,
+        )
 
 
 @contextlib.contextmanager
