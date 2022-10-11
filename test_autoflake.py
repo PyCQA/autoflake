@@ -3113,7 +3113,7 @@ class ConfigFileTest(unittest.TestCase):
     def create_file(self, path, contents=""):
         effective_path = self.effective_path(path)
         self.create_dir(os.path.split(path)[0])
-        with open(effective_path, "wt") as f:
+        with open(effective_path, "w") as f:
             f.write(contents)
 
     def test_no_config_file(self):
