@@ -924,7 +924,7 @@ def _fix_file(
 
     filtered_source = fix_code(
         source,
-        additional_imports=args.get("imports", "").split(","),
+        additional_imports=(args["imports"].split(",") if "imports" in args else None),
         expand_star_imports=args["expand_star_imports"],
         remove_all_unused_imports=args["remove_all_unused_imports"],
         remove_duplicate_keys=args["remove_duplicate_keys"],

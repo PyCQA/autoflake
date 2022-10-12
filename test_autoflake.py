@@ -2638,6 +2638,26 @@ print(x)
             "\n".join(stdout.decode().split(os.linesep)),
         )
 
+    def test_end_to_end_dont_remove_unused_imports_when_not_using_flag(self):
+        with temporary_file(
+            """\
+from . import fake_bar
+from . import fake_foo
+fake_foo.fake_function()
+""",
+        ) as filename:
+            process = subprocess.Popen(
+                AUTOFLAKE_COMMAND
+                + [
+                    filename,
+                ],
+                stdout=subprocess.PIPE,
+            )
+            self.assertEqual(
+                "",
+                "\n".join(process.communicate()[0].decode().split(os.linesep)[3:]),
+            )
+
 
 class MultilineFromImportTests(unittest.TestCase):
     def test_is_over(self):
