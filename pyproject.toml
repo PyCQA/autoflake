@@ -5,22 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "autoflake"
 description = "Removes unused imports and unused variables"
-license = {text = "MIT"}
+license = { text = "MIT" }
 classifiers = [
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Topic :: Software Development :: Quality Assurance",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Quality Assurance",
 ]
 keywords = ["clean", "fix", "automatic", "unused", "import"]
-urls = {Homepage = "https://www.github.com/PyCQA/autoflake"}
+urls = { Homepage = "https://www.github.com/PyCQA/autoflake" }
 requires-python = ">=3.7"
-dependencies = [
-    "pyflakes>=1.1.0",
-    "tomli>=2.0.1;python_version<'3.11'",
-]
+dependencies = ["pyflakes>=1.1.0", "tomli>=2.0.1;python_version<'3.11'"]
 dynamic = ["version"]
 
 [project.readme]
@@ -36,14 +33,10 @@ license-files = ["LICENSE"]
 include-package-data = false
 
 [tool.setuptools.packages]
-find = {namespaces = false}
+find = { namespaces = false }
 
 [tool.setuptools.dynamic]
-version = {attr = "autoflake.__version__"}
+version = { attr = "autoflake.__version__" }
 
 [tool.distutils.bdist_wheel]
 universal = 1
-
-[tool.flake8]
-ignore = "E203,W503"
-max-line-length = "88"
