@@ -1453,7 +1453,11 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         args["exclude"] = set()
 
     if args["jobs"] < 1:
-        args["jobs"] = os.cpu_count() or 1
+        worker_count = os.cpu_count()
+        if sys.platform == "win32":
+            # Work around https://bugs.python.org/issue26903
+            worker_count = min(worker_count, 60)
+        args["jobs"] = worker_count or 1
 
     filenames = list(set(args["files"]))
 
