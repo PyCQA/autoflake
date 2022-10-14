@@ -12,14 +12,14 @@ repos:
       - id: codespell
 
   - repo: https://github.com/asottile/reorder_python_imports
-    rev: v3.8.4
+    rev: v3.8.5
     hooks:
       - id: reorder-python-imports
         args:
           - --py37-plus
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.69
+    rev: v0.0.72
     hooks:
       - id: lint
 
