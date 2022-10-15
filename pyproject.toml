@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.2"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "autoflake"
@@ -27,16 +27,12 @@ content-type = "text/markdown"
 [project.scripts]
 autoflake = "autoflake:main"
 
-[tool.setuptools]
-py-modules = ["autoflake"]
-license-files = ["LICENSE"]
-include-package-data = false
+[tool.hatch.version]
+path = "autoflake.py"
 
-[tool.setuptools.packages]
-find = { namespaces = false }
+[tool.hatch.build.targets.sdist]
+exclude = ["/.github"]
 
-[tool.setuptools.dynamic]
-version = { attr = "autoflake.__version__" }
-
-[tool.distutils.bdist_wheel]
-universal = 1
+[tool.hatch.build]
+include = ["/autoflake.py", "/test_autoflake.py", "/LICENSE", "/README.md"]
+exclude = ["/.gitignore"]
