@@ -16,9 +16,7 @@ jobs:
         with:
           python-version: 3.x
 
-      - run: pip install build twine wheel
-
-      - run: pip install -e .
+      - run: pip install build twine
 
       - run: python -m build --wheel --sdist
 

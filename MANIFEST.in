@@ -1,7 +1,0 @@
-include AUTHORS.rst
-include LICENSE
-include README.md
-include test_autoflake.py
-
-exclude test_fuzz.py
-exclude test_fuzz_pypi.py
