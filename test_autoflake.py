@@ -1419,6 +1419,10 @@ print(a)
         def foo():
             \"\"\" A docstring. \"\"\"
             pass
+        def foo2():
+            \"\"\" A docstring. \"\"\"
+
+            pass
         def bar():
             # abc
             pass
@@ -1448,6 +1452,10 @@ print(a)
         def foo():
             \"\"\" A docstring. \"\"\"
             pass
+        def foo2():
+            \"\"\" A docstring. \"\"\"
+
+            pass
         def bar():
             # abc
             pass
@@ -1466,6 +1474,10 @@ print(a)
     else:
         def foo():
             \"\"\" A docstring. \"\"\"
+            pass
+        def foo2():
+            \"\"\" A docstring. \"\"\"
+
             pass
         def bar():
             # abc
