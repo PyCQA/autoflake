@@ -776,18 +776,18 @@ def useless_pass_line_numbers(
 
             is_trailing_pass = (
                 previous_token_type != tokenize.INDENT
-                and not previous_lines[1].rstrip().endswith("\\")
+                and not previous_lines[-1].rstrip().endswith("\\")
             )
 
             is_pass_after_docstring = (
                 # previous line is the end of a docstring
                 previous_token_type == tokenize.NEWLINE
-                and previous_lines[1].rstrip().endswith(("'''", '"""'))
+                and previous_lines[-1].rstrip().endswith(("'''", '"""'))
             ) or (
                 # previous line contains only space and the line before that is
                 # the end of a docstring
-                previous_lines[1].strip() == ""
-                and previous_lines[0].rstrip().endswith(("'''", '"""'))
+                previous_lines[-1].strip() == ""
+                and previous_lines[-2].rstrip().endswith(("'''", '"""'))
             )
 
             # Trailing "pass".
