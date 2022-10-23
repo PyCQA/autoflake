@@ -780,7 +780,9 @@ def useless_pass_line_numbers(
                 and not previous_line.rstrip().endswith("\\")
             )
 
-            is_pass_after_docstring = previous_non_empty_line.rstrip().endswith(("'''", '"""'))
+            is_pass_after_docstring = previous_non_empty_line.rstrip().endswith(
+                ("'''", '"""'),
+            )
 
             # Trailing "pass".
             if is_trailing_pass:
