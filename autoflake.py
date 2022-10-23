@@ -754,6 +754,7 @@ def useless_pass_line_numbers(
     last_pass_row = None
     last_pass_indentation = None
     previous_line = ""
+    previous_non_empty_line = ""
     for token in tokenize.generate_tokens(sio.readline):
         token_type = token[0]
         start_row = token[2][0]
@@ -779,9 +780,8 @@ def useless_pass_line_numbers(
                 and not previous_line.rstrip().endswith("\\")
             )
 
-            is_pass_after_docstring = (
-                previous_token_type == tokenize.NEWLINE
-                and previous_line.rstrip().endswith('"""')
+            is_pass_after_docstring = previous_non_empty_line.rstrip().endswith(
+                ("'''", '"""'),
             )
 
             # Trailing "pass".
@@ -793,6 +793,8 @@ def useless_pass_line_numbers(
 
         previous_token_type = token_type
         previous_line = line
+        if line.strip():
+            previous_non_empty_line = line
 
 
 def filter_useless_pass(
