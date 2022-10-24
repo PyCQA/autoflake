@@ -17,10 +17,17 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
+          - "3.11"
         os:
           - macos
           - ubuntu
           - windows
+
+        # 3.11 isn't available in macOS yet.
+        # See https://github.com/actions/setup-python/issues/531.
+        exclude:
+          - os: macos
+            python-version: "3.11"
 
     name: tests
     runs-on: ${{ matrix.os }}-latest
