@@ -19,9 +19,9 @@ repos:
           - --py37-plus
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.82
+    rev: v0.0.178
     hooks:
-      - id: lint
+      - id: ruff
 
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.3.1
