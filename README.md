@@ -195,7 +195,7 @@ from .endpoints import role, token, user, utils  # noqa
 That line will instruct ``autoflake`` to let that specific line as is.
 
 
-## Using [pre-commit](https://pre-commit.comn) hooks
+## Using [pre-commit](https://pre-commit.com) hooks
 
 Add the following to your `.pre-commit-config.yaml`
 
