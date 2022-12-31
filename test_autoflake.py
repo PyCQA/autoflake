@@ -3150,6 +3150,21 @@ class MultilineFromImportTests(unittest.TestCase):
             "import \\\n" "    lib1, \\\n" "    lib3\n",
             remove_all=False,
         )
+    
+    def test_removal_of_unnecessary_pass_statement(self):
+        self.assertEqual(
+            """\
+print('hi wlrd')
+""",
+            "".join(
+                autoflake.fix_code(
+                    """\
+import os
+print('hi wlrd')
+""", ignore_pass_statements=True
+                )
+            )
+        )
 
 
 class ConfigFileTest(unittest.TestCase):
