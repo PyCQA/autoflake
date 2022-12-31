@@ -3150,7 +3150,7 @@ class MultilineFromImportTests(unittest.TestCase):
             "import \\\n" "    lib1, \\\n" "    lib3\n",
             remove_all=False,
         )
-    
+
     def test_removal_of_unnecessary_pass_statement(self):
         self.assertEqual(
             """\
@@ -3161,9 +3161,10 @@ print('hi wlrd')
                     """\
 import os
 print('hi wlrd')
-""", ignore_pass_statements=True
-                )
-            )
+""",
+                    ignore_pass_statements=True,
+                ),
+            ),
         )
 
 
