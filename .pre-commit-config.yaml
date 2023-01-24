@@ -19,7 +19,7 @@ repos:
           - --py37-plus
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.223
+    rev: v0.0.231
     hooks:
       - id: ruff
 
@@ -43,6 +43,6 @@ repos:
       - id: black
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.10.1
+    rev: v0.11
     hooks:
       - id: validate-pyproject
