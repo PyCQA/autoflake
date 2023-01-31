@@ -57,7 +57,7 @@ MAX_PYTHON_FILE_DETECTION_BYTES = 1024
 def standard_paths():
     """Yield paths to standard modules."""
     paths = sysconfig.get_paths()
-    path_names = ["stdlib", "platstdlib"]
+    path_names = ("stdlib", "platstdlib")
     for path_name in path_names:
         # Yield lib paths.
         if path_name in paths:
