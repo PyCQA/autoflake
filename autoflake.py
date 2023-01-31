@@ -62,7 +62,8 @@ def standard_paths():
         # Yield lib paths.
         if path_name in paths:
             path = paths[path_name]
-            yield from os.listdir(path)
+            if os.path.isdir(path):
+                yield from os.listdir(path)
 
             # Yield lib-dynload paths.
             dynload_path = os.path.join(path, "lib-dynload")
