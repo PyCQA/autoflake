@@ -2360,7 +2360,6 @@ except ImportError:
                 prefix=".",
                 directory=directory,
             ) as inner_directory:
-
                 with temporary_file(
                     """\
 import re
@@ -2368,7 +2367,6 @@ import os
 """,
                     directory=inner_directory,
                 ):
-
                     output_file = io.StringIO()
                     autoflake._main(
                         argv=[

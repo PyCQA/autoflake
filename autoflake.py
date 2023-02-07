@@ -164,7 +164,7 @@ def duplicate_key_line_numbers(messages, source):
 
         lines = source.split("\n")
 
-        for (key, messages) in key_to_messages.items():
+        for key, messages in key_to_messages.items():
             good = True
             for message in messages:
                 line = lines[message.lineno - 1]
