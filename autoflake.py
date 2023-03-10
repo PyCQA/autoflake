@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2012-2019 Steven Myint
+# Copyright (C) Steven Myint
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -470,7 +470,7 @@ def filter_from_import(line, unused_module):
 
     indentation += "import "
 
-    return indentation + ", ".join(sorted(filtered_imports)) + get_line_ending(line)
+    return indentation + ", ".join(filtered_imports) + get_line_ending(line)
 
 
 def break_up_import(line):
@@ -496,7 +496,7 @@ def break_up_import(line):
     assert newline
 
     return "".join(
-        [indentation + i.strip() + newline for i in sorted(imports.split(","))],
+        [indentation + i.strip() + newline for i in imports.split(",")],
     )
 
 

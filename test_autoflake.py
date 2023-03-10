@@ -601,13 +601,13 @@ import os, math, subprocess
 
     def test_break_up_import(self):
         self.assertEqual(
-            "import abc\nimport math\nimport subprocess\n",
+            "import abc\nimport subprocess\nimport math\n",
             autoflake.break_up_import("import abc, subprocess, math\n"),
         )
 
     def test_break_up_import_with_indentation(self):
         self.assertEqual(
-            "    import abc\n    import math\n    import subprocess\n",
+            "    import abc\n    import subprocess\n    import math\n",
             autoflake.break_up_import("    import abc, subprocess, math\n"),
         )
 
@@ -620,7 +620,7 @@ import os, math, subprocess
     def test_filter_from_import_no_remove(self):
         self.assertEqual(
             """\
-    from foo import abc, math, subprocess\n""",
+    from foo import abc, subprocess, math\n""",
             autoflake.filter_from_import(
                 "    from foo import abc, subprocess, math\n",
                 unused_module=[],
@@ -630,7 +630,7 @@ import os, math, subprocess
     def test_filter_from_import_remove_module(self):
         self.assertEqual(
             """\
-    from foo import math, subprocess\n""",
+    from foo import subprocess, math\n""",
             autoflake.filter_from_import(
                 "    from foo import abc, subprocess, math\n",
                 unused_module=["foo.abc"],
