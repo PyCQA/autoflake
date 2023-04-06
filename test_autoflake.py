@@ -3508,6 +3508,20 @@ class ConfigFileTest(unittest.TestCase):
             check=True,
         )
 
+    def test_files_from_config(self):
+        self.create_file("test_me.py")
+        self.create_file(
+            "pyproject.toml",
+            '[tool.autoflake]\nfiles=["test_me.py"]\n',
+        )
+        flag_args = dict()
+        with contextlib.chdir(self.tmpdir):
+            args, success = autoflake.merge_configuration_file(flag_args)
+        assert success is True
+        assert args == self.with_defaults(
+            files=["test_me.py"],
+        )
+
 
 @contextlib.contextmanager
 def temporary_file(contents, directory=".", suffix=".py", prefix=""):

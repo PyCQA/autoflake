@@ -1160,7 +1160,11 @@ def find_and_process_config(args):
     }
     # Traverse the file tree common to all files given as argument looking for
     # a configuration file
-    config_path = os.path.commonpath([os.path.abspath(file) for file in args["files"]])
+    config_path = (
+        os.path.commonpath([os.path.abspath(file) for file in args["files"]])
+        if args.get("files")
+        else os.getcwd()
+    )
     config = None
     while True:
         for config_file, processor in CONFIG_FILES.items():
@@ -1222,6 +1226,8 @@ def merge_configuration_file(flag_args):
         "write_to_stdout",
     }
 
+    LIST_FLAGS = {"files"}
+
     config_args = {}
     if config is not None:
         for name, value in config.items():
@@ -1233,6 +1239,14 @@ def merge_configuration_file(flag_args):
                 if not isinstance(value, bool):
                     _LOGGER.error(
                         "'%s' in the config file should be a boolean",
+                        name,
+                    )
+                    return flag_args, False
+                config_args[arg] = value
+            elif arg in LIST_FLAGS:
+                if not isinstance(value, list):
+                    _LOGGER.error(
+                        "'%s' in the config file should be a list",
                         name,
                     )
                     return flag_args, False
@@ -1403,7 +1417,7 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         ),
     )
 
-    parser.add_argument("files", nargs="+", help="files to format")
+    parser.add_argument("files", nargs="*", help="files to format")
 
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument(
@@ -1439,6 +1453,13 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
 
     args, success = merge_configuration_file(args)
     if not success:
+        return 1
+
+    if not args.get("files"):
+        _LOGGER.error(
+            "'files' must either be given as an argument on the command "
+            "line or set in the config file.",
+        )
         return 1
 
     if args["remove_rhs_for_unused_variables"] and not (
