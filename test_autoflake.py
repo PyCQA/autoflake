@@ -3388,7 +3388,11 @@ class ConfigFileTest(unittest.TestCase):
     def test_config_option_toml(self):
         with temporary_file(
             suffix=".toml",
-            contents=("[tool.autoflake]\n" "check = true\n" "exclude = [\n  \"build\",\n  \".venv\",\n]"),
+            contents=(
+                "[tool.autoflake]\n"
+                "check = true\n"
+                'exclude = [\n  "build",\n  ".venv",\n]'
+            ),
         ) as temp_config:
             self.create_file("test_me.py")
             files = [self.effective_path("test_me.py")]
