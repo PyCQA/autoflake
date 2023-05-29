@@ -52,7 +52,7 @@ jobs:
         run: pip install pre-commit
 
       - name: install package
-        run: pip install .
+        run: pip install . tomli
 
       - name: pre-commit cache
         uses: actions/cache@v3.3.1
