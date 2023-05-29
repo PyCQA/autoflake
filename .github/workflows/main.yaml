@@ -51,6 +51,9 @@ jobs:
       - name: install pre-commit
         run: pip install pre-commit
 
+      - name: install package
+        run: pip install .
+
       - name: pre-commit cache
         uses: actions/cache@v3.3.1
         with:
