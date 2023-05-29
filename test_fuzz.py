@@ -5,6 +5,8 @@ This checks that autoflake never introduces incorrect syntax. This is
 done by doing a syntax check after the autoflake run. The number of
 Pyflakes warnings is also confirmed to always improve.
 """
+from __future__ import annotations
+
 import argparse
 import os
 import shlex

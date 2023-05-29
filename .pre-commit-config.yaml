@@ -17,6 +17,8 @@ repos:
       - id: reorder-python-imports
         args:
           - --py38-plus
+          - --add-import
+          - from __future__ import annotations
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.0.269
@@ -46,3 +48,8 @@ repos:
     rev: v0.13
     hooks:
       - id: validate-pyproject
+
+  - repo: https://github.com/fsouza/mirrors-pyright
+    rev: v1.1.310
+    hooks:
+      - id: pyright

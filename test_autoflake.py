@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Test suite for autoflake."""
+from __future__ import annotations
+
 import contextlib
 import functools
 import io

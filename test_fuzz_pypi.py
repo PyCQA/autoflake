@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 """Fuzz test against the latest packages on PyPI."""
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
 import tarfile
 import zipfile
+from typing import Iterable
 
 import test_fuzz
 
@@ -15,7 +18,7 @@ TMP_DIR = os.path.join(
 )
 
 
-def latest_packages(last_hours):
+def latest_packages(last_hours: int) -> Iterable[str]:
     """Return names of latest released packages on PyPI."""
     process = subprocess.Popen(
         ["yolk", f"--latest-releases={last_hours}"],
@@ -27,7 +30,7 @@ def latest_packages(last_hours):
             yield line.split()[0]
 
 
-def download_package(name, output_directory):
+def download_package(name: str, output_directory: str) -> None:
     """Download package to output_directory.
 
     Raise CalledProcessError on failure.
@@ -38,7 +41,7 @@ def download_package(name, output_directory):
     )
 
 
-def extract_package(path, output_directory):
+def extract_package(path: str, output_directory: str) -> bool:
     """Extract package at path."""
     if path.lower().endswith(".tar.gz"):
         try:
@@ -60,7 +63,7 @@ def extract_package(path, output_directory):
     return False
 
 
-def main():
+def main() -> int:
     """Run main."""
     try:
         os.mkdir(TMP_DIR)
@@ -137,6 +140,8 @@ def main():
             "\nTested packages:\n    " + "\n    ".join(checked_packages),
             file=sys.stderr,
         )
+
+    return 0
 
 
 if __name__ == "__main__":
