@@ -5,10 +5,12 @@ This checks that autoflake never introduces incorrect syntax. This is
 done by doing a syntax check after the autoflake run. The number of
 Pyflakes warnings is also confirmed to always improve.
 """
+import argparse
 import os
 import shlex
 import subprocess
 import sys
+from typing import Sequence
 
 import autoflake
 
@@ -27,12 +29,12 @@ else:
     END = ""
 
 
-def colored(text, color):
+def colored(text: str, color: str) -> str:
     """Return color coded text."""
     return color + text + END
 
 
-def pyflakes_count(filename):
+def pyflakes_count(filename: str) -> int:
     """Return pyflakes error count."""
     with autoflake.open_with_encoding(
         filename,
@@ -41,7 +43,7 @@ def pyflakes_count(filename):
         return len(list(autoflake.check(f.read())))
 
 
-def readlines(filename):
+def readlines(filename: str) -> Sequence[str]:
     """Return contents of file as a list of lines."""
     with autoflake.open_with_encoding(
         filename,
@@ -50,7 +52,7 @@ def readlines(filename):
         return f.readlines()
 
 
-def diff(before, after):
+def diff(before: str, after: str) -> str:
     """Return diff of two files."""
     import difflib
 
@@ -64,7 +66,12 @@ def diff(before, after):
     )
 
 
-def run(filename, command, verbose=False, options=None):
+def run(
+    filename: str,
+    command: str,
+    verbose: bool = False,
+    options: list[str] | None = None,
+) -> bool:
     """Run autoflake on file at filename.
 
     Return True on success.
@@ -123,7 +130,7 @@ def run(filename, command, verbose=False, options=None):
     return True
 
 
-def check_syntax(filename, raise_error=False):
+def check_syntax(filename: str, raise_error: bool = False) -> bool:
     """Return True if syntax is okay."""
     with autoflake.open_with_encoding(
         filename,
@@ -139,10 +146,8 @@ def check_syntax(filename, raise_error=False):
                 return False
 
 
-def process_args():
+def process_args() -> argparse.Namespace:
     """Return processed arguments (options and positional arguments)."""
-    import argparse
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -192,7 +197,7 @@ def process_args():
     return parser.parse_args()
 
 
-def check(args):
+def check(args: argparse.Namespace) -> bool:
     """Run recursively run autoflake on directory of files.
 
     Return False if the fix results in broken syntax.
@@ -267,7 +272,7 @@ def check(args):
     return True
 
 
-def main():
+def main() -> int:
     """Run main."""
     return 0 if check(process_args()) else 1
 

@@ -20,6 +20,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """Removes unused imports and unused variables as reported by pyflakes."""
+from __future__ import annotations
+
 import ast
 import collections
 import difflib
@@ -34,6 +36,14 @@ import string
 import sys
 import sysconfig
 import tokenize
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import IO
+from typing import Iterable
+from typing import Mapping
+from typing import MutableMapping
+from typing import Sequence
 
 import pyflakes.api
 import pyflakes.messages
@@ -54,7 +64,7 @@ PYTHON_SHEBANG_REGEX = re.compile(r"^#!.*\bpython[3]?\b\s*$")
 MAX_PYTHON_FILE_DETECTION_BYTES = 1024
 
 
-def standard_paths():
+def standard_paths() -> Iterable[str]:
     """Yield paths to standard modules."""
     paths = sysconfig.get_paths()
     path_names = ("stdlib", "platstdlib")
@@ -71,7 +81,7 @@ def standard_paths():
                 yield from os.listdir(dynload_path)
 
 
-def standard_package_names():
+def standard_package_names() -> Iterable[str]:
     """Yield standard module names."""
     for name in standard_paths():
         if name.startswith("_") or "-" in name:
@@ -107,32 +117,40 @@ SAFE_IMPORTS = (
 )
 
 
-def unused_import_line_numbers(messages):
+def unused_import_line_numbers(
+    messages: Iterable[pyflakes.messages.Message],
+) -> Iterable[int]:
     """Yield line numbers of unused imports."""
     for message in messages:
         if isinstance(message, pyflakes.messages.UnusedImport):
             yield message.lineno
 
 
-def unused_import_module_name(messages):
+def unused_import_module_name(
+    messages: Iterable[pyflakes.messages.Message],
+) -> Iterable[tuple[int, str]]:
     """Yield line number and module name of unused imports."""
-    pattern = r"\'(.+?)\'"
+    pattern = re.compile(r"\'(.+?)\'")
     for message in messages:
         if isinstance(message, pyflakes.messages.UnusedImport):
-            module_name = re.search(pattern, str(message))
+            module_name = pattern.search(str(message))
             if module_name:
                 module_name = module_name.group()[1:-1]
                 yield (message.lineno, module_name)
 
 
-def star_import_used_line_numbers(messages):
+def star_import_used_line_numbers(
+    messages: Iterable[pyflakes.messages.Message],
+) -> Iterable[int]:
     """Yield line number of star import usage."""
     for message in messages:
         if isinstance(message, pyflakes.messages.ImportStarUsed):
             yield message.lineno
 
 
-def star_import_usage_undefined_name(messages):
+def star_import_usage_undefined_name(
+    messages: Iterable[pyflakes.messages.Message],
+) -> Iterable[tuple[int, str, str]]:
     """Yield line number, undefined name, and its possible origin module."""
     for message in messages:
         if isinstance(message, pyflakes.messages.ImportStarUsage):
@@ -141,14 +159,19 @@ def star_import_usage_undefined_name(messages):
             yield (message.lineno, undefined_name, module_name)
 
 
-def unused_variable_line_numbers(messages):
+def unused_variable_line_numbers(
+    messages: Iterable[pyflakes.messages.Message],
+) -> Iterable[int]:
     """Yield line numbers of unused variables."""
     for message in messages:
         if isinstance(message, pyflakes.messages.UnusedVariable):
             yield message.lineno
 
 
-def duplicate_key_line_numbers(messages, source):
+def duplicate_key_line_numbers(
+    messages: Iterable[pyflakes.messages.Message],
+    source: str,
+) -> Iterable[int]:
     """Yield line numbers of duplicate keys."""
     messages = [
         message
@@ -178,15 +201,17 @@ def duplicate_key_line_numbers(messages, source):
                     yield message.lineno
 
 
-def create_key_to_messages_dict(messages):
+def create_key_to_messages_dict(
+    messages: Iterable[pyflakes.messages.MultiValueRepeatedKeyLiteral],
+) -> Mapping[Any, Iterable[pyflakes.messages.MultiValueRepeatedKeyLiteral]]:
     """Return dict mapping the key to list of messages."""
-    dictionary = collections.defaultdict(lambda: [])
+    dictionary = collections.defaultdict(list)
     for message in messages:
         dictionary[message.message_args[0]].append(message)
     return dictionary
 
 
-def check(source):
+def check(source: str) -> Iterable[pyflakes.messages.Message]:
     """Return messages from pyflakes."""
     reporter = ListReporter()
     try:
@@ -199,28 +224,28 @@ def check(source):
 class StubFile:
     """Stub out file for pyflakes."""
 
-    def write(self, *_):
+    def write(self, *_: Any) -> None:
         """Stub out."""
 
 
 class ListReporter(pyflakes.reporter.Reporter):
     """Accumulate messages in messages list."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize.
 
         Ignore errors from Reporter.
         """
         ignore = StubFile()
         pyflakes.reporter.Reporter.__init__(self, ignore, ignore)
-        self.messages = []
+        self.messages: list[pyflakes.messages.Message] = []
 
-    def flake(self, message):
+    def flake(self, message: pyflakes.messages.Message) -> None:
         """Accumulate messages."""
         self.messages.append(message)
 
 
-def extract_package_name(line):
+def extract_package_name(line: str) -> str | None:
     """Return package name in import statement."""
     assert "\\" not in line
     assert "(" not in line
@@ -239,7 +264,7 @@ def extract_package_name(line):
     return package
 
 
-def multiline_import(line, previous_line=""):
+def multiline_import(line: str, previous_line: str = "") -> bool:
     """Return True if import is spans multiples lines."""
     for symbol in "()":
         if symbol in line:
@@ -248,7 +273,7 @@ def multiline_import(line, previous_line=""):
     return multiline_statement(line, previous_line)
 
 
-def multiline_statement(line, previous_line=""):
+def multiline_statement(line: str, previous_line: str = "") -> bool:
     """Return True if this is part of a multiline statement."""
     for symbol in "\\:;":
         if symbol in line:
@@ -270,11 +295,11 @@ class PendingFix:
     with the following line.
     """
 
-    def __init__(self, line):
+    def __init__(self, line: str) -> None:
         """Analyse and store the first line."""
         self.accumulator = collections.deque([line])
 
-    def __call__(self, line):
+    def __call__(self, line: str) -> PendingFix | str:
         """Process line considering the accumulator.
 
         Return self to keep processing the following lines or a string
@@ -283,7 +308,7 @@ class PendingFix:
         raise NotImplementedError("Abstract method needs to be overwritten")
 
 
-def _valid_char_in_line(char, line):
+def _valid_char_in_line(char: str, line: str) -> bool:
     """Return True if a char appears in the line and is not commented."""
     comment_index = line.find("#")
     char_index = line.find(char)
@@ -293,19 +318,22 @@ def _valid_char_in_line(char, line):
     return valid_char_in_line
 
 
-def _top_module(module_name):
+def _top_module(module_name: str) -> str:
     """Return the name of the top level module in the hierarchy."""
     if module_name[0] == ".":
         return "%LOCAL_MODULE%"
     return module_name.split(".")[0]
 
 
-def _modules_to_remove(unused_modules, safe_to_remove=SAFE_IMPORTS):
+def _modules_to_remove(
+    unused_modules: Iterable[str],
+    safe_to_remove: Iterable[str] = SAFE_IMPORTS,
+) -> Iterable[str]:
     """Discard unused modules that are not safe to remove from the list."""
     return [x for x in unused_modules if _top_module(x) in safe_to_remove]
 
 
-def _segment_module(segment):
+def _segment_module(segment: str) -> str:
     """Extract the module identifier inside the segment.
 
     It might be the case the segment does not have a module (e.g. is composed
@@ -338,19 +366,19 @@ class FilterMultilineImport(PendingFix):
 
     def __init__(
         self,
-        line,
-        unused_module=(),
-        remove_all_unused_imports=False,
-        safe_to_remove=SAFE_IMPORTS,
-        previous_line="",
+        line: str,
+        unused_module: Iterable[str] = (),
+        remove_all_unused_imports: bool = False,
+        safe_to_remove: Iterable[str] = SAFE_IMPORTS,
+        previous_line: str = "",
     ):
         """Receive the same parameters as ``filter_unused_import``."""
-        self.remove = unused_module
-        self.parenthesized = "(" in line
+        self.remove: Iterable[str] = unused_module
+        self.parenthesized: bool = "(" in line
         self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
         match = self.BASE_RE.search(self.from_)
         self.base = match.group(1) if match else None
-        self.give_up = False
+        self.give_up: bool = False
 
         if not remove_all_unused_imports:
             if self.base and _top_module(self.base) not in safe_to_remove:
@@ -366,7 +394,7 @@ class FilterMultilineImport(PendingFix):
 
         PendingFix.__init__(self, imports)
 
-    def is_over(self, line=None):
+    def is_over(self, line: str | None = None) -> bool:
         """Return True if the multiline import statement is over."""
         line = line or self.accumulator[-1]
 
@@ -375,12 +403,12 @@ class FilterMultilineImport(PendingFix):
 
         return not _valid_char_in_line("\\", line)
 
-    def analyze(self, line):
+    def analyze(self, line: str) -> None:
         """Decide if the statement will be fixed or left unchanged."""
         if any(ch in line for ch in ";:#"):
             self.give_up = True
 
-    def fix(self, accumulated):
+    def fix(self, accumulated: Iterable[str]) -> str:
         """Given a collection of accumulated lines, fix the entire import."""
         old_imports = "".join(accumulated)
         ending = get_line_ending(old_imports)
@@ -416,12 +444,14 @@ class FilterMultilineImport(PendingFix):
         # Replace empty imports with a "pass" statement
         empty = len(fixed.strip(string.whitespace + "\\(),")) < 1
         if empty:
-            indentation = self.INDENTATION_RE.search(self.from_).group(0)
+            match = self.INDENTATION_RE.search(self.from_)
+            assert match is not None
+            indentation = match.group(0)
             return indentation + "pass" + ending
 
         return self.from_ + "import " + fixed
 
-    def __call__(self, line=None):
+    def __call__(self, line: str | None = None) -> PendingFix | str:
         """Accumulate all the lines in the import and then trigger the fix."""
         if line:
             self.accumulator.append(line)
@@ -434,18 +464,22 @@ class FilterMultilineImport(PendingFix):
         return self.fix(self.accumulator)
 
 
-def _filter_imports(imports, parent=None, unused_module=()):
+def _filter_imports(
+    imports: Iterable[str],
+    parent: str | None = None,
+    unused_module: Iterable[str] = (),
+) -> Sequence[str]:
     # We compare full module name (``a.module`` not `module`) to
     # guarantee the exact same module as detected from pyflakes.
     sep = "" if parent and parent[-1] == "." else "."
 
-    def full_name(name):
+    def full_name(name: str) -> str:
         return name if parent is None else parent + sep + name
 
     return [x for x in imports if full_name(x) not in unused_module]
 
 
-def filter_from_import(line, unused_module):
+def filter_from_import(line: str, unused_module: Iterable[str]) -> str:
     """Parse and filter ``from something import a, b, c``.
 
     Return line without unused import modules, or `pass` if all of the
@@ -456,10 +490,12 @@ def filter_from_import(line, unused_module):
         string=line,
         maxsplit=1,
     )
-    base_module = re.search(
+    match = re.search(
         pattern=r"\bfrom\s+([^ ]+)",
         string=indentation,
-    ).group(1)
+    )
+    assert match is not None
+    base_module = match.group(1)
 
     imports = re.split(pattern=r"\s*,\s*", string=imports.strip())
     filtered_imports = _filter_imports(imports, base_module, unused_module)
@@ -473,7 +509,7 @@ def filter_from_import(line, unused_module):
     return indentation + ", ".join(filtered_imports) + get_line_ending(line)
 
 
-def break_up_import(line):
+def break_up_import(line: str) -> str:
     """Return line with imports on separate lines."""
     assert "\\" not in line
     assert "(" not in line
@@ -501,15 +537,15 @@ def break_up_import(line):
 
 
 def filter_code(
-    source,
-    additional_imports=None,
-    expand_star_imports=False,
-    remove_all_unused_imports=False,
-    remove_duplicate_keys=False,
-    remove_unused_variables=False,
-    remove_rhs_for_unused_variables=False,
-    ignore_init_module_imports=False,
-):
+    source: str,
+    additional_imports: Iterable[str] | None = None,
+    expand_star_imports: bool = False,
+    remove_all_unused_imports: bool = False,
+    remove_duplicate_keys: bool = False,
+    remove_unused_variables: bool = False,
+    remove_rhs_for_unused_variables: bool = False,
+    ignore_init_module_imports: bool = False,
+) -> Iterable[str]:
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
@@ -519,15 +555,16 @@ def filter_code(
     messages = check(source)
 
     if ignore_init_module_imports:
-        marked_import_line_numbers = frozenset()
+        marked_import_line_numbers: frozenset[int] = frozenset()
     else:
         marked_import_line_numbers = frozenset(
             unused_import_line_numbers(messages),
         )
-    marked_unused_module = collections.defaultdict(lambda: [])
+    marked_unused_module: dict[int, list[str]] = collections.defaultdict(list)
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
 
+    undefined_names: list[str] = []
     if expand_star_imports and not (
         # See explanations in #18.
         re.search(r"\b__all__\b", source)
@@ -540,7 +577,6 @@ def filter_code(
             # Auto expanding only possible for single star import
             marked_star_import_line_numbers = frozenset()
         else:
-            undefined_names = []
             for line_number, undefined_name, _ in star_import_usage_undefined_name(
                 messages,
             ):
@@ -558,7 +594,7 @@ def filter_code(
         marked_variable_line_numbers = frozenset()
 
     if remove_duplicate_keys:
-        marked_key_line_numbers = frozenset(
+        marked_key_line_numbers: frozenset[int] = frozenset(
             duplicate_key_line_numbers(messages, source),
         )
     else:
@@ -568,7 +604,7 @@ def filter_code(
 
     sio = io.StringIO(source)
     previous_line = ""
-    result = None
+    result: str | PendingFix = ""
     for line_number, line in enumerate(sio.readlines(), start=1):
         if isinstance(result, PendingFix):
             result = result(line)
@@ -606,27 +642,32 @@ def filter_code(
         previous_line = line
 
 
-def get_messages_by_line(messages):
+def get_messages_by_line(
+    messages: Iterable[pyflakes.messages.Message],
+) -> Mapping[int, pyflakes.messages.Message]:
     """Return dictionary that maps line number to message."""
-    line_messages = {}
+    line_messages: dict[int, pyflakes.messages.Message] = {}
     for message in messages:
         line_messages[message.lineno] = message
     return line_messages
 
 
-def filter_star_import(line, marked_star_import_undefined_name):
+def filter_star_import(
+    line: str,
+    marked_star_import_undefined_name: Iterable[str],
+) -> str:
     """Return line with the star import expanded."""
     undefined_name = sorted(set(marked_star_import_undefined_name))
     return re.sub(r"\*", ", ".join(undefined_name), line)
 
 
 def filter_unused_import(
-    line,
-    unused_module,
-    remove_all_unused_imports,
-    imports,
-    previous_line="",
-):
+    line: str,
+    unused_module: Iterable[str],
+    remove_all_unused_imports: bool,
+    imports: Iterable[str],
+    previous_line: str = "",
+) -> PendingFix | str:
     """Return line if used, otherwise return None."""
     # Ignore doctests.
     if line.lstrip().startswith(">"):
@@ -648,7 +689,7 @@ def filter_unused_import(
         return break_up_import(line)
 
     package = extract_package_name(line)
-    if not remove_all_unused_imports and package not in imports:
+    if not remove_all_unused_imports and package is not None and package not in imports:
         return line
 
     if "," in line:
@@ -662,7 +703,11 @@ def filter_unused_import(
         return get_indentation(line) + "pass" + get_line_ending(line)
 
 
-def filter_unused_variable(line, previous_line="", drop_rhs=False):
+def filter_unused_variable(
+    line: str,
+    previous_line: str = "",
+    drop_rhs: bool = False,
+) -> str:
     """Return line if used, otherwise return None."""
     if re.match(EXCEPT_REGEX, line):
         return re.sub(r" as \w+:$", ":", line, count=1)
@@ -690,13 +735,13 @@ def filter_unused_variable(line, previous_line="", drop_rhs=False):
 
 
 def filter_duplicate_key(
-    line,
-    message,
-    line_number,
-    marked_line_numbers,
-    source,
-    previous_line="",
-):
+    line: str,
+    message: pyflakes.messages.Message,
+    line_number: int,
+    marked_line_numbers: Iterable[int],
+    source: str,
+    previous_line: str = "",
+) -> str:
     """Return '' if first occurrence of the key otherwise return `line`."""
     if marked_line_numbers and line_number == sorted(marked_line_numbers)[0]:
         return ""
@@ -704,7 +749,7 @@ def filter_duplicate_key(
     return line
 
 
-def dict_entry_has_key(line, key):
+def dict_entry_has_key(line: str, key: Any) -> bool:
     """Return True if `line` is a dict entry that uses `key`.
 
     Return False for multiline cases where the line should not be removed by
@@ -726,10 +771,10 @@ def dict_entry_has_key(line, key):
     if multiline_statement(result.group(2)):
         return False
 
-    return candidate_key == key
+    return cast(bool, candidate_key == key)
 
 
-def is_literal_or_name(value):
+def is_literal_or_name(value: str) -> bool:
     """Return True if value is a literal or a name."""
     try:
         ast.literal_eval(value)
@@ -742,13 +787,13 @@ def is_literal_or_name(value):
 
     # Support removal of variables on the right side. But make sure
     # there are no dots, which could mean an access of a property.
-    return re.match(r"^\w+\s*$", value)
+    return re.match(r"^\w+\s*$", value) is not None
 
 
 def useless_pass_line_numbers(
-    source,
-    ignore_pass_after_docstring=False,
-):
+    source: str,
+    ignore_pass_after_docstring: bool = False,
+) -> Iterable[int]:
     """Yield line numbers of unneeded "pass" statements."""
     sio = io.StringIO(source)
     previous_token_type = None
@@ -799,13 +844,13 @@ def useless_pass_line_numbers(
 
 
 def filter_useless_pass(
-    source,
-    ignore_pass_statements=False,
-    ignore_pass_after_docstring=False,
-):
+    source: str,
+    ignore_pass_statements: bool = False,
+    ignore_pass_after_docstring: bool = False,
+) -> Iterable[str]:
     """Yield code with useless "pass" lines removed."""
     if ignore_pass_statements:
-        marked_lines = frozenset()
+        marked_lines: frozenset[int] = frozenset()
     else:
         try:
             marked_lines = frozenset(
@@ -823,7 +868,7 @@ def filter_useless_pass(
             yield line
 
 
-def get_indentation(line):
+def get_indentation(line: str) -> str:
     """Return leading whitespace."""
     if line.strip():
         non_whitespace_index = len(line) - len(line.lstrip())
@@ -832,7 +877,7 @@ def get_indentation(line):
         return ""
 
 
-def get_line_ending(line):
+def get_line_ending(line: str) -> str:
     """Return line ending."""
     non_whitespace_index = len(line.rstrip()) - len(line)
     if not non_whitespace_index:
@@ -842,17 +887,17 @@ def get_line_ending(line):
 
 
 def fix_code(
-    source,
-    additional_imports=None,
-    expand_star_imports=False,
-    remove_all_unused_imports=False,
-    remove_duplicate_keys=False,
-    remove_unused_variables=False,
-    remove_rhs_for_unused_variables=False,
-    ignore_init_module_imports=False,
-    ignore_pass_statements=False,
-    ignore_pass_after_docstring=False,
-):
+    source: str,
+    additional_imports: Iterable[str] | None = None,
+    expand_star_imports: bool = False,
+    remove_all_unused_imports: bool = False,
+    remove_duplicate_keys: bool = False,
+    remove_unused_variables: bool = False,
+    remove_rhs_for_unused_variables: bool = False,
+    ignore_init_module_imports: bool = False,
+    ignore_pass_statements: bool = False,
+    ignore_pass_after_docstring: bool = False,
+) -> str:
     """Return code with all filtering run on it."""
     if not source:
         return source
@@ -891,7 +936,11 @@ def fix_code(
     return filtered_source
 
 
-def fix_file(filename, args, standard_out=None) -> int:
+def fix_file(
+    filename: str,
+    args: Mapping[str, Any],
+    standard_out: IO[str] | None = None,
+) -> int:
     """Run fix_code() on a file."""
     if standard_out is None:
         standard_out = sys.stdout
@@ -908,12 +957,12 @@ def fix_file(filename, args, standard_out=None) -> int:
 
 
 def _fix_file(
-    input_file,
-    filename,
-    args,
-    write_to_stdout,
-    standard_out,
-    encoding=None,
+    input_file: IO[str],
+    filename: str,
+    args: Mapping[str, Any],
+    write_to_stdout: bool,
+    standard_out: IO[str],
+    encoding: str | None = None,
 ) -> int:
     source = input_file.read()
     original_source = source
@@ -981,11 +1030,11 @@ def _fix_file(
 
 
 def open_with_encoding(
-    filename,
-    encoding,
-    mode="r",
-    limit_byte_check=-1,
-):
+    filename: str,
+    encoding: str | None,
+    mode: str = "r",
+    limit_byte_check: int = -1,
+) -> IO[str]:
     """Return opened file with a specific encoding."""
     if not encoding:
         encoding = detect_encoding(filename, limit_byte_check=limit_byte_check)
@@ -994,11 +1043,11 @@ def open_with_encoding(
         filename,
         mode=mode,
         encoding=encoding,
-        newline="",
-    )  # Preserve line endings
+        newline="",  # Preserve line endings
+    )
 
 
-def detect_encoding(filename, limit_byte_check=-1):
+def detect_encoding(filename: str, limit_byte_check: int = -1) -> str:
     """Return file encoding."""
     try:
         with open(filename, "rb") as input_file:
@@ -1013,7 +1062,7 @@ def detect_encoding(filename, limit_byte_check=-1):
         return "latin-1"
 
 
-def _detect_encoding(readline):
+def _detect_encoding(readline: Callable[[], bytes]) -> str:
     """Return file encoding."""
     try:
         encoding = tokenize.detect_encoding(readline)[0]
@@ -1022,7 +1071,7 @@ def _detect_encoding(readline):
         return "latin-1"
 
 
-def get_diff_text(old, new, filename):
+def get_diff_text(old: Sequence[str], new: Sequence[str], filename: str) -> str:
     """Return text of unified diff between old and new."""
     newline = "\n"
     diff = difflib.unified_diff(
@@ -1044,12 +1093,12 @@ def get_diff_text(old, new, filename):
     return text
 
 
-def _split_comma_separated(string):
+def _split_comma_separated(string: str) -> set[str]:
     """Return a set of strings."""
     return {text.strip() for text in string.split(",") if text.strip()}
 
 
-def is_python_file(filename):
+def is_python_file(filename: str) -> bool:
     """Return True if filename is Python file."""
     if filename.endswith(".py"):
         return True
@@ -1073,7 +1122,7 @@ def is_python_file(filename):
     return True
 
 
-def is_exclude_file(filename, exclude):
+def is_exclude_file(filename: str, exclude: Iterable[str]) -> bool:
     """Return True if file matches exclude pattern."""
     base_name = os.path.basename(filename)
 
@@ -1088,7 +1137,7 @@ def is_exclude_file(filename, exclude):
     return False
 
 
-def match_file(filename, exclude):
+def match_file(filename: str, exclude: Iterable[str]) -> bool:
     """Return True if file is okay for modifying/recursing."""
     if is_exclude_file(filename, exclude):
         _LOGGER.debug("Skipped %s: matched to exclude pattern", filename)
@@ -1100,7 +1149,11 @@ def match_file(filename, exclude):
     return True
 
 
-def find_files(filenames, recursive, exclude):
+def find_files(
+    filenames: list[str],
+    recursive: bool,
+    exclude: Iterable[str],
+) -> Iterable[str]:
     """Yield filenames."""
     while filenames:
         name = filenames.pop(0)
@@ -1129,7 +1182,7 @@ def find_files(filenames, recursive, exclude):
                 _LOGGER.debug("Skipped %s: matched to exclude pattern", name)
 
 
-def process_pyproject_toml(toml_file_path):
+def process_pyproject_toml(toml_file_path: str) -> MutableMapping[str, Any] | None:
     """Extract config mapping from pyproject.toml file."""
     try:
         import tomllib
@@ -1140,7 +1193,7 @@ def process_pyproject_toml(toml_file_path):
         return tomllib.load(f).get("tool", {}).get("autoflake", None)
 
 
-def process_config_file(config_file_path):
+def process_config_file(config_file_path: str) -> MutableMapping[str, Any] | None:
     """Extract config mapping from config file."""
     import configparser
 
@@ -1152,16 +1205,16 @@ def process_config_file(config_file_path):
     return reader["autoflake"]
 
 
-def find_and_process_config(args):
+def find_and_process_config(args: Mapping[str, Any]) -> MutableMapping[str, Any] | None:
     # Configuration file parsers {filename: parser function}.
-    CONFIG_FILES = {
+    CONFIG_FILES: Mapping[str, Callable[[str], MutableMapping[str, Any] | None]] = {
         "pyproject.toml": process_pyproject_toml,
         "setup.cfg": process_config_file,
     }
     # Traverse the file tree common to all files given as argument looking for
     # a configuration file
     config_path = os.path.commonpath([os.path.abspath(file) for file in args["files"]])
-    config = None
+    config: Mapping[str, Any] | None = None
     while True:
         for config_file, processor in CONFIG_FILES.items():
             config_file_path = os.path.join(
@@ -1179,7 +1232,9 @@ def find_and_process_config(args):
     return config
 
 
-def merge_configuration_file(flag_args):
+def merge_configuration_file(
+    flag_args: MutableMapping[str, Any],
+) -> tuple[MutableMapping[str, Any], bool]:
     """Merge configuration from a file into args."""
     BOOL_TYPES = {
         "1": True,
@@ -1194,7 +1249,7 @@ def merge_configuration_file(flag_args):
 
     if "config_file" in flag_args:
         config_file = pathlib.Path(flag_args["config_file"]).resolve()
-        config = process_config_file(config_file)
+        config = process_config_file(str(config_file))
 
         if not config:
             _LOGGER.error(
@@ -1222,7 +1277,7 @@ def merge_configuration_file(flag_args):
         "write_to_stdout",
     }
 
-    config_args = {}
+    config_args: dict[str, Any] = {}
     if config is not None:
         for name, value in config.items():
             arg = name.replace("-", "_")
@@ -1272,7 +1327,12 @@ def merge_configuration_file(flag_args):
     }, True
 
 
-def _main(argv, standard_out, standard_error, standard_input=None) -> int:
+def _main(
+    argv: Sequence[str],
+    standard_out: IO[str] | None,
+    standard_error: IO[str] | None,
+    standard_input: IO[str] | None = None,
+) -> int:
     """Return exit status.
 
     0 means no error.
@@ -1423,8 +1483,7 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         ),
     )
 
-    args = parser.parse_args(argv[1:])
-    args = vars(args)
+    args: MutableMapping[str, Any] = vars(parser.parse_args(argv[1:]))
 
     if standard_error is None:
         _LOGGER.addHandler(logging.NullHandler())
@@ -1476,7 +1535,7 @@ def _main(argv, standard_out, standard_error, standard_input=None) -> int:
         or standard_out is not None
     ):
         for name in files:
-            if name == "-":
+            if name == "-" and standard_input is not None:
                 exit_status |= _fix_file(
                     standard_input,
                     args["stdin_display_name"],
