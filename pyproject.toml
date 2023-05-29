@@ -34,5 +34,11 @@ path = "autoflake.py"
 exclude = ["/.github"]
 
 [tool.hatch.build]
-include = ["/autoflake.py", "/test_autoflake.py", "/LICENSE", "/README.md"]
+include = [
+  "/autoflake.py",
+  "/test_autoflake.py",
+  "/py.typed",
+  "/LICENSE",
+  "/README.md",
+]
 exclude = ["/.gitignore"]
