@@ -205,7 +205,10 @@ def create_key_to_messages_dict(
     messages: Iterable[pyflakes.messages.MultiValueRepeatedKeyLiteral],
 ) -> Mapping[Any, Iterable[pyflakes.messages.MultiValueRepeatedKeyLiteral]]:
     """Return dict mapping the key to list of messages."""
-    dictionary = collections.defaultdict(list)
+    dictionary: dict[
+        Any,
+        list[pyflakes.messages.MultiValueRepeatedKeyLiteral],
+    ] = collections.defaultdict(list)
     for message in messages:
         dictionary[message.message_args[0]].append(message)
     return dictionary
