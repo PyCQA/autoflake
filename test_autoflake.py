@@ -3186,19 +3186,7 @@ class ConfigFileTest(unittest.TestCase):
 
     def create_dir(self, path) -> None:
         effective_path = self.effective_path(path, False)
-        if sys.version_info >= (3, 2, 0):
-            os.makedirs(effective_path, exist_ok=True)
-        else:
-            if os.path.exists(effective_path):
-                return
-            try:
-                os.mkdir(effective_path)
-            except OSError:
-                parent = os.path.split(path)[0]
-                if not parent:
-                    raise
-                self.create_dir(parent)
-                os.mkdir(effective_path)
+        os.makedirs(effective_path, exist_ok=True)
 
     def create_file(self, path, contents="") -> None:
         effective_path = self.effective_path(path)
