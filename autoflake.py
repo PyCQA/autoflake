@@ -1574,7 +1574,7 @@ def _main(
     return exit_status
 
 
-def main():
+def main() -> int:
     """Command-line entry point."""
     try:
         # Exit on broken pipe.
