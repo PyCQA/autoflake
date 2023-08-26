@@ -21,19 +21,19 @@ repos:
           - from __future__ import annotations
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.280
+    rev: v0.0.286
     hooks:
       - id: ruff
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.9.0
+    rev: v3.10.1
     hooks:
       - id: pyupgrade
         args:
           - --py38-plus
 
   - repo: https://github.com/asottile/add-trailing-comma
-    rev: v3.0.0
+    rev: v3.0.1
     hooks:
       - id: add-trailing-comma
         args:
@@ -45,11 +45,11 @@ repos:
       - id: black
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.13
+    rev: v0.14
     hooks:
       - id: validate-pyproject
 
   - repo: https://github.com/fsouza/mirrors-pyright
-    rev: v1.1.319
+    rev: v1.1.324
     hooks:
       - id: pyright
