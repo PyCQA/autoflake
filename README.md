@@ -205,3 +205,14 @@ Add the following to your `.pre-commit-config.yaml`
     hooks:
     -   id: autoflake
 ```
+
+When customizing the arguments, make sure you include `--in-place` in the list
+of arguments:
+
+```yaml
+-   repo: https://github.com/PyCQA/autoflake
+    rev: v2.2.1
+    hooks:
+    -   id: autoflake
+        args: [--remove-all-unused-imports, --in-place]
+```
