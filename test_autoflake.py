@@ -928,6 +928,7 @@ StrictVersion('1.0.0')
 from distutils.version import LooseVersion, StrictVersion
 StrictVersion('1.0.0')
 """,
+                remove_all_unused_imports=True,
             ),
         )
 
@@ -941,6 +942,7 @@ version('1.0.0')
 from distutils.version import LooseVersion, StrictVersion as version
 version('1.0.0')
 """,
+                remove_all_unused_imports=True,
             ),
         )
 
