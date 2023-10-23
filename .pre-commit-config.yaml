@@ -21,7 +21,7 @@ repos:
           - from __future__ import annotations
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: ruff
 
@@ -40,7 +40,7 @@ repos:
           - --py36-plus
 
   - repo: https://github.com/psf/black
-    rev: "23.10.0"
+    rev: "23.10.1"
     hooks:
       - id: black
 
