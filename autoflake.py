@@ -1252,7 +1252,11 @@ def merge_configuration_file(
 
     if "config_file" in flag_args:
         config_file = pathlib.Path(flag_args["config_file"]).resolve()
-        config = process_config_file(str(config_file))
+        process_method = process_config_file
+        if config_file.suffix == ".toml":
+            process_method = process_pyproject_toml
+
+        config = process_method(str(config_file))
 
         if not config:
             _LOGGER.error(

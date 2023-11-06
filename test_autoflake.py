@@ -3389,6 +3389,28 @@ class ConfigFileTest(unittest.TestCase):
                 check=True,
             )
 
+    def test_merge_configuration_file__toml_config_option(self) -> None:
+        with temporary_file(
+            suffix=".toml",
+            contents=("[tool.autoflake]\n" "check = true\n"),
+        ) as temp_config:
+            self.create_file("test_me.py")
+            files = [self.effective_path("test_me.py")]
+
+            args, success = autoflake.merge_configuration_file(
+                {
+                    "files": files,
+                    "config_file": temp_config,
+                },
+            )
+
+            assert success is True
+            assert args == self.with_defaults(
+                files=files,
+                config_file=temp_config,
+                check=True,
+            )
+
     def test_load_false(self) -> None:
         self.create_file("test_me.py")
         self.create_file(
