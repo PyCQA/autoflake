@@ -21,7 +21,7 @@ repos:
           - from __future__ import annotations
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.1.1
+    rev: v0.1.5
     hooks:
       - id: ruff
       - id: ruff-format
@@ -46,6 +46,6 @@ repos:
       - id: validate-pyproject
 
   - repo: https://github.com/fsouza/mirrors-pyright
-    rev: v1.1.332
+    rev: v1.1.335
     hooks:
       - id: pyright
