@@ -56,7 +56,7 @@ jobs:
         run: pip install . tomli
 
       - name: pre-commit cache
-        uses: actions/cache@v3.3.3
+        uses: actions/cache@v4.0.0
         with:
           path: ~/.cache/pre-commit
           key: "${{ hashFiles('.pre-commit-config.yaml') }}"
