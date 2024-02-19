@@ -2008,6 +2008,49 @@ class SystemTests(unittest.TestCase):
 
     """System tests."""
 
+    def test_skip_file(self) -> None:
+        skipped_file_file_text = """
+# autoflake: skip_file
+import re
+import os
+import my_own_module
+x = 1
+"""
+        with temporary_file(skipped_file_file_text) as filename:
+            output_file = io.StringIO()
+            autoflake._main(
+                argv=["my_fake_program", filename, "--stdout"],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual(
+                skipped_file_file_text,
+                output_file.getvalue(),
+            )
+
+    def test_skip_file_with_shebang_respect(self) -> None:
+        skipped_file_file_text = """
+#!/usr/bin/env python3
+
+# autoflake: skip_file
+
+import re
+import os
+import my_own_module
+x = 1
+"""
+        with temporary_file(skipped_file_file_text) as filename:
+            output_file = io.StringIO()
+            autoflake._main(
+                argv=["my_fake_program", filename, "--stdout"],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual(
+                skipped_file_file_text,
+                output_file.getvalue(),
+            )
+
     def test_diff(self) -> None:
         with temporary_file(
             """\

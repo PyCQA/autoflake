@@ -63,6 +63,11 @@ PYTHON_SHEBANG_REGEX = re.compile(r"^#!.*\bpython[3]?\b\s*$")
 
 MAX_PYTHON_FILE_DETECTION_BYTES = 1024
 
+IGNORE_COMMENT_REGEX = re.compile(
+    r"\s*#\s{1,}autoflake:\s{1,}\bskip_file\b",
+    re.MULTILINE,
+)
+
 
 def standard_paths() -> Iterable[str]:
     """Yield paths to standard modules."""
@@ -902,6 +907,9 @@ def fix_code(
 ) -> str:
     """Return code with all filtering run on it."""
     if not source:
+        return source
+
+    if IGNORE_COMMENT_REGEX.search(source):
         return source
 
     # pyflakes does not handle "nonlocal" correctly.

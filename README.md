@@ -127,6 +127,11 @@ options:
   -s, --stdout          print changed text to stdout. defaults to true when formatting stdin, or to false otherwise
 ```
 
+To ignore the file, you can also add a comment to the top of the file:
+```python
+# autoflake: skip_file
+import os
+```
 
 ## Configuration
 
