@@ -2031,7 +2031,9 @@ x = 1
     def test_skip_file_with_shebang_respect(self) -> None:
         skipped_file_file_text = """
 #!/usr/bin/env python3
+
 # autoflake: skip_file
+
 import re
 import os
 import my_own_module
