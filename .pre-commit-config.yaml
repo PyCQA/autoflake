@@ -21,13 +21,13 @@ repos:
           - from __future__ import annotations
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.1.11
+    rev: v0.2.2
     hooks:
       - id: ruff
       - id: ruff-format
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
+    rev: v3.15.1
     hooks:
       - id: pyupgrade
         args:
@@ -41,11 +41,11 @@ repos:
           - --py36-plus
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.15
+    rev: v0.16
     hooks:
       - id: validate-pyproject
 
   - repo: https://github.com/fsouza/mirrors-pyright
-    rev: v1.1.345
+    rev: v1.1.350
     hooks:
       - id: pyright
