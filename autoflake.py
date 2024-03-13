@@ -1209,7 +1209,7 @@ def process_config_file(config_file_path: str) -> MutableMapping[str, Any] | Non
     import configparser
 
     reader = configparser.ConfigParser()
-    reader.read(config_file_path)
+    reader.read(config_file_path, encoding="utf-8")
     if not reader.has_section("autoflake"):
         return None
 
