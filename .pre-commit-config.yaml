@@ -20,8 +20,8 @@ repos:
           - --add-import
           - from __future__ import annotations
 
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.2.2
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.2
     hooks:
       - id: ruff
       - id: ruff-format
@@ -46,6 +46,6 @@ repos:
       - id: validate-pyproject
 
   - repo: https://github.com/fsouza/mirrors-pyright
-    rev: v1.1.350
+    rev: v1.1.353
     hooks:
       - id: pyright
