@@ -20,7 +20,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """Removes unused imports and unused variables as reported by pyflakes."""
-
 from __future__ import annotations
 
 import ast
@@ -576,7 +575,8 @@ def filter_code(
     undefined_names: list[str] = []
     if expand_star_imports and not (
         # See explanations in #18.
-        re.search(r"\b__all__\b", source) or re.search(r"\bdel\b", source)
+        re.search(r"\b__all__\b", source)
+        or re.search(r"\bdel\b", source)
     ):
         marked_star_import_line_numbers = frozenset(
             star_import_used_line_numbers(messages),
@@ -1515,9 +1515,8 @@ def _main(
     if not success:
         return 1
 
-    if (
-        args["remove_rhs_for_unused_variables"]
-        and not (args["remove_unused_variables"])
+    if args["remove_rhs_for_unused_variables"] and not (
+        args["remove_unused_variables"]
     ):
         _LOGGER.error(
             "Using --remove-rhs-for-unused-variables only makes sense when "
