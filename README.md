@@ -206,7 +206,7 @@ Add the following to your `.pre-commit-config.yaml`
 
 ```yaml
 -   repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.0
+    rev: v2.3.1
     hooks:
     -   id: autoflake
 ```
