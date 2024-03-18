@@ -40,7 +40,7 @@ repos:
       - id: validate-pyproject
 
   - repo: https://github.com/psf/black
-    rev: "24.2.0"
+    rev: "24.3.0"
     hooks:
       - id: black
 
@@ -50,6 +50,6 @@ repos:
       - id: autoflake
 
   - repo: https://github.com/fsouza/mirrors-pyright
-    rev: v1.1.353
+    rev: v1.1.354
     hooks:
       - id: pyright
