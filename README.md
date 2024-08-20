@@ -216,7 +216,7 @@ of arguments:
 
 ```yaml
 -   repo: https://github.com/PyCQA/autoflake
-    rev: v2.2.1
+    rev: v2.3.1
     hooks:
     -   id: autoflake
         args: [--remove-all-unused-imports, --in-place]
