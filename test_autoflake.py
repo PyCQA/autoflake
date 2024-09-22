@@ -12,10 +12,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from collections.abc import Iterator
+from collections.abc import Mapping
+from collections.abc import Sequence
 from typing import Any
-from typing import Iterator
-from typing import Mapping
-from typing import Sequence
 
 import autoflake
 

@@ -36,14 +36,14 @@ import string
 import sys
 import sysconfig
 import tokenize
+from collections.abc import Iterable
+from collections.abc import Mapping
+from collections.abc import MutableMapping
+from collections.abc import Sequence
 from typing import Any
 from typing import Callable
 from typing import cast
 from typing import IO
-from typing import Iterable
-from typing import Mapping
-from typing import MutableMapping
-from typing import Sequence
 
 import pyflakes.api
 import pyflakes.messages
