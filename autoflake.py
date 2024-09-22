@@ -962,7 +962,7 @@ def fix_file(
             filename,
             args,
             args["write_to_stdout"],
-            standard_out,
+            cast(IO[str], standard_out),
             encoding=encoding,
         )
 
