@@ -16,7 +16,7 @@ classifiers = [
 ]
 keywords = ["clean", "fix", "automatic", "unused", "import"]
 urls = { Homepage = "https://www.github.com/PyCQA/autoflake" }
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = ["pyflakes>=3.0.0", "tomli>=2.0.1;python_version<'3.11'"]
 dynamic = ["version"]
 
