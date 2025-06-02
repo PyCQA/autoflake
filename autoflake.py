@@ -534,7 +534,6 @@ def break_up_import(line: str) -> str:
     if len(parts) == 2:
         indentation, imports = parts
     else:
-        # Eğer split işlemi beklenen şekilde çalışmazsa
         indentation = ''
         imports = line.replace('\r', '')
 
