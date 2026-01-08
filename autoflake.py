@@ -495,7 +495,7 @@ def filter_from_import(line: str, unused_module: Iterable[str]) -> str:
     """
     (indentation, imports) = re.split(
         pattern=r"\bimport\b",
-        string=line,
+        string=line.replace('\r', ''), 
         maxsplit=1,
     )
     match = re.search(
@@ -530,11 +530,13 @@ def break_up_import(line: str) -> str:
     if not newline:
         return line
 
-    (indentation, imports) = re.split(
-        pattern=r"\bimport\b",
-        string=line,
-        maxsplit=1,
-    )
+    parts = re.split(r"\bimport\b", line.replace('\r', ''), maxsplit=1)
+    if len(parts) == 2:
+        indentation, imports = parts
+    else:
+        indentation = ''
+        imports = line.replace('\r', '')
+
 
     indentation += "import "
     assert newline
@@ -575,8 +577,8 @@ def filter_code(
     undefined_names: list[str] = []
     if expand_star_imports and not (
         # See explanations in #18.
-        re.search(r"\b__all__\b", source)
-        or re.search(r"\bdel\b", source)
+        re.search(r"\b__all__\b", source.replace('\r', ''))
+        or re.search(r"\bdel\b", source.replace('\r', ''))
     ):
         marked_star_import_line_numbers = frozenset(
             star_import_used_line_numbers(messages),
