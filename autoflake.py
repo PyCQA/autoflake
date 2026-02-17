@@ -261,7 +261,10 @@ def extract_package_name(line: str) -> str | None:
     assert ";" not in line
 
     if line.lstrip().startswith(("import", "from")):
-        word = line.split()[1]
+        parts = line.split()
+        if len(parts) < 2:
+            return None
+        word = parts[1]
     else:
         # Ignore doctests.
         return None

@@ -79,6 +79,9 @@ class UnitTests(unittest.TestCase):
             autoflake.extract_package_name("import os.path"),
         )
 
+    def test_extract_package_name_with_incomplete_import(self) -> None:
+        self.assertIsNone(autoflake.extract_package_name("import"))
+
     def test_extract_package_name_should_ignore_doctest_for_now(self) -> None:
         self.assertFalse(autoflake.extract_package_name(">>> import os"))
 
@@ -979,6 +982,10 @@ def z() -> None:
             "",
             autoflake.fix_code(""),
         )
+
+    def test_fix_code_with_carriage_return_in_import(self) -> None:
+        """Should not crash on import lines corrupted by carriage returns."""
+        autoflake.fix_code("import t\rs\nimport test\nimport0")
 
     def test_fix_code_with_from_and_as_and_escaped_newline(self) -> None:
         """Make sure stuff after escaped newline is not lost."""
