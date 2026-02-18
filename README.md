@@ -206,7 +206,7 @@ Add the following to your `.pre-commit-config.yaml`
 
 ```yaml
 -   repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.1
+    rev: v2.3.2
     hooks:
     -   id: autoflake
 ```
@@ -216,7 +216,7 @@ of arguments:
 
 ```yaml
 -   repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.1
+    rev: v2.3.2
     hooks:
     -   id: autoflake
         args: [--remove-all-unused-imports, --in-place]
