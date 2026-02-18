@@ -1860,6 +1860,11 @@ def func11() -> None:
         self.assertFalse(autoflake.is_literal_or_name("xyz.prop"))
         self.assertFalse(autoflake.is_literal_or_name(" "))
 
+    def test_is_literal_or_name_with_unhashable_types(self) -> None:
+        """Should not crash on set literals containing unhashable types."""
+        self.assertFalse(autoflake.is_literal_or_name("{{}}"))
+        self.assertFalse(autoflake.is_literal_or_name("{[]}"))
+
     def test_is_python_file(self) -> None:
         self.assertTrue(
             autoflake.is_python_file(

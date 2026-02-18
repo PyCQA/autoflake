@@ -787,7 +787,7 @@ def is_literal_or_name(value: str) -> bool:
     try:
         ast.literal_eval(value)
         return True
-    except (SyntaxError, ValueError):
+    except (SyntaxError, TypeError, ValueError):
         pass
 
     if value.strip() in ["dict()", "list()", "set()"]:
