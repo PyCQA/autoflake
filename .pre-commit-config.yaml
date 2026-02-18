@@ -1,13 +1,13 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
   - repo: https://github.com/asottile/reorder-python-imports
-    rev: v3.13.0
+    rev: v3.16.0
     hooks:
       - id: reorder-python-imports
         args:
@@ -16,26 +16,26 @@ repos:
           - from __future__ import annotations
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.17.0
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args:
-          - --py39-plus
+          - --py310-plus
 
   - repo: https://github.com/asottile/add-trailing-comma
-    rev: v3.1.0
+    rev: v4.0.0
     hooks:
       - id: add-trailing-comma
         args:
           - --py36-plus
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.19
+    rev: v0.25
     hooks:
       - id: validate-pyproject
 
   - repo: https://github.com/psf/black
-    rev: "24.8.0"
+    rev: "26.1.0"
     hooks:
       - id: black
 
@@ -45,6 +45,6 @@ repos:
       - id: autoflake
 
   - repo: https://github.com/fsouza/mirrors-pyright
-    rev: v1.1.381
+    rev: v1.1.275
     hooks:
       - id: pyright
