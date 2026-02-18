@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-python@v6.1.0
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-python@v6.1.0
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: 3.x
 
@@ -61,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-python@v6.1.0
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: 3.x
 
