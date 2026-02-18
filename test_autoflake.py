@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Test suite for autoflake."""
+
 from __future__ import annotations
 
 import contextlib
@@ -18,7 +19,6 @@ from collections.abc import Sequence
 from typing import Any
 
 import autoflake
-
 
 ROOT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 

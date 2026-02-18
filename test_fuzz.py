@@ -5,6 +5,7 @@ This checks that autoflake never introduces incorrect syntax. This is
 done by doing a syntax check after the autoflake run. The number of
 Pyflakes warnings is also confirmed to always improve.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -15,7 +16,6 @@ import sys
 from collections.abc import Sequence
 
 import autoflake
-
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 AUTOFLAKE_BIN = "'{}' '{}'".format(

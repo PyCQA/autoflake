@@ -20,6 +20,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """Removes unused imports and unused variables as reported by pyflakes."""
+
 from __future__ import annotations
 
 import ast
@@ -41,14 +42,13 @@ from collections.abc import Mapping
 from collections.abc import MutableMapping
 from collections.abc import Sequence
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 from typing import cast
 from typing import IO
 
 import pyflakes.api
 import pyflakes.messages
 import pyflakes.reporter
-
 
 __version__ = "2.3.1"
 
@@ -496,7 +496,7 @@ def filter_from_import(line: str, unused_module: Iterable[str]) -> str:
     Return line without unused import modules, or `pass` if all of the
     module in import is unused.
     """
-    (indentation, imports) = re.split(
+    indentation, imports = re.split(
         pattern=r"\bimport\b",
         string=line,
         maxsplit=1,
@@ -533,7 +533,7 @@ def break_up_import(line: str) -> str:
     if not newline:
         return line
 
-    (indentation, imports) = re.split(
+    indentation, imports = re.split(
         pattern=r"\bimport\b",
         string=line,
         maxsplit=1,
