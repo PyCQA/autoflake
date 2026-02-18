@@ -37,12 +37,12 @@ import string
 import sys
 import sysconfig
 import tokenize
+from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import MutableMapping
 from collections.abc import Sequence
 from typing import Any
-from collections.abc import Callable
 from typing import cast
 from typing import IO
 
@@ -578,8 +578,7 @@ def filter_code(
     undefined_names: list[str] = []
     if expand_star_imports and not (
         # See explanations in #18.
-        re.search(r"\b__all__\b", source)
-        or re.search(r"\bdel\b", source)
+        re.search(r"\b__all__\b", source) or re.search(r"\bdel\b", source)
     ):
         marked_star_import_line_numbers = frozenset(
             star_import_used_line_numbers(messages),
@@ -1386,7 +1385,7 @@ def _main(
     imports_group.add_argument(
         "--remove-all-unused-imports",
         action="store_true",
-        help="remove all unused imports (not just those from " "the standard library)",
+        help="remove all unused imports (not just those from the standard library)",
     )
 
     parser.add_argument(
@@ -1401,12 +1400,12 @@ def _main(
         type=int,
         metavar="n",
         default=0,
-        help="number of parallel jobs; " "match CPU count if value is 0 (default: 0)",
+        help="number of parallel jobs; match CPU count if value is 0 (default: 0)",
     )
     parser.add_argument(
         "--exclude",
         metavar="globs",
-        help="exclude file/directory names that match these " "comma-separated globs",
+        help="exclude file/directory names that match these comma-separated globs",
     )
     parser.add_argument(
         "--expand-star-imports",
@@ -1420,7 +1419,7 @@ def _main(
     parser.add_argument(
         "--ignore-init-module-imports",
         action="store_true",
-        help="exclude __init__.py when removing unused " "imports",
+        help="exclude __init__.py when removing unused imports",
     )
     parser.add_argument(
         "--remove-duplicate-keys",
@@ -1435,7 +1434,7 @@ def _main(
     parser.add_argument(
         "--remove-rhs-for-unused-variables",
         action="store_true",
-        help="remove RHS of statements when removing unused " "variables (unsafe)",
+        help="remove RHS of statements when removing unused variables (unsafe)",
     )
     parser.add_argument(
         "--ignore-pass-statements",
@@ -1463,7 +1462,7 @@ def _main(
         action="count",
         dest="verbosity",
         default=0,
-        help="print more verbose logs (you can " "repeat `-v` to make it more verbose)",
+        help="print more verbose logs (you can repeat `-v` to make it more verbose)",
     )
     parser.add_argument(
         "--stdin-display-name",
@@ -1518,8 +1517,9 @@ def _main(
     if not success:
         return 1
 
-    if args["remove_rhs_for_unused_variables"] and not (
-        args["remove_unused_variables"]
+    if (
+        args["remove_rhs_for_unused_variables"]
+        and not (args["remove_unused_variables"])
     ):
         _LOGGER.error(
             "Using --remove-rhs-for-unused-variables only makes sense when "

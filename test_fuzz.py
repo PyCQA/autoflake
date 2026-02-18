@@ -161,7 +161,7 @@ def process_args() -> argparse.Namespace:
     parser.add_argument(
         "--expand-star-imports",
         action="store_true",
-        help="expand wildcard star imports with undefined " "names",
+        help="expand wildcard star imports with undefined names",
     )
 
     parser.add_argument(
@@ -172,19 +172,19 @@ def process_args() -> argparse.Namespace:
     parser.add_argument(
         "--remove-all-unused-imports",
         action="store_true",
-        help='pass "--remove-all-unused-imports" option to ' "autoflake",
+        help='pass "--remove-all-unused-imports" option to autoflake',
     )
 
     parser.add_argument(
         "--remove-duplicate-keys",
         action="store_true",
-        help='pass "--remove-duplicate-keys" option to ' "autoflake",
+        help='pass "--remove-duplicate-keys" option to autoflake',
     )
 
     parser.add_argument(
         "--remove-unused-variables",
         action="store_true",
-        help='pass "--remove-unused-variables" option to ' "autoflake",
+        help='pass "--remove-unused-variables" option to autoflake',
     )
 
     parser.add_argument(

@@ -2768,7 +2768,7 @@ class MultilineFromImportTests(unittest.TestCase):
 
         # "Multiline" imports that are not really multiline
         filt = autoflake.FilterMultilineImport(
-            "import os; " "import math, subprocess",
+            "import os; import math, subprocess",
         )
         self.assertTrue(filt.is_over())
 
@@ -2841,7 +2841,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib1, lib2, lib3, \\\n",
                 "    lib4, lib5, lib6\n",
             ],
-            "from third_party import \\\n" "    lib2, lib5, lib6\n",
+            "from third_party import \\\n    lib2, lib5, lib6\n",
         )
 
         # Example m3 (isort)
@@ -2855,7 +2855,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib5\n",
                 ")\n",
             ],
-            "from third_party import (\n" "    lib2,\n" "    lib5\n" ")\n",
+            "from third_party import (\n    lib2,\n    lib5\n)\n",
         )
 
         # Example m4 (isort)
@@ -2865,7 +2865,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib1, lib2, lib3, lib4,\n",
                 "    lib5, lib6)\n",
             ],
-            "from third_party import (\n" "    lib2, lib5, lib6)\n",
+            "from third_party import (\n    lib2, lib5, lib6)\n",
         )
 
         # Example m5 (isort)
@@ -2876,7 +2876,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib5, lib6\n",
                 ")\n",
             ],
-            "from third_party import (\n" "    lib2, lib5, lib6\n" ")\n",
+            "from third_party import (\n    lib2, lib5, lib6\n)\n",
         )
 
         # Some Deviations
@@ -2892,11 +2892,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib4,\n",  # unused import with comment
                 ")\n",
             ],
-            "from third_party import (\n"
-            "    lib2\\\n"
-            "    ,libA, \n"
-            "    libB,\n"
-            ")\n",
+            "from third_party import (\n    lib2\\\n    ,libA, \n    libB,\n)\n",
         )
 
         self.assert_fix(
@@ -2913,7 +2909,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib5\n",
                 ")\n",
             ],
-            "from third_party import (\n" "    lib2\n" ",\n" "    lib5\n" ")\n",
+            "from third_party import (\n    lib2\n,\n    lib5\n)\n",
         )
 
         self.assert_fix(
@@ -2930,11 +2926,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib5 \\\n",
                 ")\n",
             ],
-            "from third_party import (\n"
-            "    lib2 \\\n"
-            ", \\\n"
-            "    lib5 \\\n"
-            ")\n",
+            "from third_party import (\n    lib2 \\\n, \\\n    lib5 \\\n)\n",
         )
 
     def test_indentation(self) -> None:
@@ -2947,7 +2939,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib5, lib6\n",
                 ")\n",
             ],
-            "    from third_party import (\n" "            lib2, lib5, lib6\n" ")\n",
+            "    from third_party import (\n            lib2, lib5, lib6\n)\n",
         )
         self.assert_fix(
             [
@@ -2955,7 +2947,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "\t\tlib1, lib2, lib3, \\\n",
                 "\t\tlib4, lib5, lib6\n",
             ],
-            "\tfrom third_party import \\\n" "\t\tlib2, lib5, lib6\n",
+            "\tfrom third_party import \\\n\t\tlib2, lib5, lib6\n",
         )
 
     def test_fix_relative(self) -> None:
@@ -2980,9 +2972,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "                lib5,\n",
                 "                lib6)\n",
             ],
-            "from .. import (lib2,\n"
-            "                lib5,\n"
-            "                lib6)\n",
+            "from .. import (lib2,\n                lib5,\n                lib6)\n",
         )
 
         # Example m2 (isort)
@@ -2993,7 +2983,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib1, lib2, lib3, \\\n",
                 "    lib4, lib5, lib6\n",
             ],
-            "from ... import \\\n" "    lib2, lib5, lib6\n",
+            "from ... import \\\n    lib2, lib5, lib6\n",
         )
 
         # Example m3 (isort)
@@ -3008,7 +2998,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib5\n",
                 ")\n",
             ],
-            "from .parent import (\n" "    lib2,\n" "    lib5\n" ")\n",
+            "from .parent import (\n    lib2,\n    lib5\n)\n",
         )
 
     def test_fix_without_from(self) -> None:
@@ -3021,7 +3011,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib1, lib2, lib3 \\\n",
                 "    ,lib4, lib5, lib6\n",
             ],
-            "import \\\n" "    lib2, lib5, lib6\n",
+            "import \\\n    lib2, lib5, lib6\n",
         )
         self.assert_fix(
             [
@@ -3044,7 +3034,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib4\\\n",  # unused import with comment
                 "\n",
             ],
-            "import \\\n" "    lib2,\\\n" "    libA, \\\n" "    libB\\\n" "\n",
+            "import \\\n    lib2,\\\n    libA, \\\n    libB\\\n\n",
         )
 
         self.unused = [f"lib{x}.x.y.z" for x in (1, 3, 4)]
@@ -3061,7 +3051,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    , \\\n",
                 "    lib5.x.y.z\n",
             ],
-            "import \\\n" "    lib2.x.y.z \\" "    , \\\n" "    lib5.x.y.z\n",
+            "import \\\n    lib2.x.y.z \\    , \\\n    lib5.x.y.z\n",
         )
 
     def test_give_up(self) -> None:
@@ -3073,7 +3063,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib1, lib2, lib3, \\\n",
                 "    lib4, lib5; import lib6\n",
             ],
-            "import \\\n" "    lib1, lib2, lib3, \\\n" "    lib4, lib5; import lib6\n",
+            "import \\\n    lib1, lib2, lib3, \\\n    lib4, lib5; import lib6\n",
         )
         # Comments
         self.unused = [".lib" + str(x) for x in (1, 3, 4)]
@@ -3107,7 +3097,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "import \\\n",
                 "    lib1\n",
             ],
-            "import \\\n" "    lib1\n",
+            "import \\\n    lib1\n",
         )
         self.assert_fix(
             [
@@ -3135,7 +3125,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "        log\n",
                 "    )\n",
             ],
-            "from math import (\n" "        log\n" "    )\n",
+            "from math import (\n        log\n    )\n",
         )
         self.unused = ["module.b"]
         self.assert_fix(
@@ -3192,7 +3182,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib3,\\\n",
                 "    lib4\n",
             ],
-            "import \\\n" "    lib1,\\\n" "    lib3,\\\n" "    lib4\n",
+            "import \\\n    lib1,\\\n    lib3,\\\n    lib4\n",
             remove_all=False,
         )
 
@@ -3215,7 +3205,7 @@ class MultilineFromImportTests(unittest.TestCase):
                 "    lib1, \\\n",
                 "    lib3\n",
             ],
-            "import \\\n" "    lib1, \\\n" "    lib3\n",
+            "import \\\n    lib1, \\\n    lib3\n",
             remove_all=False,
         )
 
@@ -3424,7 +3414,7 @@ class ConfigFileTest(unittest.TestCase):
     def test_config_option(self) -> None:
         with temporary_file(
             suffix=".ini",
-            contents=("[autoflake]\n" "check = True\n"),
+            contents=("[autoflake]\ncheck = True\n"),
         ) as temp_config:
             self.create_file("test_me.py")
             files = [self.effective_path("test_me.py")]
@@ -3445,7 +3435,7 @@ class ConfigFileTest(unittest.TestCase):
     def test_merge_configuration_file__toml_config_option(self) -> None:
         with temporary_file(
             suffix=".toml",
-            contents=("[tool.autoflake]\n" "check = true\n"),
+            contents=("[tool.autoflake]\ncheck = true\n"),
         ) as temp_config:
             self.create_file("test_me.py")
             files = [self.effective_path("test_me.py")]
