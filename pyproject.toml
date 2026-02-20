@@ -5,7 +5,8 @@ build-backend = "hatchling.build"
 [project]
 name = "autoflake"
 description = "Removes unused imports and unused variables"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 classifiers = [
   "Environment :: Console",
   "Intended Audience :: Developers",
@@ -34,5 +35,5 @@ path = "autoflake.py"
 exclude = ["/.github"]
 
 [tool.hatch.build]
-include = ["/autoflake.py", "/test_autoflake.py", "/LICENSE", "/README.md"]
+include = ["/autoflake.py"]
 exclude = ["/.gitignore"]
