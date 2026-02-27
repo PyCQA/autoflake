@@ -21,7 +21,7 @@ jobs:
 
       - run: python -m build --wheel --sdist
 
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.0
         with:
           name: release-dists
           path: dist/
