@@ -533,12 +533,17 @@ def break_up_import(line: str) -> str:
     if not newline:
         return line
 
-    indentation, imports = re.split(
+    parts = re.split(
         pattern=r"\bimport\b",
         string=line,
         maxsplit=1,
     )
 
+    if len(parts) != 2:
+        # No 'import' keyword found (e.g., a continuation line with \r line endings)
+        return line
+
+    indentation, imports = parts
     indentation += "import "
     assert newline
 

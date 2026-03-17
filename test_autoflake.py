@@ -3619,3 +3619,23 @@ class StubFile:
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCarriageReturnInImport(unittest.TestCase):
+    """Tests for fix of crash with carriage return in multiline import (issue #326)."""
+
+    def test_carriage_return_in_multiline_parenthesized_import(self):
+        """Should not crash when a line within parenthesized import starts with \r."""
+        source = (
+            "from t import (\n"
+            "\r  a,\n"
+            "    b,\n"
+            ")\n"
+            "from t import (\n"
+            "    a,\n"
+            "    b,\n"
+            ")\n"
+        )
+        # Should not raise ValueError
+        result = autoflake.fix_code(source, remove_all_unused_imports=True)
+        self.assertIsNotNone(result)
