@@ -68,6 +68,13 @@ IGNORE_COMMENT_REGEX = re.compile(
     re.MULTILINE,
 )
 
+# Internal sentinel appended to ``pass`` statements that autoflake inserts in
+# place of removed imports.  It lets ``filter_useless_pass`` unconditionally
+# strip those lines even when the caller has set ``ignore_pass_statements=True``
+# (issue #206).  The string is intentionally long and distinctive so it will
+# never clash with user-written comments.
+_AUTOFLAKE_PASS_SENTINEL = "  # _autoflake_import_pass_"
+
 
 def standard_paths() -> Iterable[str]:
     """Yield paths to standard modules."""
@@ -382,6 +389,7 @@ class FilterMultilineImport(PendingFix):
         remove_all_unused_imports: bool = False,
         safe_to_remove: Iterable[str] = SAFE_IMPORTS,
         previous_line: str = "",
+        pass_sentinel: str = "",
     ):
         """Receive the same parameters as ``filter_unused_import``."""
         self.remove: Iterable[str] = unused_module
@@ -390,6 +398,7 @@ class FilterMultilineImport(PendingFix):
         match = self.BASE_RE.search(self.from_)
         self.base = match.group(1) if match else None
         self.give_up: bool = False
+        self._pass_sentinel: str = pass_sentinel
 
         if not remove_all_unused_imports:
             if self.base and _top_module(self.base) not in safe_to_remove:
@@ -458,7 +467,7 @@ class FilterMultilineImport(PendingFix):
             match = self.INDENTATION_RE.search(self.from_)
             assert match is not None
             indentation = match.group(0)
-            return indentation + "pass" + ending
+            return indentation + "pass" + self._pass_sentinel + ending
 
         return self.from_ + "import " + fixed
 
@@ -490,7 +499,11 @@ def _filter_imports(
     return [x for x in imports if full_name(x) not in unused_module]
 
 
-def filter_from_import(line: str, unused_module: Iterable[str]) -> str:
+def filter_from_import(
+    line: str,
+    unused_module: Iterable[str],
+    pass_sentinel: str = "",
+) -> str:
     """Parse and filter ``from something import a, b, c``.
 
     Return line without unused import modules, or `pass` if all of the
@@ -513,7 +526,12 @@ def filter_from_import(line: str, unused_module: Iterable[str]) -> str:
 
     # All of the import in this statement is unused
     if not filtered_imports:
-        return get_indentation(line) + "pass" + get_line_ending(line)
+        return (
+            get_indentation(line)
+            + "pass"
+            + pass_sentinel
+            + get_line_ending(line)
+        )
 
     indentation += "import "
 
@@ -556,6 +574,7 @@ def filter_code(
     remove_unused_variables: bool = False,
     remove_rhs_for_unused_variables: bool = False,
     ignore_init_module_imports: bool = False,
+    pass_sentinel: str = "",
 ) -> Iterable[str]:
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
@@ -627,6 +646,7 @@ def filter_code(
                 remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
                 previous_line=previous_line,
+                pass_sentinel=pass_sentinel,
             )
         elif line_number in marked_variable_line_numbers:
             result = filter_unused_variable(
@@ -677,6 +697,7 @@ def filter_unused_import(
     remove_all_unused_imports: bool,
     imports: Iterable[str],
     previous_line: str = "",
+    pass_sentinel: str = "",
 ) -> PendingFix | str:
     """Return line if used, otherwise return None."""
     # Ignore doctests.
@@ -690,6 +711,7 @@ def filter_unused_import(
             remove_all_unused_imports,
             imports,
             previous_line,
+            pass_sentinel=pass_sentinel,
         )
         return filt()
 
@@ -704,13 +726,18 @@ def filter_unused_import(
 
     if "," in line:
         assert is_from_import
-        return filter_from_import(line, unused_module)
+        return filter_from_import(line, unused_module, pass_sentinel=pass_sentinel)
     else:
         # We need to replace import with "pass" in case the import is the
         # only line inside a block. For example,
         # "if True:\n    import os". In such cases, if the import is
         # removed, the block will be left hanging with no body.
-        return get_indentation(line) + "pass" + get_line_ending(line)
+        return (
+            get_indentation(line)
+            + "pass"
+            + pass_sentinel
+            + get_line_ending(line)
+        )
 
 
 def filter_unused_variable(
@@ -859,22 +886,48 @@ def filter_useless_pass(
     ignore_pass_after_docstring: bool = False,
 ) -> Iterable[str]:
     """Yield code with useless "pass" lines removed."""
+    # Determine which passes are "useless" by analysing the source with
+    # sentinel comments stripped.  This way the tokeniser sees plain ``pass``
+    # statements so that ``useless_pass_line_numbers`` works correctly even
+    # for autoflake-inserted sentinel passes.  Line numbers are preserved
+    # because we only remove characters within a line, never whole lines.
+    sentinel_stripped = source.replace(_AUTOFLAKE_PASS_SENTINEL, "")
+    try:
+        all_useless_lines: frozenset[int] = frozenset(
+            useless_pass_line_numbers(
+                sentinel_stripped,
+                ignore_pass_after_docstring,
+            ),
+        )
+    except (SyntaxError, tokenize.TokenError):
+        all_useless_lines = frozenset()
+
     if ignore_pass_statements:
-        marked_lines: frozenset[int] = frozenset()
+        # When the caller wants to preserve user-written ``pass`` statements,
+        # only remove passes that:
+        #   1. were inserted by autoflake itself (identified by the sentinel), AND
+        #   2. are now useless (i.e. the block already has other content).
+        # Needed autoflake-inserted passes (sole body of a block) are kept, but
+        # with the sentinel comment stripped.  See issue #206.
+        source_lines = source.splitlines(keepends=True)
+        marked_lines: frozenset[int] = frozenset(
+            ln
+            for ln in all_useless_lines
+            if _AUTOFLAKE_PASS_SENTINEL in source_lines[ln - 1]
+        )
     else:
-        try:
-            marked_lines = frozenset(
-                useless_pass_line_numbers(
-                    source,
-                    ignore_pass_after_docstring,
-                ),
-            )
-        except (SyntaxError, tokenize.TokenError):
-            marked_lines = frozenset()
+        marked_lines = all_useless_lines
 
     sio = io.StringIO(source)
     for line_number, line in enumerate(sio.readlines(), start=1):
-        if line_number not in marked_lines:
+        if line_number in marked_lines:
+            continue
+        # Strip the autoflake sentinel comment from passes that are *kept*
+        # (e.g. a pass that is the only statement in a block) so that the
+        # sentinel never appears in the final output.
+        if _AUTOFLAKE_PASS_SENTINEL in line:
+            yield line.replace(_AUTOFLAKE_PASS_SENTINEL, "")
+        else:
             yield line
 
 
@@ -935,6 +988,7 @@ def fix_code(
                             remove_rhs_for_unused_variables
                         ),
                         ignore_init_module_imports=ignore_init_module_imports,
+                        pass_sentinel=_AUTOFLAKE_PASS_SENTINEL,
                     ),
                 ),
                 ignore_pass_statements=ignore_pass_statements,
