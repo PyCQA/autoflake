@@ -1462,6 +1462,51 @@ print(a)
             ),
         )
 
+    def test_fix_code_removes_autoflake_pass_with_ignore_pass_statements(
+        self,
+    ) -> None:
+        """Regression test for issue #206.
+
+        When ``ignore_pass_statements=True``, autoflake-inserted ``pass``
+        statements (used as placeholders to keep block structure valid while
+        removing an import) must still be removed from the output.  Only
+        user-written ``pass`` statements should be preserved.
+        """
+        self.assertEqual(
+            """\
+
+print("hello")
+""",
+            autoflake.fix_code(
+                """\
+import os
+
+print("hello")
+""",
+                ignore_pass_statements=True,
+            ),
+        )
+
+    def test_fix_code_keeps_necessary_pass_with_ignore_pass_statements(
+        self,
+    ) -> None:
+        """Autoflake-inserted ``pass`` in a block that has no other body must
+        be kept even with ``ignore_pass_statements=True``.
+        """
+        self.assertEqual(
+            """\
+if True:
+    pass
+""",
+            autoflake.fix_code(
+                """\
+if True:
+    import os
+""",
+                ignore_pass_statements=True,
+            ),
+        )
+
     def test_fix_code_keeps_passes_after_docstrings(self) -> None:
         actual = autoflake.fix_code(
             """\
