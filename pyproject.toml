@@ -14,6 +14,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Topic :: Software Development :: Quality Assurance",
+  "Typing :: Typed",
 ]
 keywords = ["clean", "fix", "automatic", "unused", "import"]
 urls = { Homepage = "https://www.github.com/PyCQA/autoflake" }
