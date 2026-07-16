@@ -717,6 +717,29 @@ isdir('42')
             ),
         )
 
+    def test_filter_code_backslash_continuation_import_on_second_line(
+        self,
+    ) -> None:
+        """Backslash-continuation where 'import' appears on the second line.
+
+        ``from X \\<newline>    import A, B`` is a valid Python multiline
+        import.  autoflake used to crash with ``ValueError: not enough values
+        to unpack`` because the regex split expected ``import`` on the first
+        line.  The statement must be passed through unchanged (give_up path).
+        """
+        source = "".join(
+            [
+                "from ci.zimbeast.test_scripts.framework.test_interrupt.seq_lib \\\n",
+                "    import IntTestSequence, send_int\n",
+                "\n",
+                "x = send_int(1)\n",
+            ]
+        )
+        self.assertEqual(
+            source,
+            "".join(autoflake.filter_code(source, remove_all_unused_imports=True)),
+        )
+
     def test_filter_code_should_ignore_semicolons(self) -> None:
         self.assertEqual(
             r"""\
