@@ -496,11 +496,16 @@ def filter_from_import(line: str, unused_module: Iterable[str]) -> str:
     Return line without unused import modules, or `pass` if all of the
     module in import is unused.
     """
-    indentation, imports = re.split(
+    parts = re.split(
         pattern=r"\bimport\b",
         string=line,
         maxsplit=1,
     )
+    if len(parts) != 2:
+        # No 'import' keyword found — line-number mismatch caused by \r
+        # in source (splitlines vs readlines differ); return unchanged.
+        return line
+    indentation, imports = parts
     match = re.search(
         pattern=r"\bfrom\s+([^ ]+)",
         string=indentation,
