@@ -211,8 +211,6 @@ def _module_referenced_in_source(
     For a dotted name like ``os.path`` this checks whether ``os.path``
     appears as a chain of :class:`ast.Attribute` accesses in the tree.
     """
-    parts = module_name.split(".")
-
     for node in ast.walk(tree):
         if isinstance(node, ast.Attribute):
             # Walk up the attribute chain to reconstruct the full name.
