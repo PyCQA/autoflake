@@ -144,6 +144,91 @@ def unused_import_module_name(
                 yield (message.lineno, module_name)
 
 
+def _find_redundant_submodule_imports(
+    source: str,
+) -> set[int]:
+    """Return line numbers of submodule imports that are redundant.
+
+    A submodule import like ``import os.path`` is redundant when the parent
+    module ``os`` is also imported separately and the submodule name is never
+    explicitly referenced in the source (e.g. ``os.path`` does not appear as
+    an attribute access).
+
+    Pyflakes does not flag these because ``import os.path`` also binds the
+    name ``os``, so both imports appear "used" when ``os`` is referenced.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return set()
+
+    # Collect all imports grouped by top-level module.
+    # direct_imports[top] = [(full_name, lineno), ...]
+    direct_imports: dict[str, list[tuple[str, int]]] = {}
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                # Skip aliased imports (import X.Y as Z) — they bind a
+                # different name and are correctly handled by pyflakes.
+                if alias.asname is not None:
+                    continue
+                parts = alias.name.split(".")
+                top = parts[0]
+                if top not in direct_imports:
+                    direct_imports[top] = []
+                direct_imports[top].append((alias.name, node.lineno))
+
+    redundant: set[int] = set()
+
+    for top, imports in direct_imports.items():
+        # Separate submodule imports (import X.Y) from plain imports (import X)
+        sub_imports = [
+            (name, lineno) for name, lineno in imports if "." in name
+        ]
+        plain_imports = [
+            (name, lineno) for name, lineno in imports if "." not in name
+        ]
+
+        if not sub_imports or not plain_imports:
+            continue
+
+        # For each submodule import, check whether the submodule name
+        # is explicitly referenced as an attribute anywhere in the code.
+        for sub_name, sub_lineno in sub_imports:
+            if not _module_referenced_in_source(tree, sub_name):
+                redundant.add(sub_lineno)
+
+    return redundant
+
+
+def _module_referenced_in_source(
+    tree: ast.Module,
+    module_name: str,
+) -> bool:
+    """Return True if *module_name* is referenced in the AST.
+
+    For a dotted name like ``os.path`` this checks whether ``os.path``
+    appears as a chain of :class:`ast.Attribute` accesses in the tree.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute):
+            # Walk up the attribute chain to reconstruct the full name.
+            chain: list[str] = []
+            n: ast.expr = node
+            while isinstance(n, ast.Attribute):
+                chain.append(n.attr)
+                n = n.value
+            if isinstance(n, ast.Name):
+                chain.append(n.id)
+            chain.reverse()
+            full = ".".join(chain)
+            if full == module_name or full.startswith(module_name + "."):
+                return True
+
+    return False
+
+
 def star_import_used_line_numbers(
     messages: Iterable[pyflakes.messages.Message],
 ) -> Iterable[int]:
@@ -567,13 +652,33 @@ def filter_code(
 
     if ignore_init_module_imports:
         marked_import_line_numbers: frozenset[int] = frozenset()
+        redundant_submodules: set[int] = set()
     else:
+        pyflakes_unused = set(unused_import_line_numbers(messages))
+        # Also detect submodule imports (import X.Y) that are redundant
+        # because the parent module is imported separately and the
+        # submodule is never explicitly referenced.  Pyflakes does not
+        # flag these because import X.Y also binds the name X.
+        redundant_submodules = _find_redundant_submodule_imports(source)
         marked_import_line_numbers = frozenset(
-            unused_import_line_numbers(messages),
+            pyflakes_unused | redundant_submodules,
         )
     marked_unused_module: dict[int, list[str]] = collections.defaultdict(list)
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
+    # Add module names for redundant submodule imports so that
+    # filter_unused_import can use them when deciding what to remove.
+    for line_number in redundant_submodules:
+        if line_number not in marked_unused_module:
+            # Get the full-name from the source line if needed.
+            lines = source.splitlines()
+            idx = line_number - 1
+            if 0 <= idx < len(lines):
+                parts = lines[idx].split()
+                if len(parts) >= 2 and parts[0] == "import":
+                    marked_unused_module[line_number].append(
+                        parts[1].split(",")[0].strip(),
+                    )
 
     undefined_names: list[str] = []
     if expand_star_imports and not (
