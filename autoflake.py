@@ -101,6 +101,12 @@ def standard_package_names() -> Iterable[str]:
 IMPORTS_WITH_SIDE_EFFECTS = {"antigravity", "rlcompleter", "this"}
 
 # In case they are built into CPython.
+#
+# ``standard_package_names()`` only discovers modules that have a file in the
+# standard library directory, so modules compiled into the interpreter (e.g.
+# ``itertools``) are invisible to it. ``sys.builtin_module_names`` reports them
+# for the running interpreter; the literals below cover builds where these are
+# extension modules on some platforms but not others.
 BINARY_IMPORTS = {
     "datetime",
     "grp",
@@ -115,7 +121,7 @@ BINARY_IMPORTS = {
     "os",
     "sys",
     "time",
-}
+} | set(sys.builtin_module_names)
 
 SAFE_IMPORTS = (
     frozenset(standard_package_names()) - IMPORTS_WITH_SIDE_EFFECTS | BINARY_IMPORTS
