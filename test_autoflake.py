@@ -38,6 +38,23 @@ class UnitTests(unittest.TestCase):
     def test_imports(self) -> None:
         self.assertGreater(len(autoflake.SAFE_IMPORTS), 0)
 
+    def test_imports_includes_builtin_modules(self) -> None:
+        """Modules compiled into the interpreter are safe to remove.
+
+        They have no file in the standard library directory, so
+        ``standard_package_names()`` cannot discover them.
+        """
+        for name in sys.builtin_module_names:
+            if name.startswith("_"):
+                continue
+            self.assertIn(name, autoflake.SAFE_IMPORTS)
+
+    def test_fix_code_removes_unused_builtin_module(self) -> None:
+        self.assertEqual(
+            "print(1)\n",
+            autoflake.fix_code("import itertools\nprint(1)\n"),
+        )
+
     def test_unused_import_line_numbers(self) -> None:
         self.assertEqual(
             [1],
