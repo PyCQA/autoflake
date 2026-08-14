@@ -824,14 +824,17 @@ def useless_pass_line_numbers(
 
         is_pass = token_type == tokenize.NAME and line.strip() == "pass"
 
-        # Leading "pass".
-        if (
-            start_row - 1 == last_pass_row
-            and get_indentation(line) == last_pass_indentation
-            and token_type in ATOMS
-            and not is_pass
-        ):
-            yield start_row - 1
+        # Leading "pass". The next real token may be separated from the
+        # pass by blank lines or comments, so resolve the pending pass on the
+        # first ATOM token instead of requiring an adjacent row.
+        if token_type in ATOMS and not is_pass:
+            if (
+                last_pass_row is not None
+                and get_indentation(line) == last_pass_indentation
+            ):
+                yield last_pass_row
+            last_pass_row = None
+            last_pass_indentation = None
 
         if is_pass:
             last_pass_row = start_row
