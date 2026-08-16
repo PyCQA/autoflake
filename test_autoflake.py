@@ -1063,6 +1063,71 @@ def main() -> None:
             ),
         )
 
+    def test_fix_code_with_unused_variables_followed_by_comment(self) -> None:
+        """See issue #82.
+
+        The assignment should be deleted outright rather than replaced
+        with "pass", since the block still contains a statement after it.
+        """
+        self.assertEqual(
+            """\
+def main() -> None:
+    # Harmless comment
+    print('Harmless print')
+""",
+            autoflake.fix_code(
+                """\
+def main() -> None:
+    unused_variable = 2020
+    # Harmless comment
+    print('Harmless print')
+""",
+                remove_unused_variables=True,
+            ),
+        )
+
+    def test_fix_code_with_unused_variables_followed_by_blank_line(self) -> None:
+        """See issue #82.
+
+        The assignment should be deleted outright rather than replaced
+        with "pass", since the block still contains a statement after it.
+        """
+        self.assertEqual(
+            """\
+def main() -> None:
+
+    print('Harmless print')
+""",
+            autoflake.fix_code(
+                """\
+def main() -> None:
+    unused_variable = 2020
+
+    print('Harmless print')
+""",
+                remove_unused_variables=True,
+            ),
+        )
+
+    def test_fix_code_with_unused_variables_as_sole_statement_in_block(
+        self,
+    ) -> None:
+        """The assignment is the only statement in the block, so it must be
+        replaced with "pass" rather than deleted outright."""
+        self.assertEqual(
+            """\
+def f() -> None:
+    pass
+""",
+            autoflake.fix_code(
+                """\
+def f() -> None:
+    x = 1
+""",
+                remove_unused_variables=True,
+            ),
+        )
+
     def test_fix_code_with_unused_variables_should_skip_nonlocal(self) -> None:
         """pyflakes does not handle nonlocal correctly."""
         code = """\
@@ -1550,6 +1615,38 @@ print(a)
             list(
                 autoflake.useless_pass_line_numbers(
                     "if True:\n    pass\n",
+                ),
+            ),
+        )
+
+    def test_useless_pass_line_numbers_with_comment_between(self) -> None:
+        """See issue #82."""
+        self.assertEqual(
+            [2],
+            list(
+                autoflake.useless_pass_line_numbers(
+                    """\
+if True:
+    pass
+    # comment
+    x = 1
+""",
+                ),
+            ),
+        )
+
+    def test_useless_pass_line_numbers_with_blank_line_between(self) -> None:
+        """See issue #82."""
+        self.assertEqual(
+            [2],
+            list(
+                autoflake.useless_pass_line_numbers(
+                    """\
+if True:
+    pass
+
+    x = 1
+""",
                 ),
             ),
         )
