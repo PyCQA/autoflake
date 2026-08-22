@@ -392,17 +392,7 @@ class FilterMultilineImport(PendingFix):
         """Receive the same parameters as ``filter_unused_import``."""
         self.remove: Iterable[str] = unused_module
         self.parenthesized: bool = "(" in line
-        split = self.IMPORT_RE.split(line, maxsplit=1)
-        if len(split) == 1:
-            # ``import`` is on a continuation line (e.g. ``from X \<newline>
-            #     import Y``).  Treat the whole first line as the ``from``
-            # fragment and leave imports empty; give_up ensures the statement
-            # is passed through unchanged.
-            self.from_, imports = line, ""
-            self.give_up_no_import_on_first_line: bool = True
-        else:
-            self.from_, imports = split
-            self.give_up_no_import_on_first_line = False
+        self.from_, imports = self.IMPORT_RE.split(line, maxsplit=1)
         match = self.BASE_RE.search(self.from_)
         self.base = match.group(1) if match else None
         self.give_up: bool = False
@@ -415,10 +405,6 @@ class FilterMultilineImport(PendingFix):
 
         if "\\" in previous_line:
             # Ignore tricky things like "try: \<new line> import" ...
-            self.give_up = True
-
-        if self.give_up_no_import_on_first_line:
-            # ``import`` is deferred to a continuation line; cannot filter.
             self.give_up = True
 
         self.analyze(line)
@@ -490,10 +476,6 @@ class FilterMultilineImport(PendingFix):
         if not self.is_over(line):
             return self
         if self.give_up:
-            if self.give_up_no_import_on_first_line:
-                # The ``import`` keyword was not on the first line; reconstruct
-                # verbatim without inserting a spurious ``import``.
-                return self.from_ + "".join(self.accumulator)
             return self.from_ + "import " + "".join(self.accumulator)
 
         return self.fix(self.accumulator)
@@ -708,6 +690,10 @@ def filter_unused_import(
         return line
 
     if multiline_import(line, previous_line):
+        if not FilterMultilineImport.IMPORT_RE.search(line):
+            # Ignore imports with the ``import`` keyword on a continuation
+            # line (e.g. ``from x \<newline> import y``).
+            return line
         filt = FilterMultilineImport(
             line,
             unused_module,
