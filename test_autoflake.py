@@ -870,6 +870,68 @@ def foo() -> None:
         finally:
             shutil.rmtree(temp_directory)
 
+    def test_split_lines(self) -> None:
+        self.assertEqual([], autoflake._split_lines(""))
+        self.assertEqual(["x = 1\n"], autoflake._split_lines("x = 1\n"))
+        self.assertEqual(
+            ["a\r\n", "b\r", "c\n", "d"],
+            autoflake._split_lines("a\r\nb\rc\nd"),
+        )
+        # Form feeds are whitespace to the tokenizer, not line
+        # terminators; make sure they do not split lines the way
+        # str.splitlines() would.
+        self.assertEqual(["a\fb\n"], autoflake._split_lines("a\fb\n"))
+
+    def test_fix_code_with_bare_carriage_return(self) -> None:
+        """See issue #326.
+
+        A bare CR ("\\r") counts as a line terminator for the tokenizer (and
+        thus for the line numbers pyflakes reports) but not for
+        io.StringIO readlines, which used to shift every marked line
+        after it and crash in break_up_import.
+        """
+        source = """\
+
+from t import (
+\r  a,
+    b,
+)
+from t import (
+    a,
+    b,
+)
+"""
+        self.assertEqual(source, autoflake.fix_code(source))
+
+    def test_fix_code_with_bare_carriage_return_should_not_shift_lines(
+        self,
+    ) -> None:
+        """See issue #326.
+
+        The line-number shift caused by a bare "\r" must not make
+        autoflake act on the wrong lines: "os" is used and must survive,
+        while the unused "sys" import must be removed.
+        """
+        self.assertEqual(
+            """\
+import os
+print(os.path)
+""",
+            "".join(
+                autoflake.fix_code(
+                    """\
+from t import (
+\r  a,
+)
+import sys
+import os
+print(os.path)
+""",
+                    remove_all_unused_imports=True,
+                ),
+            ),
+        )
+
     def test_fix_code(self) -> None:
         self.assertEqual(
             """\
