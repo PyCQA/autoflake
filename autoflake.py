@@ -37,14 +37,8 @@ import string
 import sys
 import sysconfig
 import tokenize
-from collections.abc import Callable
-from collections.abc import Iterable
-from collections.abc import Mapping
-from collections.abc import MutableMapping
-from collections.abc import Sequence
-from typing import Any
-from typing import cast
-from typing import IO
+from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
+from typing import IO, Any, cast
 
 import pyflakes.api
 import pyflakes.messages
@@ -390,7 +384,7 @@ class FilterMultilineImport(PendingFix):
     BASE_RE = re.compile(r"\bfrom\s+([^ ]+)")
     SEGMENT_RE = re.compile(
         r"([^,\s]+(?:[\s\\]+as[\s\\]+[^,\s]+)?[,\s\\)]*)",
-        re.M,
+        re.MULTILINE,
     )
     # ^ module + comma + following space (including new line and continuation)
     IDENTIFIER_RE = re.compile(r"[^,\s]+")

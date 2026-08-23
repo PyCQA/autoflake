@@ -13,9 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from collections.abc import Iterator
-from collections.abc import Mapping
-from collections.abc import Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
 import autoflake
@@ -2518,32 +2516,30 @@ except ImportError:
         self.assertFalse(output_file.getvalue())
 
     def test_ignore_hidden_directories(self) -> None:
-        with temporary_directory() as directory:
-            with temporary_directory(
-                prefix=".",
-                directory=directory,
-            ) as inner_directory:
-                with temporary_file(
-                    """\
+        with temporary_directory() as directory, temporary_directory(
+            prefix=".",
+            directory=directory,
+        ) as inner_directory, temporary_file(
+            """\
 import re
 import os
 """,
-                    directory=inner_directory,
-                ):
-                    output_file = io.StringIO()
-                    autoflake._main(
-                        argv=[
-                            "my_fake_program",
-                            "--recursive",
-                            directory,
-                        ],
-                        standard_out=output_file,
-                        standard_error=None,
-                    )
-                    self.assertEqual(
-                        "",
-                        output_file.getvalue().strip(),
-                    )
+            directory=inner_directory,
+        ):
+            output_file = io.StringIO()
+            autoflake._main(
+                argv=[
+                    "my_fake_program",
+                    "--recursive",
+                    directory,
+                ],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual(
+                "",
+                output_file.getvalue().strip(),
+            )
 
     def test_in_place_and_stdout(self) -> None:
         output_file = io.StringIO()
@@ -2593,28 +2589,27 @@ import re, os
 x = os.sep
 print(x)
 """,
-        ) as filename1:
-            with temporary_file(
-                """\
+        ) as filename1, temporary_file(
+            """\
 import os
 x = os.sep
 print(x)
 """,
-            ) as filename2:
-                process = subprocess.Popen(
-                    AUTOFLAKE_COMMAND
-                    + [
-                        "--imports=fake_foo,fake_bar",
-                        "--check",
-                        "--jobs=2",
-                        filename1,
-                        filename2,
-                    ],
-                    stdout=subprocess.PIPE,
-                )
+        ) as filename2:
+            process = subprocess.Popen(
+                AUTOFLAKE_COMMAND
+                + [
+                    "--imports=fake_foo,fake_bar",
+                    "--check",
+                    "--jobs=2",
+                    filename1,
+                    filename2,
+                ],
+                stdout=subprocess.PIPE,
+            )
 
-                status_code = process.wait()
-                self.assertEqual(1, status_code)
+            status_code = process.wait()
+            self.assertEqual(1, status_code)
 
     def test_end_to_end_with_remove_all_unused_imports(self) -> None:
         with temporary_file(
