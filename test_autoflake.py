@@ -742,13 +742,11 @@ isdir('42')
         to unpack`` because the regex split expected ``import`` on the first
         line.  The statement must be passed through unchanged (give_up path).
         """
-        source = "".join(
-            [
-                "from ci.zimbeast.test_scripts.framework.test_interrupt.seq_lib \\\n",
-                "    import IntTestSequence, send_int\n",
-                "\n",
-                "x = send_int(1)\n",
-            ]
+        source = (
+            "from ci.zimbeast.test_scripts.framework.test_interrupt.seq_lib \\\n"
+            "    import IntTestSequence, send_int\n"
+            "\n"
+            "x = send_int(1)\n"
         )
         self.assertEqual(
             source,
@@ -2342,22 +2340,24 @@ except ImportError:
             )
 
     def test_check_with_multiple_files(self) -> None:
-        with temporary_file("import sys") as file1:
-            with temporary_file("import sys") as file2:
-                output_file = io.StringIO()
-                exit_status = autoflake._main(
-                    argv=["my_fake_program", "--check", file1, file2],
-                    standard_out=output_file,
-                    standard_error=None,
-                )
-                self.assertEqual(exit_status, 1)
-                self.assertEqual(
-                    {
-                        f"{file1}: Unused imports/variables detected",
-                        f"{file2}: Unused imports/variables detected",
-                    },
-                    set(output_file.getvalue().strip().split(os.linesep)),
-                )
+        with (
+            temporary_file("import sys") as file1,
+            temporary_file("import sys") as file2,
+        ):
+            output_file = io.StringIO()
+            exit_status = autoflake._main(
+                argv=["my_fake_program", "--check", file1, file2],
+                standard_out=output_file,
+                standard_error=None,
+            )
+            self.assertEqual(exit_status, 1)
+            self.assertEqual(
+                {
+                    f"{file1}: Unused imports/variables detected",
+                    f"{file2}: Unused imports/variables detected",
+                },
+                set(output_file.getvalue().strip().split(os.linesep)),
+            )
 
     def test_check_diff_with_empty_file(self) -> None:
         line = ""
@@ -2516,15 +2516,19 @@ except ImportError:
         self.assertFalse(output_file.getvalue())
 
     def test_ignore_hidden_directories(self) -> None:
-        with temporary_directory() as directory, temporary_directory(
-            prefix=".",
-            directory=directory,
-        ) as inner_directory, temporary_file(
-            """\
+        with (
+            temporary_directory() as directory,
+            temporary_directory(
+                prefix=".",
+                directory=directory,
+            ) as inner_directory,
+            temporary_file(
+                """\
 import re
 import os
 """,
-            directory=inner_directory,
+                directory=inner_directory,
+            ),
         ):
             output_file = io.StringIO()
             autoflake._main(
@@ -2582,20 +2586,23 @@ print(x)
             )
 
     def test_end_to_end_multiple_files(self) -> None:
-        with temporary_file(
-            """\
+        with (
+            temporary_file(
+                """\
 import fake_fake, fake_foo, fake_bar, fake_zoo
 import re, os
 x = os.sep
 print(x)
 """,
-        ) as filename1, temporary_file(
-            """\
+            ) as filename1,
+            temporary_file(
+                """\
 import os
 x = os.sep
 print(x)
 """,
-        ) as filename2:
+            ) as filename2,
+        ):
             process = subprocess.Popen(
                 AUTOFLAKE_COMMAND
                 + [
@@ -3683,15 +3690,14 @@ def temporary_file(
     prefix: str = "",
 ) -> Iterator[str]:
     """Write contents to temporary file and yield it."""
-    f = tempfile.NamedTemporaryFile(
+    with tempfile.NamedTemporaryFile(
         suffix=suffix,
         prefix=prefix,
         delete=False,
         dir=directory,
-    )
-    try:
+    ) as f:
         f.write(contents.encode())
-        f.close()
+    try:
         yield f.name
     finally:
         os.remove(f.name)

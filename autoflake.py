@@ -770,7 +770,7 @@ def filter_duplicate_key(
     previous_line: str = "",
 ) -> str:
     """Return '' if first occurrence of the key otherwise return `line`."""
-    if marked_line_numbers and line_number == sorted(marked_line_numbers)[0]:
+    if marked_line_numbers and line_number == min(marked_line_numbers):
         return ""
 
     return line
@@ -1146,10 +1146,7 @@ def is_python_file(filename: str) -> bool:
     except (OSError, IndexError):
         return False
 
-    if not PYTHON_SHEBANG_REGEX.match(first_line):
-        return False
-
-    return True
+    return PYTHON_SHEBANG_REGEX.match(first_line) is not None
 
 
 def is_exclude_file(filename: str, exclude: Iterable[str]) -> bool:
@@ -1173,10 +1170,7 @@ def match_file(filename: str, exclude: Iterable[str]) -> bool:
         _LOGGER.debug("Skipped %s: matched to exclude pattern", filename)
         return False
 
-    if not os.path.isdir(filename) and not is_python_file(filename):
-        return False
-
-    return True
+    return os.path.isdir(filename) or is_python_file(filename)
 
 
 def find_files(
