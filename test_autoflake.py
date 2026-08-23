@@ -2874,7 +2874,7 @@ class MultilineFromImportTests(unittest.TestCase):
         )
         self.assertTrue(filt.is_over())
 
-    unused = ()
+    unused: Sequence[str] = ()
 
     def assert_fix(
         self,

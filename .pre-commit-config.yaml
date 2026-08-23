@@ -11,10 +11,10 @@ repos:
     hooks:
       - id: validate-pyproject
 
-  - repo: https://github.com/fsouza/mirrors-pyright
-    rev: v1.1.275
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.74
     hooks:
-      - id: pyright
+      - id: ty
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.1

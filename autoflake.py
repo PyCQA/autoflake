@@ -165,8 +165,9 @@ def star_import_usage_undefined_name(
     """Yield line number, undefined name, and its possible origin module."""
     for message in messages:
         if isinstance(message, pyflakes.messages.ImportStarUsage):
-            undefined_name = message.message_args[0]
-            module_name = message.message_args[1]
+            # pyflakes annotates message_args as an empty tuple
+            undefined_name = message.message_args[0]  # ty: ignore[index-out-of-bounds]
+            module_name = message.message_args[1]  # ty: ignore[index-out-of-bounds]
             yield (message.lineno, undefined_name, module_name)
 
 
@@ -215,7 +216,7 @@ def duplicate_key_line_numbers(
             good = True
             for message in messages:
                 line = lines[message.lineno - 1]
-                key = message.message_args[0]
+                key = message.message_args[0]  # ty: ignore[index-out-of-bounds]
 
                 if not dict_entry_has_key(line, key):
                     good = False
@@ -234,7 +235,7 @@ def create_key_to_messages_dict(
         list[pyflakes.messages.MultiValueRepeatedKeyLiteral],
     ] = collections.defaultdict(list)
     for message in messages:
-        dictionary[message.message_args[0]].append(message)
+        dictionary[message.message_args[0]].append(message)  # ty: ignore[index-out-of-bounds]
     return dictionary
 
 
@@ -1219,9 +1220,9 @@ def find_files(
 
 def process_pyproject_toml(toml_file_path: str) -> MutableMapping[str, Any] | None:
     """Extract config mapping from pyproject.toml file."""
-    try:
+    if sys.version_info >= (3, 11):
         import tomllib
-    except ModuleNotFoundError:
+    else:
         import tomli as tomllib
 
     with open(toml_file_path, "rb") as f:
