@@ -7,7 +7,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.25
+    rev: '0.26'
     hooks:
       - id: validate-pyproject
 
@@ -17,7 +17,7 @@ repos:
       - id: ty
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.1
+    rev: v0.16.4
     hooks:
       - id: ruff-check
       - id: ruff-format
