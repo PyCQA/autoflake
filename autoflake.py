@@ -826,6 +826,7 @@ def useless_pass_line_numbers(
     previous_token_type = None
     last_pass_row = None
     last_pass_indentation = None
+    pass_pending_leading_check = False
     previous_line = ""
     previous_non_empty_line = ""
     for token in tokenize.generate_tokens(sio.readline):
@@ -835,18 +836,35 @@ def useless_pass_line_numbers(
 
         is_pass = token_type == tokenize.NAME and line.strip() == "pass"
 
-        # Leading "pass".
+        # Leading "pass". A "pass" statement is unneeded if it is
+        # immediately followed by another statement at the same
+        # indentation, even if separated by blank lines and/or comments.
         if (
-            start_row - 1 == last_pass_row
-            and get_indentation(line) == last_pass_indentation
+            pass_pending_leading_check
             and token_type in ATOMS
             and not is_pass
+            and get_indentation(line) == last_pass_indentation
         ):
-            yield start_row - 1
+            yield last_pass_row
+            pass_pending_leading_check = False
+        elif (
+            pass_pending_leading_check
+            and token_type
+            not in (
+                tokenize.COMMENT,
+                tokenize.NL,
+                tokenize.NEWLINE,
+                tokenize.INDENT,
+                tokenize.DEDENT,
+            )
+            and not is_pass
+        ):
+            pass_pending_leading_check = False
 
         if is_pass:
             last_pass_row = start_row
             last_pass_indentation = get_indentation(line)
+            pass_pending_leading_check = True
 
             is_trailing_pass = (
                 previous_token_type != tokenize.INDENT
