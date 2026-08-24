@@ -1046,6 +1046,28 @@ version('1.0.0')
             ),
         )
 
+    def test_fix_code_removes_redundant_submodule_import(self) -> None:
+        self.assertEqual(
+            """\
+from __future__ import annotations
+
+import os
+
+print(os)
+""",
+            autoflake.fix_code(
+                """\
+from __future__ import annotations
+
+import os
+import os.path
+
+print(os)
+""",
+                remove_all_unused_imports=True,
+            ),
+        )
+
     def test_fix_code_with_indented_from(self) -> None:
         self.assertEqual(
             """\

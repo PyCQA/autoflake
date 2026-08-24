@@ -561,6 +561,49 @@ def break_up_import(line: str) -> str:
     )
 
 
+def _redundant_submodule_imports(
+    source: str,
+    existing_unused_lines: frozenset[int],
+) -> dict[int, str]:
+    """Find ``import X.Y`` lines where ``import X`` is present and used.
+
+    When ``import os.path`` appears alongside ``import os`` (which is in
+    use), the submodule import is redundant — ``os.path`` is already
+    accessible as an attribute of ``os``.  Returns ``{line_number: module}``
+    for each such redundant submodule import.
+    """
+    lines = _split_lines(source)
+    parent_lines: dict[str, int] = {}
+    for line_no, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if not stripped.startswith("import ") or stripped.startswith("from "):
+            continue
+        parts = stripped.split()
+        if len(parts) < 2:
+            continue
+        name = parts[1]
+        if "." not in name and line_no not in existing_unused_lines:
+            parent_lines[name] = line_no
+
+    redundant: dict[int, str] = {}
+    for line_no, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if not stripped.startswith("import ") or stripped.startswith("from "):
+            continue
+        parts = stripped.split()
+        if len(parts) < 2:
+            continue
+        name = parts[1]
+        if "." in name:
+            parent = name.split(".")[0]
+            if (
+                parent in parent_lines
+                and line_no not in existing_unused_lines
+            ):
+                redundant[line_no] = name
+    return redundant
+
+
 def filter_code(
     source: str,
     additional_imports: Iterable[str] | None = None,
@@ -588,6 +631,18 @@ def filter_code(
     marked_unused_module: dict[int, list[str]] = collections.defaultdict(list)
     for line_number, module_name in unused_import_module_name(messages):
         marked_unused_module[line_number].append(module_name)
+
+    # Pyflakes does not flag ``import X.Y`` as unused when ``import X``
+    # is in use (X.Y is accessible as an attribute of X), but the
+    # submodule import is still redundant.  Find these and add them to
+    # the removal set.
+    redundant = _redundant_submodule_imports(source, marked_import_line_numbers)
+    if redundant:
+        marked_import_line_numbers = marked_import_line_numbers | frozenset(
+            redundant.keys(),
+        )
+        for line_no, module in redundant.items():
+            marked_unused_module[line_no].append(module)
 
     undefined_names: list[str] = []
     if expand_star_imports and not (
