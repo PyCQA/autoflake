@@ -396,6 +396,7 @@ class FilterMultilineImport(PendingFix):
         remove_all_unused_imports: bool = False,
         safe_to_remove: Iterable[str] = SAFE_IMPORTS,
         previous_line: str = "",
+        except_imports: Iterable[str] = (),
     ):
         """Receive the same parameters as ``filter_unused_import``."""
         self.remove: Iterable[str] = unused_module
@@ -404,6 +405,11 @@ class FilterMultilineImport(PendingFix):
         match = self.BASE_RE.search(self.from_)
         self.base = match.group(1) if match else None
         self.give_up: bool = False
+
+        if self.base and _top_module(self.base) in except_imports:
+            # The whole statement imports from a protected module, so leave it
+            # untouched.
+            self.give_up = True
 
         if not remove_all_unused_imports:
             if self.base and _top_module(self.base) not in safe_to_remove:
@@ -570,12 +576,16 @@ def filter_code(
     remove_unused_variables: bool = False,
     remove_rhs_for_unused_variables: bool = False,
     ignore_init_module_imports: bool = False,
+    except_imports: Iterable[str] | None = None,
 ) -> Iterable[str]:
     """Yield code with unused imports removed."""
     imports = SAFE_IMPORTS
     if additional_imports:
         imports |= frozenset(additional_imports)
     del additional_imports
+
+    protected_imports = frozenset(except_imports) if except_imports else frozenset()
+    del except_imports
 
     messages = check(source)
 
@@ -640,6 +650,7 @@ def filter_code(
                 remove_all_unused_imports=remove_all_unused_imports,
                 imports=imports,
                 previous_line=previous_line,
+                except_imports=protected_imports,
             )
         elif line_number in marked_variable_line_numbers:
             result = filter_unused_variable(
@@ -690,6 +701,7 @@ def filter_unused_import(
     remove_all_unused_imports: bool,
     imports: Iterable[str],
     previous_line: str = "",
+    except_imports: Iterable[str] = (),
 ) -> PendingFix | str:
     """Return line if used, otherwise return None."""
     # Ignore doctests.
@@ -707,6 +719,7 @@ def filter_unused_import(
             remove_all_unused_imports,
             imports,
             previous_line,
+            except_imports,
         )
         return filt()
 
@@ -716,6 +729,8 @@ def filter_unused_import(
         return break_up_import(line)
 
     package = extract_package_name(line)
+    if except_imports and package is not None and package in except_imports:
+        return line
     if not remove_all_unused_imports and package is not None and package not in imports:
         return line
 
@@ -924,6 +939,7 @@ def fix_code(
     ignore_init_module_imports: bool = False,
     ignore_pass_statements: bool = False,
     ignore_pass_after_docstring: bool = False,
+    except_imports: Iterable[str] | None = None,
 ) -> str:
     """Return code with all filtering run on it."""
     if not source:
@@ -952,6 +968,7 @@ def fix_code(
                             remove_rhs_for_unused_variables
                         ),
                         ignore_init_module_imports=ignore_init_module_imports,
+                        except_imports=except_imports,
                     ),
                 ),
                 ignore_pass_statements=ignore_pass_statements,
@@ -1015,6 +1032,11 @@ def _fix_file(
         ignore_init_module_imports=ignore_init_module_imports,
         ignore_pass_statements=args["ignore_pass_statements"],
         ignore_pass_after_docstring=args["ignore_pass_after_docstring"],
+        except_imports=(
+            args["never_remove_imports"].split(",")
+            if "never_remove_imports" in args
+            else None
+        ),
     )
 
     if original_source != filtered_source:
@@ -1337,7 +1359,7 @@ def merge_configuration_file(
 
     # merge args that can be merged
     merged_args = {}
-    mergeable_keys = {"imports", "exclude"}
+    mergeable_keys = {"imports", "exclude", "never_remove_imports"}
     for key in mergeable_keys:
         values = (
             v for v in (config_args.get(key), flag_args.get(key)) if v is not None
@@ -1397,6 +1419,12 @@ def _main(
         "--remove-all-unused-imports",
         action="store_true",
         help="remove all unused imports (not just those from the standard library)",
+    )
+
+    parser.add_argument(
+        "--never-remove-imports",
+        help="specify a comma-separated list of modules/packages whose imports "
+        "should never be removed, even when they appear unused",
     )
 
     parser.add_argument(

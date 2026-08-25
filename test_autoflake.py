@@ -460,6 +460,82 @@ x = 1
             ),
         )
 
+    def test_filter_code_with_except_imports(self) -> None:
+        self.assertEqual(
+            """\
+import os
+pass
+x = 1
+""",
+            "".join(
+                autoflake.filter_code(
+                    """\
+import os
+import sys
+x = 1
+""",
+                    except_imports=["os"],
+                ),
+            ),
+        )
+
+    def test_filter_code_with_except_imports_and_remove_all(self) -> None:
+        self.assertEqual(
+            """\
+import foo
+pass
+x = 1
+""",
+            "".join(
+                autoflake.filter_code(
+                    """\
+import foo
+import zap
+x = 1
+""",
+                    remove_all_unused_imports=True,
+                    except_imports=["foo"],
+                ),
+            ),
+        )
+
+    def test_filter_code_with_except_imports_from_import(self) -> None:
+        self.assertEqual(
+            """\
+from foo import bar
+x = 1
+""",
+            "".join(
+                autoflake.filter_code(
+                    """\
+from foo import bar
+x = 1
+""",
+                    remove_all_unused_imports=True,
+                    except_imports=["foo"],
+                ),
+            ),
+        )
+
+    def test_filter_code_with_except_imports_multiline(self) -> None:
+        code = """\
+from foo import (
+    bar,
+    baz,
+)
+x = 1
+"""
+        self.assertEqual(
+            code,
+            "".join(
+                autoflake.filter_code(
+                    code,
+                    remove_all_unused_imports=True,
+                    except_imports=["foo"],
+                ),
+            ),
+        )
+
     def test_filter_code_should_ignore_imports_with_inline_comment(self) -> None:
         self.assertEqual(
             """\
@@ -2578,6 +2654,37 @@ print(x)
 -import re, os
 +import fake_fake
 +import fake_zoo
++import os
+ x = os.sep
+ print(x)
+""",
+                "\n".join(process.communicate()[0].decode().split(os.linesep)[3:]),
+            )
+
+    def test_end_to_end_with_never_remove_imports(self) -> None:
+        with temporary_file(
+            """\
+import fake_fake, fake_foo, fake_bar, fake_zoo
+import re, os
+x = os.sep
+print(x)
+""",
+        ) as filename:
+            process = subprocess.Popen(
+                AUTOFLAKE_COMMAND
+                + [
+                    "--remove-all-unused-imports",
+                    "--never-remove-imports=fake_foo,fake_bar",
+                    filename,
+                ],
+                stdout=subprocess.PIPE,
+            )
+            self.assertEqual(
+                """\
+-import fake_fake, fake_foo, fake_bar, fake_zoo
+-import re, os
++import fake_foo
++import fake_bar
 +import os
  x = os.sep
  print(x)

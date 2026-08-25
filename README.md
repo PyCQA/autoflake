@@ -79,12 +79,21 @@ $ autoflake --imports=django,requests,urllib3 <filename>
 To remove all unused imports (whether or not they are from the standard
 library), use the ``--remove-all-unused-imports`` option.
 
+To keep specific modules even when their imports look unused (for example
+imports that are only kept around for their side effects), use the
+``--never-remove-imports`` option. It accepts a comma-separated list of names
+and takes precedence over the options above:
+
+```
+$ autoflake --remove-all-unused-imports --never-remove-imports=side_effects <filename>
+```
+
 To remove unused variables, use the ``--remove-unused-variables`` option.
 
 Below is the full listing of options:
 
 ```
-usage: autoflake [-h] [-c | -cd] [-r] [-j n] [--exclude globs] [--imports IMPORTS] [--expand-star-imports] [--remove-all-unused-imports] [--ignore-init-module-imports] [--remove-duplicate-keys] [--remove-unused-variables]
+usage: autoflake [-h] [-c | -cd] [-r] [-j n] [--exclude globs] [--imports IMPORTS] [--never-remove-imports NEVER_REMOVE_IMPORTS] [--expand-star-imports] [--remove-all-unused-imports] [--ignore-init-module-imports] [--remove-duplicate-keys] [--remove-unused-variables]
                  [--remove-rhs-for-unused-variables] [--ignore-pass-statements] [--ignore-pass-after-docstring] [--version] [--quiet] [-v] [--stdin-display-name STDIN_DISPLAY_NAME] [--config CONFIG_FILE] [-i | -s]
                  files [files ...]
 
@@ -101,6 +110,8 @@ options:
   -j n, --jobs n        number of parallel jobs; match CPU count if value is 0 (default: 0)
   --exclude globs       exclude file/directory names that match these comma-separated globs
   --imports IMPORTS     by default, only unused standard library imports are removed; specify a comma-separated list of additional modules/packages
+  --never-remove-imports NEVER_REMOVE_IMPORTS
+                        specify a comma-separated list of modules/packages whose imports should never be removed, even when they appear unused
   --expand-star-imports
                         expand wildcard star imports with undefined names; this only triggers if there is only one star import in the file; this is skipped if there are any uses of `__all__` or `del` in the file
   --remove-all-unused-imports
