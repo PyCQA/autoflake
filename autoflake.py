@@ -56,7 +56,18 @@ __version__ = "2.3.3"
 _LOGGER = logging.getLogger("autoflake")
 _LOGGER.propagate = False
 
-ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
+# Token types that never begin a statement of their own. Everything else, seen
+# outside brackets, is the start of the next logical line.
+NON_STATEMENT_TOKENS = frozenset(
+    [
+        tokenize.COMMENT,
+        tokenize.NL,
+        tokenize.NEWLINE,
+        tokenize.INDENT,
+        tokenize.DEDENT,
+        tokenize.ENDMARKER,
+    ],
+)
 
 EXCEPT_REGEX = re.compile(r"^\s*except [\s,()\w]+ as \w+:$")
 PYTHON_SHEBANG_REGEX = re.compile(r"^#!.*\bpython[3]?\b\s*$")
@@ -817,17 +828,31 @@ def useless_pass_line_numbers(
     last_pass_indentation = None
     previous_line = ""
     previous_non_empty_line = ""
+    bracket_depth = 0
     for token in tokenize.generate_tokens(sio.readline):
         token_type = token[0]
+        token_string = token[1]
         start_row = token[2][0]
         line = token[4]
 
         is_pass = token_type == tokenize.NAME and line.strip() == "pass"
 
-        # Leading "pass". The next real token may be separated from the
-        # pass by blank lines or comments, so resolve the pending pass on the
-        # first ATOM token instead of requiring an adjacent row.
-        if token_type in ATOMS and not is_pass:
+        # Leading "pass". The statement that follows may be separated from the
+        # pass by blank lines or comments, so resolve the pending pass at the
+        # start of the next logical line rather than requiring an adjacent row.
+        # Only tokens outside brackets count: within a continuation, token.line
+        # is a physical line whose indentation is not the statement's, so
+        #
+        #     if b:
+        #         pass
+        #
+        #     [
+        #         q,
+        #     ] = r
+        #
+        # would otherwise take the "q," line for a statement indented like the
+        # pass and drop the only statement in the body.
+        if not bracket_depth and token_type not in NON_STATEMENT_TOKENS and not is_pass:
             if (
                 last_pass_row is not None
                 and get_indentation(line) == last_pass_indentation
@@ -835,6 +860,12 @@ def useless_pass_line_numbers(
                 yield last_pass_row
             last_pass_row = None
             last_pass_indentation = None
+
+        if token_type == tokenize.OP:
+            if token_string in "([{":
+                bracket_depth += 1
+            elif token_string in ")]}":
+                bracket_depth = max(bracket_depth - 1, 0)
 
         if is_pass:
             last_pass_row = start_row

@@ -1626,6 +1626,40 @@ if True:
             ),
         )
 
+    def test_useless_pass_line_numbers_keeps_a_pass_before_a_bracketed_statement(
+        self,
+    ) -> None:
+        """A statement opening with a bracket is not indented like its contents."""
+        for source in (
+            "if b:\n    pass\n\n[\n    q,\n] = r\n",
+            "if b:\n    pass\n[\n    q,\n] = r\n",
+            "if b:\n    pass\n\n(\n    q,\n) = r\n",
+            "if b:\n    pass\n\n[\n    [\n        q,\n    ],\n] = r\n",
+        ):
+            self.assertEqual(
+                [],
+                list(autoflake.useless_pass_line_numbers(source)),
+                msg=repr(source),
+            )
+
+    def test_useless_pass_line_numbers_with_a_bracketed_statement_alongside(
+        self,
+    ) -> None:
+        """The bracket guard must not hide a genuinely useless pass."""
+        self.assertEqual(
+            [2],
+            list(
+                autoflake.useless_pass_line_numbers(
+                    "if b:\n    pass\n\n    [\n        q,\n    ] = r\n",
+                ),
+            ),
+        )
+
+    def test_filter_useless_pass_keeps_the_only_statement_in_a_block(self) -> None:
+        """Dropping this pass would leave "if b:" with an empty body."""
+        source = "if b:\n    pass\n\n[\n    q,\n] = r\n"
+        self.assertEqual(source, "".join(autoflake.filter_useless_pass(source)))
+
     def test_useless_pass_line_numbers_after_docstring(self) -> None:
         actual_pass_line_numbers = list(
             autoflake.useless_pass_line_numbers(
