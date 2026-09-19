@@ -144,6 +144,80 @@ def unused_import_module_name(
                 yield (message.lineno, module_name)
 
 
+def redefined_imports(
+    messages: Iterable[pyflakes.messages.Message], source: str
+) -> Iterable[pyflakes.messages.UnusedImport]:
+    """Find singleton imports immediately replaced by plain functions.
+
+    A general F811 does not establish that an import can be removed: intervening
+    code, decorators, defaults, annotations and class bodies can use its value.
+    Only handle adjacent statements with no definition-time expressions, in
+    module or function bodies. Class namespaces can have custom binding behavior.
+    """
+    redefinitions = {
+        (message.lineno, *cast(tuple[str, int], message.message_args)): message.filename
+        for message in messages
+        if isinstance(message, pyflakes.messages.RedefinedWhileUnused)
+    }
+    if not redefinitions:
+        return
+    try:
+        tree = ast.parse(source)
+    except (SyntaxError, ValueError, RecursionError):
+        return
+
+    for parent in ast.walk(tree):
+        if not isinstance(parent, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        lines = collections.Counter(statement.lineno for statement in parent.body)
+        for imported_node, definition in zip(parent.body, parent.body[1:]):
+            if not isinstance(
+                imported_node, (ast.Import, ast.ImportFrom)
+            ) or not isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if len(imported_node.names) != 1 or lines[imported_node.lineno] != 1:
+                continue
+            alias = imported_node.names[0]
+            bound = alias.asname or (
+                alias.name.split(".")[0]
+                if isinstance(imported_node, ast.Import)
+                else alias.name
+            )
+            # Function creation itself reads these names from the global namespace.
+            if bound in {"__builtins__", "__name__"}:
+                continue
+            key = (definition.lineno, bound, imported_node.lineno)
+            if definition.name != bound or key not in redefinitions:
+                continue
+            args = definition.args
+            parameters = [*args.posonlyargs, *args.args, *args.kwonlyargs]
+            if args.vararg:
+                parameters.append(args.vararg)
+            if args.kwarg:
+                parameters.append(args.kwarg)
+            if (
+                definition.decorator_list
+                or args.defaults
+                or any(default is not None for default in args.kw_defaults)
+                or definition.returns is not None
+                or any(parameter.annotation is not None for parameter in parameters)
+                or getattr(definition, "type_params", ())
+            ):
+                continue
+            imported = alias.name
+            if isinstance(imported_node, ast.ImportFrom):
+                imported = (
+                    "." * imported_node.level
+                    + (imported_node.module + "." if imported_node.module else "")
+                    + imported
+                )
+            if alias.asname:
+                imported += " as " + alias.asname
+            yield pyflakes.messages.UnusedImport(
+                redefinitions[key], imported_node, imported
+            )
+
+
 def star_import_used_line_numbers(
     messages: Iterable[pyflakes.messages.Message],
 ) -> Iterable[int]:
@@ -577,7 +651,8 @@ def filter_code(
         imports |= frozenset(additional_imports)
     del additional_imports
 
-    messages = check(source)
+    messages = list(check(source))
+    messages.extend(redefined_imports(messages, source))
 
     if ignore_init_module_imports:
         marked_import_line_numbers: frozenset[int] = frozenset()
