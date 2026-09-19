@@ -33,6 +33,170 @@ AUTOFLAKE_COMMAND = [
 class UnitTests(unittest.TestCase):
     """Unit tests."""
 
+    def test_fix_code_adjacent_redefinition(self) -> None:
+        definition = 'def fix_code():\n    return "this"\n\nprint(fix_code())\n'
+        code = "from autoflake import fix_code\n\n" + definition
+        self.assertEqual(code, autoflake.fix_code(code))
+        for remove_all, additional in (
+            (True, None),
+            (False, ["autoflake"]),
+        ):
+            with self.subTest(remove_all=remove_all, additional=additional):
+                self.assertEqual(
+                    "\n" + definition,
+                    autoflake.fix_code(
+                        code,
+                        remove_all_unused_imports=remove_all,
+                        additional_imports=additional,
+                    ),
+                )
+
+    def test_fix_code_adjacent_redefinition_bindings(self) -> None:
+        for imported, name in (
+            ("import os", "os"),
+            ("import os.path", "os"),
+            ("import os.path as path", "path"),
+            ("from os import path", "path"),
+            ("from os import (\n    path as renamed,\n)", "renamed"),
+            ("from .other import name", "name"),
+            ("from . import name", "name"),
+        ):
+            with self.subTest(imported=imported):
+                definition = f"def {name}():\n    return 1\nprint({name}())\n"
+                self.assertEqual(
+                    definition,
+                    autoflake.fix_code(
+                        imported + "\n" + definition, remove_all_unused_imports=True
+                    ),
+                )
+
+    def test_fix_code_adjacent_redefinition_plain_functions(self) -> None:
+        for definition in (
+            "def os():\n    return os\n",
+            "async def os():\n    return os\n",
+            "def os(a, /, *args, b, **kwargs):\n    return a, args, b, kwargs\n",
+            "async def os(a, /, *args, b, **kwargs):\n    return a, args, b, kwargs\n",
+        ):
+            with self.subTest(definition=definition):
+                self.assertEqual(
+                    definition, autoflake.fix_code("import os\n" + definition)
+                )
+
+    def test_fix_code_adjacent_redefinition_local_scope(self) -> None:
+        for prefix in ("def outer():", "async def outer():"):
+            with self.subTest(prefix=prefix):
+                code = (
+                    prefix
+                    + "\n    import os\n    def os():\n        pass\n    return os\n"
+                )
+                self.assertEqual(
+                    code.replace("    import os\n", ""), autoflake.fix_code(code)
+                )
+
+    def test_fix_code_adjacent_redefinition_preserves_evaluated_definitions(
+        self,
+    ) -> None:
+        for definition in (
+            "@decorate\ndef os():\n    pass\n",
+            "def os(value=None):\n    pass\n",
+            "def os(*, value=None):\n    pass\n",
+            "def os(value: str):\n    pass\n",
+            "def os(value: str, /):\n    pass\n",
+            "def os(*args: str):\n    pass\n",
+            "def os(*, value: str):\n    pass\n",
+            "def os(**kwargs: str):\n    pass\n",
+            "def os() -> str:\n    pass\n",
+            'def os(value: "str"):\n    pass\n',
+            "async def os(value=None):\n    pass\n",
+            "async def os() -> str:\n    pass\n",
+        ):
+            with self.subTest(definition=definition):
+                code = "import os\n" + definition
+                self.assertEqual(code, autoflake.fix_code(code))
+        code = "from __future__ import annotations\nimport os\ndef os() -> str:\n    pass\n"
+        self.assertEqual(code, autoflake.fix_code(code))
+
+    @unittest.skipIf(sys.version_info < (3, 12), "type parameters require Python 3.12")
+    def test_fix_code_adjacent_redefinition_preserves_type_parameters(self) -> None:
+        for definition in (
+            "def os[T]():\n    pass\n",
+            "async def os[T]():\n    pass\n",
+        ):
+            with self.subTest(definition=definition):
+                code = "import os\n" + definition
+                self.assertEqual(code, autoflake.fix_code(code))
+
+    def test_fix_code_adjacent_redefinition_preserves_other_scopes(self) -> None:
+        for code in (
+            "import os\nclass os:\n    pass\n",
+            "class Example:\n    import os\n    def os():\n        pass\n",
+            "import os\nclass Example:\n    def os():\n        pass\nprint(os)\n",
+            "if condition:\n    import os\n    def os():\n        pass\n",
+            "try:\n    import os\n    def os():\n        pass\nexcept Exception:\n    pass\n",
+            "import os\nif condition:\n    def os():\n        pass\nprint(os)\n",
+            "def os():\n    return 1\ndef os():\n    return 2\n",
+        ):
+            with self.subTest(code=code):
+                self.assertEqual(
+                    code, autoflake.fix_code(code, remove_all_unused_imports=True)
+                )
+
+    def test_fix_code_adjacent_redefinition_preserves_intervening_code(self) -> None:
+        for code in (
+            "import os\nvalue = 1\ndef os():\n    pass\n",
+            "import math\ndef use():\n    return math.sqrt(4)\nvalue=use()\ndef math():\n    pass\n",
+            "def use():\n    return math.sqrt(4)\nimport math\nvalue=use()\ndef math():\n    pass\n",
+            "import math\ndef use():\n    return math.sqrt(4)\ndef math(value=use()):\n    pass\n",
+            "from functools import lru_cache\ndef deco(fn):\n    return lru_cache(fn)\n@deco\ndef lru_cache():\n    pass\n",
+            'import math\ndef use(value: "math.sqrt"):\n    pass\nimport typing\nvalue=typing.get_type_hints(use)\ndef math():\n    pass\n',
+            'import math\nvalue=globals()["ma" + "th"].sqrt(4)\ndef math():\n    pass\n',
+            "from math import pi\ndef change():\n    global pi\n    pi += 1\nchange()\ndef pi():\n    pass\n",
+            "import math\ndef change():\n    global math\n    del math\nchange()\ndef math():\n    pass\n",
+        ):
+            with self.subTest(code=code):
+                self.assertEqual(code, autoflake.fix_code(code))
+
+    def test_fix_code_adjacent_redefinition_preserves_ambiguous_imports(self) -> None:
+        for code in (
+            "import os as name, sys as other\ndef name():\n    pass\nprint(other)\n",
+            "from os import path as name, sep\ndef name():\n    pass\nprint(sep)\n",
+            "import os as name; import sys as name\ndef name():\n    pass\n",
+        ):
+            with self.subTest(code=code):
+                self.assertEqual(code, autoflake.fix_code(code))
+
+    def test_fix_code_adjacent_redefinition_preserves_filters(self) -> None:
+        code = "import os\ndef os():\n    pass\n"
+        self.assertEqual(
+            code, autoflake.fix_code(code, ignore_init_module_imports=True)
+        )
+        for commented in (
+            code.replace("import os", "import os  # noqa"),
+            "# autoflake: skip_file\n" + code,
+        ):
+            with self.subTest(code=commented):
+                self.assertEqual(commented, autoflake.fix_code(commented))
+
+    def test_fix_code_adjacent_redefinition_preserves_function_metadata(self) -> None:
+        for imported, name in (
+            ("from math import pi as __name__", "__name__"),
+            ("from builtins import __dict__ as __builtins__", "__builtins__"),
+        ):
+            with self.subTest(name=name):
+                code = imported + f"\ndef {name}():\n    pass\n"
+                self.assertEqual(
+                    code, autoflake.fix_code(code, remove_all_unused_imports=True)
+                )
+
+    def test_fix_code_adjacent_redefinition_preserves_module_reflection(self) -> None:
+        code = (
+            "import math\n"
+            "import sys\n"
+            "value = sys.modules[__name__].math.sqrt(4)\n"
+            "def math():\n    pass\n"
+        )
+        self.assertEqual(code, autoflake.fix_code(code))
+
     def test_imports(self) -> None:
         self.assertGreater(len(autoflake.SAFE_IMPORTS), 0)
 
