@@ -500,6 +500,161 @@ x = 1
             ),
         )
 
+    def test_filter_code_with_trailing_comment(self) -> None:
+        self.assertEqual(
+            """\
+pass
+x = 1
+""",
+            "".join(
+                autoflake.filter_code(
+                    """\
+import os  # lorem ipsum
+x = 1
+""",
+                ),
+            ),
+        )
+
+    def test_fix_code_with_trailing_comments_on_imports(self) -> None:
+        self.assertEqual(
+            """\
+x = 1
+""",
+            autoflake.fix_code(
+                """\
+import os  # lorem ipsum
+x = 1
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+x = 1
+""",
+            autoflake.fix_code(
+                """\
+from os import path  # comment
+x = 1
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+from os import environ  # comment
+print(environ)
+""",
+            autoflake.fix_code(
+                """\
+from os import path, environ  # comment
+print(environ)
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+from os import path  # comment
+print(path)
+""",
+            autoflake.fix_code(
+                """\
+from os import path, environ  # comment
+print(path)
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+x = 1
+""",
+            autoflake.fix_code(
+                """\
+from os import path, environ  # comment
+x = 1
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+import sys  # comment
+print(sys)
+""",
+            autoflake.fix_code(
+                """\
+import os, sys  # comment
+print(sys)
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+x = 1
+""",
+            autoflake.fix_code(
+                """\
+import os, sys  # comment
+x = 1
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+if True:
+    pass
+""",
+            autoflake.fix_code(
+                """\
+if True:
+    import os  # comment
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+import os  # noqa
+x = 1
+""",
+            autoflake.fix_code(
+                """\
+import os  # noqa
+x = 1
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+from os import path  # noqa: F401
+x = 1
+""",
+            autoflake.fix_code(
+                """\
+from os import path  # noqa: F401
+x = 1
+""",
+            ),
+        )
+
+        self.assertEqual(
+            """\
+x = 1
+""",
+            autoflake.fix_code(
+                """\
+import os  # comment (with parentheses) : and \\
+x = 1
+""",
+            ),
+        )
+
     def test_filter_code_expand_star_imports(self) -> None:
         self.assertEqual(
             """\
