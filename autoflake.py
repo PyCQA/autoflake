@@ -61,6 +61,12 @@ IGNORE_COMMENT_REGEX = re.compile(
     r"\s*#\s{1,}autoflake:\s{1,}\bskip_file\b",
     re.MULTILINE,
 )
+NOQA_REGEX = re.compile(r"#\s*noqa\b", re.IGNORECASE)
+
+
+def is_noqa(line: str) -> bool:
+    """Return True if line contains a noqa comment."""
+    return bool(NOQA_REGEX.search(line))
 
 
 def standard_paths() -> Iterable[str]:
@@ -267,8 +273,21 @@ class ListReporter(pyflakes.reporter.Reporter):
         self.messages.append(message)
 
 
+def _valid_char_in_line(char: str, line: str) -> bool:
+    """Return True if a char appears in the line and is not commented."""
+    comment_index = line.find("#")
+    char_index = line.find(char)
+    valid_char_in_line = char_index >= 0 and (
+        comment_index > char_index or comment_index < 0
+    )
+    return valid_char_in_line
+
+
 def extract_package_name(line: str) -> str | None:
     """Return package name in import statement."""
+    if "#" in line:
+        line = line.split("#", 1)[0]
+
     assert "\\" not in line
     assert "(" not in line
     assert ")" not in line
@@ -292,7 +311,7 @@ def extract_package_name(line: str) -> str | None:
 def multiline_import(line: str, previous_line: str = "") -> bool:
     """Return True if import is spans multiples lines."""
     for symbol in "()":
-        if symbol in line:
+        if _valid_char_in_line(symbol, line):
             return True
 
     return multiline_statement(line, previous_line)
@@ -301,7 +320,7 @@ def multiline_import(line: str, previous_line: str = "") -> bool:
 def multiline_statement(line: str, previous_line: str = "") -> bool:
     """Return True if this is part of a multiline statement."""
     for symbol in "\\:;":
-        if symbol in line:
+        if _valid_char_in_line(symbol, line):
             return True
 
     sio = io.StringIO(line)
@@ -331,16 +350,6 @@ class PendingFix:
         with the final result of all the lines processed at once.
         """
         raise NotImplementedError("Abstract method needs to be overwritten")
-
-
-def _valid_char_in_line(char: str, line: str) -> bool:
-    """Return True if a char appears in the line and is not commented."""
-    comment_index = line.find("#")
-    char_index = line.find(char)
-    valid_char_in_line = char_index >= 0 and (
-        comment_index > char_index or comment_index < 0
-    )
-    return valid_char_in_line
 
 
 def _top_module(module_name: str) -> str:
@@ -510,9 +519,19 @@ def filter_from_import(line: str, unused_module: Iterable[str]) -> str:
     Return line without unused import modules, or `pass` if all of the
     module in import is unused.
     """
+    newline = get_line_ending(line)
+    line_body = line[:-len(newline)] if newline else line
+
+    comment = ""
+    if "#" in line_body:
+        code, comment_text = line_body.split("#", 1)
+        spacing = code[len(code.rstrip()):]
+        comment = spacing + "#" + comment_text
+        line_body = code.rstrip()
+
     indentation, imports = re.split(
         pattern=r"\bimport\b",
-        string=line,
+        string=line_body,
         maxsplit=1,
     )
     match = re.search(
@@ -522,34 +541,45 @@ def filter_from_import(line: str, unused_module: Iterable[str]) -> str:
     assert match is not None
     base_module = match.group(1)
 
-    imports = re.split(pattern=r"\s*,\s*", string=imports.strip())
+    imports = [
+        x.strip()
+        for x in re.split(pattern=r"\s*,\s*", string=imports.strip())
+        if x.strip()
+    ]
     filtered_imports = _filter_imports(imports, base_module, unused_module)
 
     # All of the import in this statement is unused
     if not filtered_imports:
-        return get_indentation(line) + "pass" + get_line_ending(line)
+        return get_indentation(line) + "pass" + newline
 
     indentation += "import "
 
-    return indentation + ", ".join(filtered_imports) + get_line_ending(line)
+    return indentation + ", ".join(filtered_imports) + comment + newline
 
 
 def break_up_import(line: str) -> str:
     """Return line with imports on separate lines."""
-    assert "\\" not in line
-    assert "(" not in line
-    assert ")" not in line
-    assert ";" not in line
-    assert "#" not in line
-    assert not line.lstrip().startswith("from")
-
     newline = get_line_ending(line)
     if not newline:
         return line
 
+    line_body = line[:-len(newline)] if newline else line
+    comment = ""
+    if "#" in line_body:
+        code, comment_text = line_body.split("#", 1)
+        spacing = code[len(code.rstrip()):]
+        comment = spacing + "#" + comment_text
+        line_body = code.rstrip()
+
+    assert "\\" not in line_body
+    assert "(" not in line_body
+    assert ")" not in line_body
+    assert ";" not in line_body
+    assert not line_body.lstrip().startswith("from")
+
     indentation, imports = re.split(
         pattern=r"\bimport\b",
-        string=line,
+        string=line_body,
         maxsplit=1,
     )
 
@@ -557,7 +587,7 @@ def break_up_import(line: str) -> str:
     assert newline
 
     return "".join(
-        [indentation + i.strip() + newline for i in imports.split(",")],
+        [indentation + i.strip() + comment + newline for i in imports.split(",")],
     )
 
 
@@ -631,16 +661,19 @@ def filter_code(
     for line_number, line in enumerate(_split_lines(source), start=1):
         if isinstance(result, PendingFix):
             result = result(line)
+        elif line_number in marked_import_line_numbers:
+            if is_noqa(line):
+                result = line
+            else:
+                result = filter_unused_import(
+                    line,
+                    unused_module=marked_unused_module[line_number],
+                    remove_all_unused_imports=remove_all_unused_imports,
+                    imports=imports,
+                    previous_line=previous_line,
+                )
         elif "#" in line:
             result = line
-        elif line_number in marked_import_line_numbers:
-            result = filter_unused_import(
-                line,
-                unused_module=marked_unused_module[line_number],
-                remove_all_unused_imports=remove_all_unused_imports,
-                imports=imports,
-                previous_line=previous_line,
-            )
         elif line_number in marked_variable_line_numbers:
             result = filter_unused_variable(
                 line,
@@ -711,15 +744,17 @@ def filter_unused_import(
         return filt()
 
     is_from_import = line.lstrip().startswith("from")
+    code = line.split("#", 1)[0]
+    has_comma = "," in code
 
-    if "," in line and not is_from_import:
+    if has_comma and not is_from_import:
         return break_up_import(line)
 
     package = extract_package_name(line)
     if not remove_all_unused_imports and package is not None and package not in imports:
         return line
 
-    if "," in line:
+    if has_comma:
         assert is_from_import
         return filter_from_import(line, unused_module)
     else:
