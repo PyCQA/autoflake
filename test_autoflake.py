@@ -168,6 +168,39 @@ class UnitTests(unittest.TestCase):
             autoflake.filter_unused_variable("x = {}"),
         )
 
+    def test_filter_unused_variable_with_equals_in_rhs(self) -> None:
+        for value in ("foo(id=id)", "foo(first=1, second=2)", "first == second"):
+            with self.subTest(value=value):
+                line = f"    unused = {value}\n"
+                self.assertEqual(
+                    f"    {value}\n",
+                    autoflake.filter_unused_variable(line),
+                )
+                self.assertEqual(
+                    "    pass\n",
+                    autoflake.filter_unused_variable(line, drop_rhs=True),
+                )
+
+    def test_filter_unused_variable_with_equals_in_literal(self) -> None:
+        self.assertEqual(
+            "    pass\n",
+            autoflake.filter_unused_variable('    unused = "a=b"\n'),
+        )
+
+    def test_filter_unused_variable_preserves_other_targets(self) -> None:
+        for line in (
+            "first = second = foo(id=id)\n",
+            "first, second = foo(id=id)\n",
+            "obj.attribute = foo(id=id)\n",
+            "obj[0] = foo(id=id)\n",
+        ):
+            for drop_rhs in (False, True):
+                with self.subTest(line=line, drop_rhs=drop_rhs):
+                    self.assertEqual(
+                        line,
+                        autoflake.filter_unused_variable(line, drop_rhs=drop_rhs),
+                    )
+
     def test_filter_unused_variable_with_basic_data_structures(self) -> None:
         self.assertEqual(
             "pass",
@@ -211,7 +244,7 @@ class UnitTests(unittest.TestCase):
 
     def test_filter_unused_variable_drop_rhs(self) -> None:
         self.assertEqual(
-            "",
+            "pass",
             autoflake.filter_unused_variable(
                 "x = foo()",
                 drop_rhs=True,
@@ -219,7 +252,7 @@ class UnitTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "",
+            "    pass",
             autoflake.filter_unused_variable(
                 "    x = foo()",
                 drop_rhs=True,
@@ -1139,6 +1172,21 @@ def main() -> None:
     y = 11
     print(y)
 """,
+                remove_unused_variables=True,
+                remove_rhs_for_unused_variables=True,
+            ),
+        )
+
+    def test_fix_code_with_unused_variable_keyword_arguments(self) -> None:
+        code = "def fetch(User, id):\n    user = User.objects.get(id=id)\n"
+        self.assertEqual(
+            "def fetch(User, id):\n    User.objects.get(id=id)\n",
+            autoflake.fix_code(code, remove_unused_variables=True),
+        )
+        self.assertEqual(
+            "def fetch(User, id):\n    pass\n",
+            autoflake.fix_code(
+                code,
                 remove_unused_variables=True,
                 remove_rhs_for_unused_variables=True,
             ),

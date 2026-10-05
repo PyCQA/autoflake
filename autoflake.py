@@ -740,25 +740,34 @@ def filter_unused_variable(
         return re.sub(r" as \w+:$", ":", line, count=1)
     elif multiline_statement(line, previous_line):
         return line
-    elif line.count("=") == 1:
-        split_line = line.split("=")
-        assert len(split_line) == 2
-        value = split_line[1].lstrip()
-        if "," in split_line[0]:
-            return line
 
-        if is_literal_or_name(value):
-            # Rather than removing the line, replace with it "pass" to avoid
-            # a possible hanging block with no body.
-            value = "pass" + get_line_ending(line)
-            if drop_rhs:
-                return get_indentation(line) + value
-
-        if drop_rhs:
-            return ""
-        return get_indentation(line) + value
-    else:
+    try:
+        statements = ast.parse(line.lstrip()).body
+    except SyntaxError:
         return line
+    if len(statements) != 1:
+        return line
+    assignment = statements[0]
+    if (
+        not isinstance(assignment, ast.Assign)
+        or len(assignment.targets) != 1
+        or not isinstance(assignment.targets[0], ast.Name)
+    ):
+        return line
+
+    # Equals signs in keyword arguments, comparisons, and strings are not
+    # additional assignment targets.
+    value = line.partition("=")[2].lstrip()
+    if is_literal_or_name(value):
+        # Rather than removing the line, replace it with "pass" to avoid
+        # a possible hanging block with no body.
+        value = "pass" + get_line_ending(line)
+        if drop_rhs:
+            return get_indentation(line) + value
+
+    if drop_rhs:
+        return get_indentation(line) + "pass" + get_line_ending(line)
+    return get_indentation(line) + value
 
 
 def filter_duplicate_key(
