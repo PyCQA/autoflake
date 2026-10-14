@@ -1125,6 +1125,38 @@ def main() -> None:
             ),
         )
 
+    def test_fix_code_with_qualified_unused_exception(self) -> None:
+        for exception_type in [
+            "subprocess.CalledProcessError",
+            "(subprocess.CalledProcessError, OSError)",
+            "(subprocess.TimeoutExpired, subprocess.CalledProcessError)",
+        ]:
+            with self.subTest(exception_type=exception_type):
+                code = (
+                    "import subprocess\n\n"
+                    "def run():\n"
+                    "    try:\n"
+                    "        subprocess.run([])\n"
+                    f"    except {exception_type} as error:\n"
+                    "        pass\n"
+                )
+                self.assertEqual(code, autoflake.fix_code(code))
+                fixed = autoflake.fix_code(code, remove_unused_variables=True)
+                self.assertEqual(code.replace(" as error:", ":"), fixed)
+                self.assertFalse(list(autoflake.check(fixed)))
+                compile(fixed, "<test>", "exec")
+
+    def test_fix_code_keeps_used_qualified_exception(self) -> None:
+        code = (
+            "import subprocess\n\n"
+            "def run():\n"
+            "    try:\n"
+            "        subprocess.run([])\n"
+            "    except subprocess.CalledProcessError as error:\n"
+            "        print(error)\n"
+        )
+        self.assertEqual(code, autoflake.fix_code(code, remove_unused_variables=True))
+
     def test_fix_code_with_unused_variables_drop_rhs(self) -> None:
         self.assertEqual(
             """\
