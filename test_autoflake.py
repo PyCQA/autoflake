@@ -1284,6 +1284,57 @@ print(a)
             ),
         )
 
+    def test_fix_code_with_inline_duplicate_keys(self) -> None:
+        cases = [
+            ('x = {"A": 1, "A": 1}\n', 'x = {"A": 1}\n'),
+            ('x = {"A": 1, "B": 2, "A": 3}\n', 'x = {"B": 2, "A": 3}\n'),
+            ('x = {"A": 1, "A": 2, "B": 3, "B": 4}\n', 'x = {"A": 2, "B": 4}\n'),
+            ("x = {(0, 1): 1, (0, 1): 2,}\n", "x = {(0, 1): 2,}\n"),
+            ('x = {1: "first", True: "last"}\n', 'x = {True: "last"}\n'),
+            ('é = {"clé": 1, "clé": 2}\n', 'é = {"clé": 2}\n'),
+            (
+                'x = {"A": {"B": 1, "B": 2}, "A": {"C": 3, "C": 4}}\n',
+                'x = {"A": {"C": 4}}\n',
+            ),
+            (
+                'print({"A": 1, "A": 2}); print({"B": 3, "B": 4})\n',
+                'print({"A": 2}); print({"B": 4})\n',
+            ),
+        ]
+        for code, expected in cases:
+            with self.subTest(code=code):
+                fixed = autoflake.fix_code(code, remove_duplicate_keys=True)
+                self.assertEqual(expected, fixed)
+                compile(fixed, "<test>", "exec")
+                self.assertEqual(
+                    fixed, autoflake.fix_code(fixed, remove_duplicate_keys=True)
+                )
+
+    def test_fix_code_keeps_inline_duplicate_keys_without_option(self) -> None:
+        code = 'x = {"A": 1, "A": 2}\n'
+        self.assertEqual(code, autoflake.fix_code(code))
+
+    def test_fix_code_with_inline_duplicate_keys_preserves_line_endings(self) -> None:
+        for newline in ["\n", "\r\n", "\r"]:
+            with self.subTest(newline=newline):
+                code = 'x = {"A": 1, "A": 2}' + newline
+                expected = 'x = {"A": 2}' + newline
+                self.assertEqual(
+                    expected, autoflake.fix_code(code, remove_duplicate_keys=True)
+                )
+
+    def test_fix_code_keeps_complex_inline_duplicate_keys(self) -> None:
+        for code in [
+            'x = {"A": call(), "A": 2}\n',
+            'x = {"A": 1, "A": value}\n',
+            'x = {"A": 1, **other, "A": 2}\n',
+            'x = {"A": 1, "A": 2}  # keep this comment\n',
+        ]:
+            with self.subTest(code=code):
+                self.assertEqual(
+                    code, autoflake.fix_code(code, remove_duplicate_keys=True)
+                )
+
     def test_fix_code_with_duplicate_key_longer(self) -> None:
         self.assertEqual(
             """\

@@ -187,6 +187,59 @@ def _split_lines(source: str) -> list[str]:
     return re.findall(r"[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+", source)
 
 
+def filter_inline_duplicate_keys(source: str) -> str:
+    """Remove earlier duplicate entries from single-line literal dictionaries.
+
+    Leave dictionaries with nonliteral values, unpacking or comments unchanged.
+    AST offsets count UTF-8 bytes, so apply edits to encoded physical lines.
+    """
+    try:
+        tree = ast.parse(source)
+    except (SyntaxError, ValueError, RecursionError):
+        return source
+
+    lines = _split_lines(source)
+    edits: dict[int, list[tuple[int, int]]] = collections.defaultdict(list)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict) or node.lineno != node.end_lineno:
+            continue
+        if "#" in lines[node.lineno - 1]:
+            continue
+        keys = [key for key in node.keys if key is not None]
+        if len(keys) != len(node.keys):
+            continue
+        try:
+            ast.literal_eval(node)
+            key_values = [ast.literal_eval(key) for key in keys]
+        except (ValueError, TypeError, RecursionError):
+            continue
+
+        seen: set[Any] = set()
+        for index in reversed(range(len(keys))):
+            key_value = key_values[index]
+            if key_value in seen:
+                edits[node.lineno - 1].append(
+                    (keys[index].col_offset, keys[index + 1].col_offset),
+                )
+            seen.add(key_value)
+
+    for line_index, ranges in edits.items():
+        # A removed entry can contain a dictionary with its own duplicates.
+        # Merge overlapping deletions before applying them to the original line.
+        merged: list[tuple[int, int]] = []
+        for start, end in sorted(ranges):
+            if merged and start <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+            else:
+                merged.append((start, end))
+        line = lines[line_index].encode("utf-8")
+        for start, end in reversed(merged):
+            line = line[:start] + line[end:]
+        lines[line_index] = line.decode("utf-8")
+
+    return "".join(lines)
+
+
 def duplicate_key_line_numbers(
     messages: Iterable[pyflakes.messages.Message],
     source: str,
@@ -576,6 +629,9 @@ def filter_code(
     if additional_imports:
         imports |= frozenset(additional_imports)
     del additional_imports
+
+    if remove_duplicate_keys:
+        source = filter_inline_duplicate_keys(source)
 
     messages = check(source)
 
