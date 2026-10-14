@@ -52,7 +52,7 @@ _LOGGER.propagate = False
 
 ATOMS = frozenset([tokenize.NAME, tokenize.NUMBER, tokenize.STRING])
 
-EXCEPT_REGEX = re.compile(r"^\s*except [\s,()\w]+ as \w+:$")
+EXCEPT_REGEX = re.compile(r"^\s*except [\s,().\w]+ as \w+:$")
 PYTHON_SHEBANG_REGEX = re.compile(r"^#!.*\bpython[3]?\b\s*$")
 
 MAX_PYTHON_FILE_DETECTION_BYTES = 1024
