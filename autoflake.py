@@ -57,8 +57,10 @@ PYTHON_SHEBANG_REGEX = re.compile(r"^#!.*\bpython[3]?\b\s*$")
 
 MAX_PYTHON_FILE_DETECTION_BYTES = 1024
 
+# The leading ``\s*`` is redundant for ``search`` and backtracked
+# quadratically on a long run of whitespace, so it is left out here.
 IGNORE_COMMENT_REGEX = re.compile(
-    r"\s*#\s{1,}autoflake:\s{1,}\bskip_file\b",
+    r"#\s{1,}autoflake:\s{1,}\bskip_file\b",
     re.MULTILINE,
 )
 
@@ -786,16 +788,24 @@ def dict_entry_has_key(line: str, key: Any) -> bool:
     if "#" in line:
         return False
 
-    result = re.match(r"\s*(.*)\s*:\s*(.*),\s*$", line)
-    if not result:
+    # Split "<key>: <value>," without a regular expression. The previous
+    # pattern (``\s*(.*)\s*:\s*(.*),\s*$``) stacked ``.*`` next to ``\s*`` and
+    # backtracked quadratically on a long line, so a single crafted dict entry
+    # could hang the whole run.
+    stripped = line.rstrip()
+    if not stripped.endswith(","):
+        return False
+    before_comma = stripped[:-1]
+    colon_index = before_comma.rfind(":")
+    if colon_index < 0:
         return False
 
     try:
-        candidate_key = ast.literal_eval(result.group(1))
+        candidate_key = ast.literal_eval(before_comma[:colon_index])
     except (SyntaxError, ValueError):
         return False
 
-    if multiline_statement(result.group(2)):
+    if multiline_statement(before_comma[colon_index + 1 :]):
         return False
 
     return cast(bool, candidate_key == key)
