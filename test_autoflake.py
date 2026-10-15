@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
@@ -1521,6 +1522,37 @@ print(a)
                     remove_duplicate_keys=True,
                 ),
             ),
+        )
+
+    def _assert_finishes(self, func: Any, timeout: float = 10.0) -> Any:
+        """Run ``func`` in a thread and fail if it does not return in time."""
+        result = []
+
+        def run() -> None:
+            result.append(func())
+
+        thread = threading.Thread(target=run, daemon=True)
+        thread.start()
+        thread.join(timeout)
+        self.assertFalse(
+            thread.is_alive(),
+            f"call did not finish within {timeout} seconds",
+        )
+        return result[0]
+
+    def test_dict_entry_has_key_is_linear_on_long_line(self) -> None:
+        line = "'x': " + " " * 200000 + "0,"
+        self.assertTrue(
+            self._assert_finishes(
+                lambda: autoflake.dict_entry_has_key(line, "x"),
+            ),
+        )
+
+    def test_skip_file_regex_is_linear_on_long_whitespace(self) -> None:
+        source = " " * 200000 + "\n# autoflake: skip_file\nimport os\n"
+        self.assertEqual(
+            source,
+            self._assert_finishes(lambda: autoflake.fix_code(source)),
         )
 
     def test_fix_code_keeps_pass_statements(self) -> None:
