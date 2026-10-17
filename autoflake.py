@@ -187,6 +187,82 @@ def _split_lines(source: str) -> list[str]:
     return re.findall(r"[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+", source)
 
 
+def filter_inline_duplicate_keys(source: str) -> str:
+    """Keep the first key and last value of duplicate literal dictionary entries.
+
+    Skip comments, unpacking, nonliterals and parentheses outside AST spans.
+    Handle one innermost dictionary per pass; fix_code repeats until stable.
+    """
+    try:
+        tree = ast.parse(source)
+    except (SyntaxError, ValueError, RecursionError):
+        return source
+
+    lines = _split_lines(source)
+    for node in reversed(list(ast.walk(tree))):
+        if not isinstance(node, ast.Dict) or node.lineno != node.end_lineno:
+            continue
+        if "#" in lines[node.lineno - 1]:
+            continue
+        keys = [key for key in node.keys if key is not None]
+        if len(keys) != len(node.keys):
+            continue
+        try:
+            ast.literal_eval(node)
+            key_values = [ast.literal_eval(key) for key in keys]
+        except (ValueError, TypeError, RecursionError):
+            continue
+
+        last = {key: index for index, key in enumerate(key_values)}
+        if len(last) == len(keys):
+            continue
+
+        line = lines[node.lineno - 1].encode("utf-8")
+        assert node.end_col_offset is not None
+        end = node.end_col_offset - 1
+        # AST offsets omit redundant parentheses around keys and values.
+        # Only splice entries if their intervening syntax is unambiguous.
+        if (
+            line[node.col_offset : node.col_offset + 1] != b"{"
+            or line[node.col_offset + 1 : keys[0].col_offset].strip()
+            or any(
+                line[key.end_col_offset : value.col_offset].strip() != b":"
+                for key, value in zip(keys, node.values)
+            )
+            or any(
+                line[value.end_col_offset : key.col_offset].strip() != b","
+                for value, key in zip(node.values, keys[1:])
+            )
+            or line[node.values[-1].end_col_offset : end].strip() not in (b"", b",")
+        ):
+            continue
+
+        entries = []
+        seen: set[Any] = set()
+        for index, key_value in enumerate(key_values):
+            if key_value in seen:
+                continue
+            seen.add(key_value)
+            value = node.values[index]
+            last_value = node.values[last[key_value]]
+            entry = (
+                line[keys[index].col_offset : value.col_offset]
+                + line[last_value.col_offset : last_value.end_col_offset]
+            )
+            if len(seen) < len(last):
+                entry += line[value.end_col_offset : keys[index + 1].col_offset]
+            entries.append(entry)
+        replacement = (
+            line[: keys[0].col_offset]
+            + b"".join(entries)
+            + line[node.values[-1].end_col_offset :]
+        )
+        lines[node.lineno - 1] = replacement.decode("utf-8")
+        return "".join(lines)
+
+    return source
+
+
 def duplicate_key_line_numbers(
     messages: Iterable[pyflakes.messages.Message],
     source: str,
@@ -576,6 +652,9 @@ def filter_code(
     if additional_imports:
         imports |= frozenset(additional_imports)
     del additional_imports
+
+    if remove_duplicate_keys:
+        source = filter_inline_duplicate_keys(source)
 
     messages = check(source)
 
