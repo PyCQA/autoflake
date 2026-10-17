@@ -34,8 +34,10 @@ import subprocess, sys
 
 def foo():
     from abc import ABCMeta, WeakSet
+
     try:
         import multiprocessing
+
         print(multiprocessing.cpu_count())
     except ImportError as exception:
         print(sys.version)
@@ -52,6 +54,7 @@ import sys
 def foo():
     try:
         import multiprocessing
+
         print(multiprocessing.cpu_count())
     except ImportError:
         print(sys.version)
@@ -82,9 +85,9 @@ library), use the ``--remove-all-unused-imports`` option.
 To remove unused variables, use the ``--remove-unused-variables`` option.
 
 ``--remove-duplicate-keys`` also handles single-line dictionaries when all
-keys and values are literals, keeping the last entry for each repeated key.
-Single-line dictionaries with comments, unpacking, or nonliteral values are
-left unchanged.
+keys and values are literals, keeping each key's original position and its last
+value. Single-line dictionaries with comments, unpacking, nonliteral values,
+or redundant parentheses around keys or values are left unchanged.
 
 Below is the full listing of options:
 

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import contextlib
 import functools
 import io
@@ -1287,10 +1288,10 @@ print(a)
     def test_fix_code_with_inline_duplicate_keys(self) -> None:
         cases = [
             ('x = {"A": 1, "A": 1}\n', 'x = {"A": 1}\n'),
-            ('x = {"A": 1, "B": 2, "A": 3}\n', 'x = {"B": 2, "A": 3}\n'),
+            ('x = {"A": 1, "B": 2, "A": 3}\n', 'x = {"A": 3, "B": 2}\n'),
             ('x = {"A": 1, "A": 2, "B": 3, "B": 4}\n', 'x = {"A": 2, "B": 4}\n'),
             ("x = {(0, 1): 1, (0, 1): 2,}\n", "x = {(0, 1): 2,}\n"),
-            ('x = {1: "first", True: "last"}\n', 'x = {True: "last"}\n'),
+            ('x = {1: "first", True: "last"}\n', 'x = {1: "last"}\n'),
             ('é = {"clé": 1, "clé": 2}\n', 'é = {"clé": 2}\n'),
             (
                 'x = {"A": {"B": 1, "B": 2}, "A": {"C": 3, "C": 4}}\n',
@@ -1309,6 +1310,39 @@ print(a)
                 self.assertEqual(
                     fixed, autoflake.fix_code(fixed, remove_duplicate_keys=True)
                 )
+
+    def test_inline_duplicate_keys_preserve_mapping_semantics(self) -> None:
+        for code in [
+            'x = {"A": 1, "B": 2, "A": 3}\n',
+            'x = {1: "first", True: "last"}\n',
+            'x = {False: "first", 0: "last"}\n',
+            'x = {1.0: "first", 1: "last"}\n',
+            'x = {-0.0: "first", 0.0: "last"}\n',
+            'x = {(True,): "first", (1,): "last"}\n',
+            'x = {"A": {"B": 1, "B": 2}, "C": 0, "A": {"D": 3, "D": 4}}\n',
+        ]:
+            with self.subTest(code=code):
+                fixed = autoflake.fix_code(code, remove_duplicate_keys=True)
+                before = ast.literal_eval(code.partition(" = ")[2])
+                after = ast.literal_eval(fixed.partition(" = ")[2])
+                self.assertEqual(list(before.items()), list(after.items()))
+                self.assertEqual(
+                    [(type(key), repr(key)) for key in before],
+                    [(type(key), repr(key)) for key in after],
+                )
+
+    def test_inline_duplicate_keys_with_parentheses_are_unchanged(self) -> None:
+        for code in [
+            "x = {('a'): 1, 'a': 2}\n",
+            "x = {'a': 1, ('a'): 2}\n",
+            "x = {'a': (1), 'a': 2}\n",
+            "x = {'a': 1, 'a': (2)}\n",
+            "x = {((0, 1)): 1, (0, 1): 2}\n",
+        ]:
+            with self.subTest(code=code):
+                fixed = autoflake.fix_code(code, remove_duplicate_keys=True)
+                self.assertEqual(code, fixed)
+                compile(fixed, "<test>", "exec")
 
     def test_fix_code_keeps_inline_duplicate_keys_without_option(self) -> None:
         code = 'x = {"A": 1, "A": 2}\n'
