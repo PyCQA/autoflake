@@ -526,12 +526,7 @@ def filter_from_import(
 
     # All of the import in this statement is unused
     if not filtered_imports:
-        return (
-            get_indentation(line)
-            + "pass"
-            + pass_sentinel
-            + get_line_ending(line)
-        )
+        return get_indentation(line) + "pass" + pass_sentinel + get_line_ending(line)
 
     indentation += "import "
 
@@ -732,12 +727,7 @@ def filter_unused_import(
         # only line inside a block. For example,
         # "if True:\n    import os". In such cases, if the import is
         # removed, the block will be left hanging with no body.
-        return (
-            get_indentation(line)
-            + "pass"
-            + pass_sentinel
-            + get_line_ending(line)
-        )
+        return get_indentation(line) + "pass" + pass_sentinel + get_line_ending(line)
 
 
 def filter_unused_variable(
