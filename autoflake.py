@@ -1173,6 +1173,27 @@ def match_file(filename: str, exclude: Iterable[str]) -> bool:
     return os.path.isdir(filename) or is_python_file(filename)
 
 
+def is_symlink_outside(filename: str, root: str) -> bool:
+    """Return True if filename is a symlink that resolves outside of root.
+
+    ``os.walk()`` does not follow directory symlinks, but it still lists
+    file symlinks, and ``--in-place`` would otherwise write through them to
+    files that are not under the directory being processed.
+    """
+    if not os.path.islink(filename):
+        return False
+
+    target = os.path.realpath(filename)
+    try:
+        inside = os.path.commonpath([target, root]) == root
+    except ValueError:  # Different drives on Windows.
+        inside = False
+
+    if not inside:
+        _LOGGER.debug("Skipped %s: symlink resolves outside of %s", filename, root)
+    return not inside
+
+
 def find_files(
     filenames: list[str],
     recursive: bool,
@@ -1182,11 +1203,13 @@ def find_files(
     while filenames:
         name = filenames.pop(0)
         if recursive and os.path.isdir(name):
+            walk_root = os.path.realpath(name)
             for root, directories, children in os.walk(name):
                 filenames += [
                     os.path.join(root, f)
                     for f in children
-                    if match_file(
+                    if not is_symlink_outside(os.path.join(root, f), walk_root)
+                    and match_file(
                         os.path.join(root, f),
                         exclude,
                     )

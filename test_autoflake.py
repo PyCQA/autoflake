@@ -2087,6 +2087,34 @@ def func11() -> None:
         finally:
             shutil.rmtree(temp_directory)
 
+    def test_find_files_skips_symlinks_outside_root(self) -> None:
+        temp_directory = tempfile.mkdtemp()
+        try:
+            target = os.path.join(temp_directory, "dir")
+            os.mkdir(target)
+            inside = os.path.join(target, "a.py")
+            with open(inside, "w"):
+                pass
+
+            outside = os.path.join(temp_directory, "outside.py")
+            with open(outside, "w"):
+                pass
+
+            try:
+                os.symlink(inside, os.path.join(target, "local.py"))
+                os.symlink(outside, os.path.join(target, "escape.py"))
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks are not supported here")
+
+            files = list(autoflake.find_files([target], True, []))
+
+            file_names = [os.path.basename(f) for f in files]
+            self.assertIn("a.py", file_names)
+            self.assertIn("local.py", file_names)
+            self.assertNotIn("escape.py", file_names)
+        finally:
+            shutil.rmtree(temp_directory)
+
     def test_exclude(self) -> None:
         temp_directory = tempfile.mkdtemp(dir=".")
         try:
