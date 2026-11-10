@@ -3371,6 +3371,11 @@ class ConfigFileTest(unittest.TestCase):
         assert success is True
         assert args == self.with_defaults(**original_args)
 
+    @unittest.skipUnless(sys.platform == "win32", "requires drive letters")
+    def test_files_on_different_drives_have_no_config(self) -> None:
+        args = {"files": ["C:/test_me.py", "D:/test_me.py"]}
+        assert autoflake.find_and_process_config(args) is None
+
     def test_non_nested_pyproject_toml_empty(self) -> None:
         self.create_file("test_me.py")
         self.create_file("pyproject.toml", '[tool.other]\nprop="value"\n')

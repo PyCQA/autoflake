@@ -1237,7 +1237,13 @@ def find_and_process_config(args: Mapping[str, Any]) -> MutableMapping[str, Any]
     }
     # Traverse the file tree common to all files given as argument looking for
     # a configuration file
-    config_path = os.path.commonpath([os.path.abspath(file) for file in args["files"]])
+    try:
+        config_path = os.path.commonpath(
+            [os.path.abspath(file) for file in args["files"]],
+        )
+    except ValueError:
+        # Files on different drives (Windows): no common tree to search.
+        return None
     config: Mapping[str, Any] | None = None
     while True:
         for config_file, processor in CONFIG_FILES.items():
