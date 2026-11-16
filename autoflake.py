@@ -1029,6 +1029,8 @@ def _fix_file(
                 io.StringIO(filtered_source).readlines(),
                 filename,
             )
+            if args.get("color", False):
+                diff = _colorize_diff(diff)
             standard_out.write("".join(diff))
             return 1
         if write_to_stdout:
@@ -1047,6 +1049,8 @@ def _fix_file(
                 io.StringIO(filtered_source).readlines(),
                 filename,
             )
+            if args.get("color", False):
+                diff = _colorize_diff(diff)
             standard_out.write("".join(diff))
     elif write_to_stdout:
         standard_out.write(filtered_source)
@@ -1121,6 +1125,35 @@ def get_diff_text(old: Sequence[str], new: Sequence[str], filename: str) -> str:
             text += newline + r"\ No newline at end of file" + newline
 
     return text
+
+
+def _split_line_ending(line: str) -> tuple[str, str]:
+    """Return a line split into its contents and line ending."""
+    if line.endswith("\r\n"):
+        return line[:-2], "\r\n"
+    if line.endswith(("\n", "\r")):
+        return line[:-1], line[-1]
+    return line, ""
+
+
+def _colorize_diff(diff: str) -> str:
+    """Return diff text with removed lines red and added lines green."""
+    red = "\x1b[31m"
+    green = "\x1b[32m"
+    reset = "\x1b[0m"
+
+    colored: list[str] = []
+    for index, line in enumerate(_split_lines(diff)):
+        contents, ending = _split_line_ending(line)
+        # The first two lines are the ---/+++ file headers, so source lines
+        # starting with "-" or "+" after them are still diff changes.
+        if index >= 2 and contents.startswith("+"):
+            colored.append(green + contents + reset + ending)
+        elif index >= 2 and contents.startswith("-"):
+            colored.append(red + contents + reset + ending)
+        else:
+            colored.append(line)
+    return "".join(colored)
 
 
 def _split_comma_separated(string: str) -> set[str]:
@@ -1291,6 +1324,7 @@ def merge_configuration_file(
     BOOL_FLAGS = {
         "check",
         "check_diff",
+        "color",
         "expand_star_imports",
         "ignore_init_module_imports",
         "ignore_pass_after_docstring",
@@ -1384,6 +1418,11 @@ def _main(
         "--check-diff",
         action="store_true",
         help="return error code if changes are needed, also display file diffs",
+    )
+    parser.add_argument(
+        "--color",
+        action="store_true",
+        help="color the diff output",
     )
 
     imports_group = parser.add_mutually_exclusive_group()
