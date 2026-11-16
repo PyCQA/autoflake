@@ -81,10 +81,14 @@ library), use the ``--remove-all-unused-imports`` option.
 
 To remove unused variables, use the ``--remove-unused-variables`` option.
 
+To colorize the diff output, use the ``--color`` option. Removed lines are shown
+in red and added lines in green. Color is disabled by default, and source output
+from ``--stdout`` or files changed with ``--in-place`` is never colorized.
+
 Below is the full listing of options:
 
 ```
-usage: autoflake [-h] [-c | -cd] [-r] [-j n] [--exclude globs] [--imports IMPORTS] [--expand-star-imports] [--remove-all-unused-imports] [--ignore-init-module-imports] [--remove-duplicate-keys] [--remove-unused-variables]
+usage: autoflake [-h] [-c | -cd] [--color] [-r] [-j n] [--exclude globs] [--imports IMPORTS] [--expand-star-imports] [--remove-all-unused-imports] [--ignore-init-module-imports] [--remove-duplicate-keys] [--remove-unused-variables]
                  [--remove-rhs-for-unused-variables] [--ignore-pass-statements] [--ignore-pass-after-docstring] [--version] [--quiet] [-v] [--stdin-display-name STDIN_DISPLAY_NAME] [--config CONFIG_FILE] [-i | -s]
                  files [files ...]
 
@@ -97,6 +101,7 @@ options:
   -h, --help            show this help message and exit
   -c, --check           return error code if changes are needed
   -cd, --check-diff     return error code if changes are needed, also display file diffs
+  --color               color the diff output
   -r, --recursive       drill down directories recursively
   -j n, --jobs n        number of parallel jobs; match CPU count if value is 0 (default: 0)
   --exclude globs       exclude file/directory names that match these comma-separated globs
@@ -140,6 +145,7 @@ Configure default arguments using a `pyproject.toml` file:
 ```toml
 [tool.autoflake]
 check = true
+color = true
 imports = ["django", "requests", "urllib3"]
 ```
 
@@ -148,11 +154,14 @@ Or a `setup.cfg` file:
 ```ini
 [autoflake]
 check=true
+color=true
 imports=django,requests,urllib3
 ```
 
 The name of the configuration parameters match the flags (e.g. use the
-parameter `expand-star-imports` for the flag `--expand-star-imports`).
+parameter `expand-star-imports` for the flag `--expand-star-imports`). Boolean
+options accept `true` or `false`; INI files also accept `yes`/`no`, `on`/`off`,
+and `1`/`0`.
 
 ## Tests
 

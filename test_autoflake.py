@@ -29,6 +29,42 @@ AUTOFLAKE_COMMAND = [
     ),
 ]
 
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
+_SGR_RE = re.compile(r"\x1b\[([0-9;]*)m")
+
+
+def _strip_ansi(text: str) -> str:
+    """Return text with ANSI SGR escape sequences removed."""
+    return _ANSI_ESCAPE_RE.sub("", text)
+
+
+def _sgr_codes(text: str) -> set[int]:
+    """Return the numeric SGR parameters found in text."""
+    codes: set[int] = set()
+    for parameters in _SGR_RE.findall(text):
+        for parameter in parameters.split(";"):
+            codes.add(int(parameter) if parameter else 0)
+    return codes
+
+
+def _ends_with_ansi_reset(text: str) -> bool:
+    """Return True if text ends with an ANSI reset sequence."""
+    match = re.search(r"\x1b\[([0-9;]*)m$", text)
+    if match is None:
+        return False
+    return all(part in ("", "0", "39", "49") for part in match.group(1).split(";"))
+
+
+def _run_autoflake(*arguments: str) -> tuple[int, str]:
+    """Run autoflake in-process and return the status and standard output."""
+    output_file = io.StringIO()
+    status = autoflake._main(
+        argv=["my_fake_program", *arguments],
+        standard_out=output_file,
+        standard_error=None,
+    )
+    return status, output_file.getvalue()
+
 
 class UnitTests(unittest.TestCase):
     """Unit tests."""
@@ -2116,6 +2152,49 @@ def func11() -> None:
 class SystemTests(unittest.TestCase):
     """System tests."""
 
+    def _assert_colored_diff(
+        self,
+        plain: str,
+        colored: str,
+        reset_before_line_endings: bool = False,
+    ) -> None:
+        """Assert colored is the same diff in color, with red/green changes."""
+        self.assertEqual(plain, _strip_ansi(colored))
+        self.assertNotEqual(plain, colored)
+
+        plain_lines = plain.splitlines(keepends=True)
+        colored_lines = colored.splitlines(keepends=True)
+        self.assertEqual(len(plain_lines), len(colored_lines))
+
+        changed_lines = 0
+        for plain_line, colored_line in zip(plain_lines, colored_lines):
+            text = plain_line.rstrip("\r\n")
+            if text.startswith(("---", "+++")):
+                continue
+
+            if text.startswith("-"):
+                changed_lines += 1
+                self.assertTrue(
+                    _sgr_codes(colored_line) & {31, 91},
+                    f"Deleted line is not red: {colored_line!r}",
+                )
+            elif text.startswith("+"):
+                changed_lines += 1
+                self.assertTrue(
+                    _sgr_codes(colored_line) & {32, 92},
+                    f"Added line is not green: {colored_line!r}",
+                )
+            else:
+                continue
+
+            if reset_before_line_endings:
+                self.assertTrue(
+                    _ends_with_ansi_reset(colored_line.rstrip("\r\n")),
+                    f"No reset before line ending: {colored_line!r}",
+                )
+
+        self.assertGreater(changed_lines, 0)
+
     def test_skip_file(self) -> None:
         skipped_file_file_text = """
 # autoflake: skip_file
@@ -2182,6 +2261,99 @@ x = 1
  x = 1
 """,
                 "\n".join(output_file.getvalue().split("\n")[3:]),
+            )
+
+    def test_diff_with_color(self) -> None:
+        with temporary_file(
+            """\
+import re
+import os
+import my_own_module
+x = 1
+""",
+        ) as filename:
+            status, plain = _run_autoflake(filename)
+            self.assertEqual(0, status)
+            self.assertNotIn("\x1b[", plain)
+
+            status, colored = _run_autoflake("--color", filename)
+            self.assertEqual(0, status)
+            self._assert_colored_diff(plain, colored)
+
+    def test_check_diff_with_color(self) -> None:
+        with temporary_file(
+            """\
+import re
+import os
+import my_own_module
+x = 1
+""",
+        ) as filename:
+            plain_status, plain = _run_autoflake("--check-diff", filename)
+            self.assertEqual(1, plain_status)
+
+            colored_status, colored = _run_autoflake(
+                "--check-diff",
+                "--color",
+                filename,
+            )
+            self.assertEqual(1, colored_status)
+            self._assert_colored_diff(plain, colored)
+
+    def test_check_diff_with_color_when_clean(self) -> None:
+        with temporary_file("import os\nprint(os.sep)\n") as filename:
+            status, output = _run_autoflake(
+                "--check-diff",
+                "--color",
+                filename,
+            )
+            self.assertEqual(0, status)
+            self.assertEqual(
+                f"{filename}: No issues detected!{os.linesep}",
+                _strip_ansi(output),
+            )
+
+    def test_stdout_with_color_does_not_color_source(self) -> None:
+        with temporary_file("import re\nprint(1)\n") as filename:
+            status, output = _run_autoflake(
+                "--stdout",
+                "--color",
+                filename,
+            )
+            self.assertEqual(0, status)
+            self.assertEqual("print(1)\n", output)
+            self.assertNotIn("\x1b[", output)
+
+    def test_in_place_with_color_does_not_color_source(self) -> None:
+        with temporary_file("import re\nprint(1)\n") as filename:
+            status, output = _run_autoflake(
+                "--in-place",
+                "--color",
+                filename,
+            )
+            self.assertEqual(0, status)
+            self.assertEqual("", output)
+
+            with open(filename) as f:
+                contents = f.read()
+            self.assertEqual("print(1)\n", contents)
+            self.assertNotIn("\x1b[", contents)
+
+    def test_color_preserves_crlf_and_missing_final_newline(self) -> None:
+        with temporary_file("import re, os\r\nprint(os.sep)") as filename:
+            status, plain = _run_autoflake(filename)
+            self.assertEqual(0, status)
+            self.assertIn("\r\n", plain)
+            self.assertIn("\\ No newline at end of file", plain)
+
+            status, colored = _run_autoflake("--color", filename)
+            self.assertEqual(0, status)
+            self.assertIn("\r\n", colored)
+            self.assertIn("\\ No newline at end of file", colored)
+            self._assert_colored_diff(
+                plain,
+                colored,
+                reset_before_line_endings=True,
             )
 
     def test_diff_with_nonexistent_file(self) -> None:
@@ -3347,6 +3519,7 @@ class ConfigFileTest(unittest.TestCase):
         return {
             "check": False,
             "check_diff": False,
+            "color": False,
             "expand_star_imports": False,
             "ignore_init_module_imports": False,
             "ignore_pass_after_docstring": False,
@@ -3572,6 +3745,44 @@ class ConfigFileTest(unittest.TestCase):
             files=files,
             expand_star_imports=False,
         )
+
+    def test_color_true_in_pyproject_toml(self) -> None:
+        self.create_file("test_me.py")
+        self.create_file(
+            "pyproject.toml",
+            "[tool.autoflake]\ncolor = true\n",
+        )
+        files = [self.effective_path("test_me.py")]
+        args, success = autoflake.merge_configuration_file({"files": files})
+        assert success is True
+        assert args == self.with_defaults(
+            files=files,
+            color=True,
+        )
+
+    def test_color_false_in_setup_cfg(self) -> None:
+        self.create_file("test_me.py")
+        self.create_file(
+            "setup.cfg",
+            "[autoflake]\ncolor = false\n",
+        )
+        files = [self.effective_path("test_me.py")]
+        args, success = autoflake.merge_configuration_file({"files": files})
+        assert success is True
+        assert args == self.with_defaults(
+            files=files,
+            color=False,
+        )
+
+    def test_non_bool_value_for_color(self) -> None:
+        self.create_file("test_me.py")
+        self.create_file(
+            "setup.cfg",
+            "[autoflake]\ncolor = sometimes\n",
+        )
+        files = [self.effective_path("test_me.py")]
+        _, success = autoflake.merge_configuration_file({"files": files})
+        assert success is False
 
     def test_list_value_pyproject_toml(self) -> None:
         self.create_file("test_me.py")
