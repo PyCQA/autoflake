@@ -1125,6 +1125,17 @@ def main() -> None:
             ),
         )
 
+    def test_fix_code_with_variable_used_in_fstring(self) -> None:
+        code = """\\
+def greet():
+    name = "World"
+    return f"Hello, {name}!"
+"""
+        self.assertEqual(
+            code,
+            autoflake.fix_code(code, remove_unused_variables=True),
+        )
+
     def test_fix_code_with_unused_variables_drop_rhs(self) -> None:
         self.assertEqual(
             """\
